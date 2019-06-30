@@ -72,7 +72,18 @@ public class PlugsFactory {
 	 * @return package path 
 	 */
 	public String[] getScanPath() {
-		return Arrays.copyOf(packageDirs, packageDirs.length);
+		return packageDirs == null?null:Arrays.copyOf(packageDirs, packageDirs.length);
+	}
+	public void addScanPath(String... paths) {
+		if(paths.length>0) {
+			if(packageDirs==null) {
+				packageDirs =paths;
+			}else {
+				String[] pathCache = new String[paths.length+packageDirs.length];
+				System.arraycopy(packageDirs, 0, pathCache, 0, packageDirs.length);
+				System.arraycopy(paths, 0, pathCache, packageDirs.length, paths.length);
+			}
+		}
 	}
 	/**
 	 * add a instance as bean
@@ -214,10 +225,13 @@ public class PlugsFactory {
 				addPlugs(file);
 			}
 		}
-		Config conf = ConfigContext.getConfig("Plugin");
-		packageDirs = new String[1];
+		Config conf = ConfigContext.getInstance().getGlobalConfig();
+		if(conf!=null) {
+			conf = conf.getConfig("Plugin");
+		}
 		if (conf == null) {
-			packageDirs[0] = ".";
+			if(this.packageDirs==null)
+				this.addScanPath(".");
 		} else {
 			conf.allowKeyNull();
 			if (conf.hasPath("ScanPackage")) {
@@ -254,10 +268,11 @@ public class PlugsFactory {
 							}
 						}
 					}
-					packageDirs = dirs;
+					this.addScanPath(dirs);
 				}
 			} else {
-				packageDirs[0] = ".";
+				if(this.packageDirs==null)
+					this.addScanPath(".");
 			}
 			if (conf.hasPath("includes")) {
 				if (conf.isList("includes")) {
@@ -286,7 +301,17 @@ public class PlugsFactory {
 			if (packDir == null)
 				continue;
 			PackageScanner scanner = new PackageScanner();
-			scanner.setPackageName(packDir);
+			if(packDir.indexOf(":")!=-1||packDir.startsWith("/")) {
+				int packMark = packDir.indexOf(".",packDir.lastIndexOf("/"));
+				if(packMark!=-1) {
+					scanner.setClassPath(packDir.substring(0,packMark));
+					scanner.setPackageName(packDir.substring(packMark));
+				}else {
+					scanner.setClassPath(packDir);
+				}
+			}else {
+				scanner.setPackageName(packDir);
+			}
 			scanner.doScanner(new ClassInter() {
 				@Override
 				public void find(Class<?> cls) {
@@ -372,30 +397,45 @@ public class PlugsFactory {
 			}
 			if (type.equals(".conf")) {
 				Config config = ConfigFactory.parseFile(file);
+				ConfigContext.getInstance().mergeConfig(config);
 				config.allowKeyNull(true);
 				List<? extends Object> list = config.getValueListUnwrapper("plugins");
-				for (Object conf : list) {
-					if (conf == null)
-						continue;
-					if (conf.getClass().equals(String.class)) {
-						Class<?> clzz = Class.forName((String) conf);
-						if (clzz.isInterface()) {
-							this.addPlugsService(clzz);
-						} else
-							this.addPlugsAuto(clzz);
-					} else if (conf.getClass().equals(SimpleConfigObject.class)) {
-						RegisterDescription registerDescription = new RegisterDescription(
-								((SimpleConfigObject) conf).toConfig());
-						RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
-					}
-				}
-				Config conf = config.getConfig("conf");
-				if (conf != null)
-					ConfigContext.addConf(conf);
-
+				addPlugsByConfigList(list);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("failed to add plug at file " + file, e);
+		}
+	}
+	/**
+	 * 添加组件通过配置列表
+	 * @param list
+	 */
+	public void addPlugsByConfigList(List<? extends Object> list) {
+		for (Object conf : list) {
+			addPlugByConfig(conf);
+		}
+	}
+	/**
+	 * 添加组件通过配置
+	 * @param conf
+	 */
+	public void addPlugByConfig(Object conf) {
+		if (conf == null)
+			throw new PluginInitException("conf is null");
+		try {
+			if (conf.getClass().equals(String.class)) {
+				Class<?> clzz = Class.forName((String) conf);
+				if (clzz.isInterface()) {
+					this.addPlugsService(clzz);
+				} else
+					this.addPlugsAuto(clzz);
+			} else if (conf.getClass().equals(SimpleConfigObject.class)) {
+				RegisterDescription registerDescription = new RegisterDescription(
+						((SimpleConfigObject) conf).toConfig());
+				RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
+			}
+		} catch (Exception e) {
+			throw new PluginInitException("failed to add plug at conf  " + conf, e);
 		}
 	}
 	/**
@@ -424,26 +464,10 @@ public class PlugsFactory {
 			if (type==STREAM_TYPT.CONF) {
 				InputStreamReader reader = new InputStreamReader(stream);
 				Config config = ConfigFactory.parseReader(reader);
+				ConfigContext.getInstance().mergeConfig(config);
 				config.allowKeyNull(true);
 				List<? extends Object> list = config.getValueListUnwrapper("plugins");
-				for (Object conf : list) {
-					if (conf == null)
-						continue;
-					if (conf.getClass().equals(String.class)) {
-						Class<?> clzz = Class.forName((String) conf);
-						if (clzz.isInterface()) {
-							this.addPlugsService(clzz);
-						} else
-							this.addPlugsAuto(clzz);
-					} else if (conf.getClass().equals(SimpleConfigObject.class)) {
-						RegisterDescription registerDescription = new RegisterDescription(
-								((SimpleConfigObject) conf).toConfig());
-						RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
-					}
-				}
-				Config conf = config.getConfig("conf");
-				if (conf != null)
-					ConfigContext.addConf(conf);
+				addPlugsByConfigList(list);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("parse conf failed", e);
@@ -569,6 +593,8 @@ public class PlugsFactory {
 			if (instance == null)
 				throw new PluginRuntimeException("YaNan.plugs service not initd");
 		}
+		if (!instance.isAvailable())
+			instance.init0();
 		if (!instance.isAvailable())
 			throw new PluginRuntimeException(
 					"plugs unavailable ! this error may arise because a static field uses the PlugsFactory's proxy");
@@ -883,7 +909,7 @@ public class PlugsFactory {
 				if (anno != null) {
 					List<Annotation> list = annoGroup.get(annoType);
 					if (list == null) {
-						list = new ArrayList<Annotation>();
+						list = new LinkedList<Annotation>();
 						list.add(anno);
 						annoGroup.put(annoType, list);
 					} else
@@ -911,7 +937,7 @@ public class PlugsFactory {
 				if (annoMark != null) {
 					List<Annotation> list = annoGroup.get(annoType);
 					if (list == null) {
-						list = new ArrayList<Annotation>();
+						list = new LinkedList<Annotation>();
 						list.add(annotation);
 						annoGroup.put(annoType, list);
 					} else
@@ -940,7 +966,7 @@ public class PlugsFactory {
 				if (annoMark != null) {
 					List<Annotation> list = annoGroup.get(annoType);
 					if (list == null) {
-						list = new ArrayList<Annotation>();
+						list = new LinkedList<Annotation>();
 						list.add(annotation);
 						annoGroup.put(annoType, list);
 					} else
@@ -968,7 +994,7 @@ public class PlugsFactory {
 				if (annoMark != null) {
 					List<Annotation> list = annoGroup.get(annoType);
 					if (list == null) {
-						list = new ArrayList<Annotation>();
+						list = new LinkedList<Annotation>();
 						list.add(annotation);
 						annoGroup.put(annoType, list);
 					} else
@@ -996,7 +1022,7 @@ public class PlugsFactory {
 				if (annoMark != null) {
 					List<Annotation> list = annoGroup.get(annoType);
 					if (list == null) {
-						list = new ArrayList<Annotation>();
+						list = new LinkedList<Annotation>();
 						list.add(annotation);
 						annoGroup.put(annoType, list);
 					} else
@@ -1013,7 +1039,7 @@ public class PlugsFactory {
 		Annotation[] annotations = field.getAnnotations();
 		if (annotations.length == 0)
 			return null;
-		List<Annotation> annoGroup = new ArrayList<Annotation>();
+		List<Annotation> annoGroup = new LinkedList<Annotation>();
 		for (Annotation annotation : annotations) {
 			Annotation annoMark = annotation.annotationType().getAnnotation(annotationType);
 			if (annoMark != null)
@@ -1021,7 +1047,21 @@ public class PlugsFactory {
 		}
 		return annoGroup;
 	}
-
+	public static List<Annotation> getAnnotationGroup(Parameter parameter, Class<? extends Annotation> annotationType) {
+		if (parameter == null || annotationType == null)
+			return null;
+		Annotation[] annotations = parameter.getAnnotations();
+		if (annotations.length == 0)
+			return null;
+		List<Annotation> annoGroup = new LinkedList<Annotation>();
+		for (Annotation annotation : annotations) {
+			Annotation annoMark = annotation.annotationType().getAnnotation(annotationType);
+			if (annoMark != null)
+				annoGroup.add(annotation);
+		}
+		return annoGroup;
+	}
+	
 	/**
 	 * 获取代理对象的PlugsHandler对象
 	 * 

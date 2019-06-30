@@ -39,8 +39,6 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	private Class<?> interfaceClass;// 接口类
 	private ProxyType proxyType = ProxyType.JDK;// 代理模式
 	
-	private static Logger log = LoggerFactory.getLogger( PlugsHandler.class);
-
 	/**
 	 * return the proxy object
 	 * 
@@ -121,7 +119,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	}
 
 	@Override
-	public Object invoke(Object proxy, Method method, Object[] args) {
+	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable{
 		// if the interface class is InvokeHandler class ,jump the method filter
 		InvokeHandlerSet handler = null;
 		if (registerDescription != null && registerDescription.getHandlerMapping() != null) {
@@ -169,17 +167,21 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 						return mh.getInterruptResult();
 				}
 			}
-			log.error(e.getMessage(),e);
-			if(com.YaNan.frame.utils.reflect.ClassLoader.extendsOf(e.getClass(), InvocationTargetException.class)){
-				InvocationTargetException exc = (InvocationTargetException) e;
-				if(exc.getTargetException()!=null)
-					e = exc.getTargetException();
-			}
-			if(com.YaNan.frame.utils.reflect.ClassLoader.extendsOf(e.getClass(), RuntimeException.class))
-				throw (RuntimeException)e;
-			else
-				throw new RuntimeException(e);
+			throw processException(e);
 		}
+	}
+	/**
+	 * process the exception
+	 * @param e
+	 * @return
+	 */
+	private Throwable processException(Throwable e) {
+		if(com.YaNan.frame.utils.reflect.ClassLoader.extendsOf(e.getClass(), InvocationTargetException.class)){
+			InvocationTargetException exc = (InvocationTargetException) e;
+			if(exc.getTargetException()!=null)
+				e = exc.getTargetException();
+		}
+		return e;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -246,7 +248,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 						return mh.getInterruptResult();
 				}
 			}
-			throw e;
+			throw processException(e);
 		}
 	}
 
