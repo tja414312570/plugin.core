@@ -3,7 +3,7 @@
 	* 提供组件代理 （Proxy）
 	* 提供调用栈信息记录 （InvokeStack）
 	* 提供参数、方法、构造器等工具 （ParameterUtils）
-	* 简单的注解方式 
+	* 简单的注解方式 （@Register、@Service）
 	* 提供错误处理
 	* 提供依赖注入（DI @Service）
 	* 基于方法、构造器、以及属性的拦截器（AOP）
