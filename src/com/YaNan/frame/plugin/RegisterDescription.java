@@ -45,8 +45,8 @@ import com.typesafe.config.impl.SimpleConfigObject;
  * 组件描述类 用于创建组件时的组件信息 v1.0 支持通过Class的Builder方式 v1.1 支持通过Comp文件的Builder方式 v1.2
  * 支持创建默认的Builder方式 v1.3 支持描述器的属性 v1.4 将InvokeHandler的创建迁移到组件初始化时，大幅度提高代理执行效率
  * v1.5 20180910 重新构建InvokeHandler的逻辑，提高aop的效率 v1.6 20180921
- * 添加FieldHandler和ConstructorHandler 实现方法拦截与构造器拦截
- * v1.6 20190319 支持构造器参数，支持初始化后调用方法参数，支持构造器和方法匹配，参数数据结构多种支持，参数类型自动匹配
+ * 添加FieldHandler和ConstructorHandler 实现方法拦截与构造器拦截 v1.6 20190319
+ * 支持构造器参数，支持初始化后调用方法参数，支持构造器和方法匹配，参数数据结构多种支持，参数类型自动匹配
  * 
  * @author yanan
  *
@@ -164,6 +164,7 @@ public class RegisterDescription {
 	public String getBeanId() {
 		return id;
 	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -243,6 +244,7 @@ public class RegisterDescription {
 			return false;
 		return true;
 	}
+
 	/**
 	 * 支持注解类型的构造器 register为注解 clzz为注册器的类名 impls 为注册器实现的接口
 	 * 
@@ -252,6 +254,21 @@ public class RegisterDescription {
 	 * @throws Exception
 	 */
 	public RegisterDescription(Register register, Class<?> clzz) {
+		this.buildByAnnotation(register, clzz);
+	}
+	public void buildByDefault(Class<?> clzz) {
+		// 读取属性
+		this.priority = Integer.MAX_VALUE;
+		this.signlton = true;
+		this.description = "default register description :" + clzz.getName();
+		// 获取实现类
+		this.loader = new ClassLoader(clzz, false);
+		this.clzz = loader.getLoadedClass();
+		// 获取实现类所在的接口
+		this.plugs = clzz.getInterfaces();
+		PlugsFactory.getInstance().addRegisterHandlerQueue(this);
+	}
+	public void buildByAnnotation(Register register, Class<?> clzz) {
 		this.loader = new ClassLoader(register.declare().equals(Object.class) ? clzz : register.declare(), false);
 		this.clzz = loader.getLoadedClass();
 		this.register = register;
@@ -264,11 +281,11 @@ public class RegisterDescription {
 		String[] methods = register.method();
 		this.initMethod = new Method[methods.length];
 		int i = 0;
-		for(;i<methods.length;i++)
+		for (; i < methods.length; i++)
 			try {
 				this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
 			} catch (NoSuchMethodException | SecurityException e) {
-				throw new PluginInitException("failed to get init method \""+methods[i]+"\"",e);
+				throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
 			}
 		checkPlugs(this.plugs);
 		PlugsFactory.getInstance().addRegisterHandlerQueue(this);
@@ -294,17 +311,14 @@ public class RegisterDescription {
 	}
 
 	public RegisterDescription(Class<?> clzz) {
-		// 读取属性
-		this.priority = Integer.MAX_VALUE;
-		this.signlton = false;
-		this.description = "default register description :" + clzz.getName();
-		// 获取实现类
-		this.loader = new ClassLoader(clzz, false);
-		this.clzz = loader.getLoadedClass();
-		// 获取实现类所在的接口
-		this.plugs = clzz.getInterfaces();
-		PlugsFactory.getInstance().addRegisterHandlerQueue(this);
+		Register register = clzz.getAnnotation(Register.class);
+		if (register != null) {
+			this.buildByAnnotation(register, clzz);
+		} else {
+			this.buildByDefault(clzz);
+		}
 	}
+	
 
 	public RegisterDescription(File file) {
 		try {
@@ -655,8 +669,8 @@ public class RegisterDescription {
 									}
 									Method method = helper.getMethod(methodName, parameterTypes);
 									if (method == null)
-										throw new PluginInitException("could not found method name is \""+methodName+"\" for parameter "
-												+ values + " at bean id " + id);
+										throw new PluginInitException("could not found method name is \"" + methodName
+												+ "\" for parameter " + values + " at bean id " + id);
 									instance = this.instanceBeanByMethod(config, method, parameters);
 								} else {// 普通数据列表
 									List<? extends Object> values = config.getSimpleObjectList("args");
@@ -668,8 +682,8 @@ public class RegisterDescription {
 									}
 									Method method = helper.getMethod(methodName, parameterTypes);
 									if (method == null)
-										throw new PluginInitException("could not found method name is \""+methodName+"\" for parameter "
-												+ values + " at bean id " + id);
+										throw new PluginInitException("could not found method name is \"" + methodName
+												+ "\" for parameter " + values + " at bean id " + id);
 									instance = this.instanceBeanByMethod(config, method, parameters);
 								}
 							} else {// 单参数
@@ -692,15 +706,15 @@ public class RegisterDescription {
 									}
 									Method method = helper.getMethod(methodName, parameterTypes);
 									if (method == null)
-										throw new PluginInitException("could not found method name is \""+methodName+"\" for parameter " + entrySet
-												+ " at bean id " + id);
+										throw new PluginInitException("could not found method name is \"" + methodName
+												+ "\" for parameter " + entrySet + " at bean id " + id);
 									instance = this.instanceBeanByMethod(config, method, parameters);
 								} else {
 									Object value = config.getSimpleObject("args");
 									Method method = helper.getMethod(methodName, value.getClass());
 									if (method == null)
-										throw new PluginInitException("could not found method name is \""+methodName+"\" for parameter "
-												+ value + " at bean id " + id);
+										throw new PluginInitException("could not found method name is \"" + methodName
+												+ "\" for parameter " + value + " at bean id " + id);
 									instance = this.instanceBeanByMethod(config, method, value);
 								}
 							}
@@ -760,7 +774,7 @@ public class RegisterDescription {
 						this.initFieldHandlerMapping();
 						checkPlugs(this.plugs);
 					}
-					if (instance == null){
+					if (instance == null) {
 						instance = this.getNewBean();
 						if (this.config.hasPath("init")) {
 							try {
@@ -772,7 +786,7 @@ public class RegisterDescription {
 					}
 					PlugsFactory.addBeanRegister(instance, this);
 				} catch (Exception e) {
-					throw new PluginInitException("failed to init bean for id \""+id+"\"",e);
+					throw new PluginInitException("failed to init bean for id \"" + id + "\"", e);
 				}
 				if (this.fieldParam != null) {
 					for (FieldDesc desc : this.fieldParam.values()) {
@@ -1128,7 +1142,7 @@ public class RegisterDescription {
 				try {
 					Class<?> interfacer = Class.forName(str.trim());
 //					if (ClassLoader.implementsOf(clzz, interfacer))// 判断类及父类是否实现某接口
-						set.add(interfacer);
+					set.add(interfacer);
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 					continue;
@@ -1244,13 +1258,13 @@ public class RegisterDescription {
 
 	@SuppressWarnings("unchecked")
 	private <T> T getNewInstance(Class<T> plug, Constructor<?> constructor, Object... args) {
-		if(this.linkRegister!=null){//如果有链接的注册器
-			//获取链接类的相同构造器
+		if (this.linkRegister != null) {// 如果有链接的注册器
+			// 获取链接类的相同构造器
 			try {
-				if(this.linkProxy==null){
+				if (this.linkProxy == null) {
 					Object linkObject = this.linkRegister.getRegisterInstance(plug, args);
 					this.linkProxy = ProxyHandler.newCglibProxy(this.getRegisterClass(), this,
-							constructor.getParameterTypes(),linkObject, args);
+							constructor.getParameterTypes(), linkObject, args);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -1320,7 +1334,8 @@ public class RegisterDescription {
 			this.initProxyMethod(proxy);
 		} catch (Throwable t) {
 			PluginRuntimeException exception = t.getClass().equals(PluginRuntimeException.class)
-					? (PluginRuntimeException) t : new PluginRuntimeException(t);
+					? (PluginRuntimeException) t
+					: new PluginRuntimeException(t);
 			if (invokeHandlerSet != null) {
 				if (handler != null)
 					handler.exception(this, plug, constructor, proxy, exception, args);
@@ -1359,45 +1374,46 @@ public class RegisterDescription {
 				method.invoke(proxy);
 				method.setAccessible(false);
 			}
-		} else if (this.config!=null && this.config.hasPath("init")) {
+		} else if (this.config != null && this.config.hasPath("init")) {
 			ClassHelper helper = ClassHelper.getClassHelper(proxy.getClass());
-			//判断初始化后调用方法是否是一个列表
+			// 判断初始化后调用方法是否是一个列表
 			if (this.config.isList("init")) {
-				//获取列表的无包裹类型
+				// 获取列表的无包裹类型
 				List<? extends Object> methodList = this.config.getValueListUnwrapper("init");
-				//初始化方法列表
+				// 初始化方法列表
 				Method method;
-				//对列表进行遍历
-				for(int i = 0;i<methodList.size();i++){
+				// 对列表进行遍历
+				for (int i = 0; i < methodList.size(); i++) {
 					Object methodConf = methodList.get(i);
-					if(methodConf.getClass().equals(String.class)){
+					if (methodConf.getClass().equals(String.class)) {
 						method = helper.getMethod(methodConf.toString());
 						method.setAccessible(true);
 						method.invoke(proxy);
 						method.setAccessible(false);
-					}else if(methodConf.getClass().equals(SimpleConfigObject.class)){
-						MethodDesc[] methodDescs = ParameterUtils.transformToMethod(((SimpleConfigObject) methodConf).toConfig(), this);
+					} else if (methodConf.getClass().equals(SimpleConfigObject.class)) {
+						MethodDesc[] methodDescs = ParameterUtils
+								.transformToMethod(((SimpleConfigObject) methodConf).toConfig(), this);
 //						method[i] = methodDesc.getMethod();
 //						parameters[i] = methodDesc.getParameter();
-						for(MethodDesc methodDesc : methodDescs){
+						for (MethodDesc methodDesc : methodDescs) {
 							methodDesc.getMethod().setAccessible(true);
-							methodDesc.getMethod().invoke(proxy,methodDesc.getParameter());
+							methodDesc.getMethod().invoke(proxy, methodDesc.getParameter());
 							methodDesc.getMethod().setAccessible(false);
 						}
 					}
 				}
 			} else {
-				if(config.getType("init") == ConfigValueType.STRING){
+				if (config.getType("init") == ConfigValueType.STRING) {
 					Method method = helper.getMethod(config.getString("init"));
 					method.setAccessible(true);
 					method.invoke(proxy);
 					method.setAccessible(false);
-				}else if(config.getType("init") == ConfigValueType.OBJECT){
+				} else if (config.getType("init") == ConfigValueType.OBJECT) {
 					MethodDesc[] methodDescs = ParameterUtils.transformToMethod(config.getConfig("init"), this);
-					for(MethodDesc methodDesc : methodDescs){
+					for (MethodDesc methodDesc : methodDescs) {
 						Method method = methodDesc.getMethod();
 						method.setAccessible(true);
-						method.invoke(proxy,methodDesc.getParameter());
+						method.invoke(proxy, methodDesc.getParameter());
 						method.setAccessible(false);
 					}
 				}
@@ -1417,27 +1433,29 @@ public class RegisterDescription {
 	@SuppressWarnings("unchecked")
 	public <T> T getRegisterInstance(Class<T> plug, Object... args) throws Exception {
 		Object proxy = null;
-		if(config != null ){
+		if (config != null) {
 			String ref = config.getString("ref");
-			if(ref!=null){
+			if (ref != null) {
 				proxy = BeanContainer.getContext().getBean(ref);
-			}else{
-				proxy  = getRegisterInstance0(plug,args);
+			} else {
+				proxy = getRegisterInstance0(plug, args);
 			}
-		}else{
-			proxy  = getRegisterInstance0(plug,args);
+		} else {
+			proxy = getRegisterInstance0(plug, args);
 		}
-		if(config!=null && config.hasPath("method")&&this.method==null){
-			if(config.hasPath("args")){
+		if (config != null && config.hasPath("method") && this.method == null) {
+			if (config.hasPath("args")) {
 				ParameterInfo info = ParameterUtils.getParameterInfo(config);
-				this.method = ClassHelper.getClassHelper(proxy.getClass()).getDeclaredMethod(config.getString("method"), info.getParameterTypes());
-			}else{
-				this.method = ClassHelper.getClassHelper(proxy.getClass()).getDeclaredMethod(config.getString("method"));
+				this.method = ClassHelper.getClassHelper(proxy.getClass()).getDeclaredMethod(config.getString("method"),
+						info.getParameterTypes());
+			} else {
+				this.method = ClassHelper.getClassHelper(proxy.getClass())
+						.getDeclaredMethod(config.getString("method"));
 			}
 		}
-		if(this.method!=null){
+		if (this.method != null) {
 			Object[] parameter = new Object[this.method.getParameters().length];
-			proxy = method.invoke(proxy,parameter);
+			proxy = method.invoke(proxy, parameter);
 		}
 		return (T) proxy;
 	}
@@ -1477,7 +1495,7 @@ public class RegisterDescription {
 	@SuppressWarnings("unchecked")
 	private <T> T getProxyInstance(Class<T> plug, int hashKey, Object... args) {
 		Object proxy = null;
-		if(this.proxyContainer==null)
+		if (this.proxyContainer == null)
 			this.createProxyContainer();
 		proxy = this.proxyContainer.get(hashKey);
 		return (T) proxy;
@@ -1598,12 +1616,12 @@ public class RegisterDescription {
 	}
 
 	public void updateRegister(Class<?> registerClass) {
-		this.signlton = true;//启用单例
-		if(this.proxyContainer != null)
-			this.proxyContainer.clear();//清理代理容器
-		this.linkRegister = new RegisterDescription(registerClass);//设置链接注册器
+		this.signlton = true;// 启用单例
+		if (this.proxyContainer != null)
+			this.proxyContainer.clear();// 清理代理容器
+		this.linkRegister = new RegisterDescription(registerClass);// 设置链接注册器
 		PlugsFactory.getInstance().addPlugs(registerClass);
 		PlugsFactory.getInstance().associate();
-		this.linkProxy = null;//此时应将代理重置，以更新具体对象
+		this.linkProxy = null;// 此时应将代理重置，以更新具体对象
 	}
 }

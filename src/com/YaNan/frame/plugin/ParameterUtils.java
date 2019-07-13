@@ -3,10 +3,13 @@ package com.YaNan.frame.plugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
+
+import org.apache.tools.ant.taskdefs.XSLTProcess.ParamType;
 
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.beans.BeanContainer;
@@ -52,8 +55,8 @@ public class ParameterUtils {
 	 * @return
 	 */
 	public static Class<?> getParameterType(String parmType) {
-		parmType = parmType.trim().toLowerCase();
-		switch (parmType) {
+		parmType = parmType.trim();
+		switch (parmType.toLowerCase()) {
 		case "string":
 			return String.class;
 		case "int":

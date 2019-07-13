@@ -82,6 +82,7 @@ public class PlugsFactory {
 				String[] pathCache = new String[paths.length+packageDirs.length];
 				System.arraycopy(packageDirs, 0, pathCache, 0, packageDirs.length);
 				System.arraycopy(paths, 0, pathCache, packageDirs.length, paths.length);
+				this.packageDirs = pathCache;
 			}
 		}
 	}
@@ -677,7 +678,7 @@ public class PlugsFactory {
 		return registerDescription;
 	}
 
-	public static <T> RegisterDescription getRegisterDescrption(Class<T> impl, Class<? extends T> insClass)
+	public static <T> RegisterDescription getRegisterDescrption(Class<T> impl, Class<?> insClass)
 			throws Exception {
 		RegisterDescription registerDescription = null;
 		if (impl.isInterface() && checkAvaliable()) {
@@ -752,7 +753,7 @@ public class PlugsFactory {
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceByInsClass(Class<T> impl, Class<? extends T> insClass, Object... args) {
+	public static <T> T getPlugsInstanceByInsClass(Class<T> impl, Class<?> insClass, Object... args) {
 		try {
 
 			RegisterDescription registerDescription = getRegisterDescrption(impl, insClass);
