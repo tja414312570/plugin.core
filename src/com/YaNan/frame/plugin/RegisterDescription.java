@@ -245,17 +245,6 @@ public class RegisterDescription {
 		return true;
 	}
 
-	/**
-	 * 支持注解类型的构造器 register为注解 clzz为注册器的类名 impls 为注册器实现的接口
-	 * 
-	 * @param register
-	 * @param clzz
-	 * @param impls
-	 * @throws Exception
-	 */
-	public RegisterDescription(Register register, Class<?> clzz) {
-		this.buildByAnnotation(register, clzz);
-	}
 	public void buildByDefault(Class<?> clzz) {
 		// 读取属性
 		this.priority = Integer.MAX_VALUE;
@@ -309,7 +298,17 @@ public class RegisterDescription {
 	public <T> T getAttribute(String name) {
 		return this.attribute == null ? null : (T) this.attributes.get(name);
 	}
-
+	/**
+	 * 支持注解类型的构造器 register为注解 clzz为注册器的类名 impls 为注册器实现的接口
+	 * 
+	 * @param register
+	 * @param clzz
+	 * @param impls
+	 * @throws Exception
+	 */
+	public RegisterDescription(Register register, Class<?> clzz) {
+		this.buildByAnnotation(register, clzz);
+	}
 	public RegisterDescription(Class<?> clzz) {
 		Register register = clzz.getAnnotation(Register.class);
 		if (register != null) {
