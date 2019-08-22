@@ -132,7 +132,7 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 							notifyListener(null, nc, null, file);// 通知添加
 							log.debug(clzzName + "  add success!");
 						}
-					} catch (Exception e) {
+					} catch (Throwable e) {
 						log.error("failed to update class \"" + clzzName + "\"", e);
 					}
 				}
@@ -223,15 +223,20 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 	 * @param file
 	 */
 	protected void notifyListener(Class<?> clzz, Class<?> nc, Class<?> oc, File file) {
-		List<ClassUpdateListener> updaterList = PlugsFactory.getPlugsInstanceList(ClassUpdateListener.class);
-		for (ClassUpdateListener listener : updaterList){
-			if((clzz!=null&&ClassLoader.implementOf(clzz, ClassUpdateListener.class))
-					||(nc!=null&&ClassLoader.implementOf(nc, ClassUpdateListener.class))
-					||(oc!=null&&ClassLoader.implementOf(oc, ClassUpdateListener.class)))
-				continue;
-			System.out.println(listener+"   "+listener.getClass().getClassLoader());
-			listener.updateClass(clzz, nc, oc, file);
+		try {
+			List<ClassUpdateListener> updaterList = PlugsFactory.getPlugsInstanceListByAttribute(ClassUpdateListener.class,nc.getName());
+			for (ClassUpdateListener listener : updaterList){
+				if((clzz!=null&&ClassLoader.implementOf(clzz, ClassUpdateListener.class))
+						||(nc!=null&&ClassLoader.implementOf(nc, ClassUpdateListener.class))
+						||(oc!=null&&ClassLoader.implementOf(oc, ClassUpdateListener.class)))
+					continue;
+				System.out.println(listener+"   "+listener.getClass().getClassLoader());
+				listener.updateClass(clzz, nc, oc, file);
+			}
+		}catch (Throwable t) {
+			log.error("could not found updater listener for class "+nc.getName(),t);
 		}
+		
 	}
 
 	/**

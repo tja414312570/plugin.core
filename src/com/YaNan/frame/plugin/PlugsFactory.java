@@ -15,7 +15,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.beans.BeanContainer;
@@ -298,28 +297,14 @@ public class PlugsFactory {
 		}
 
 		// 扫描类
-		for (String packDir : packageDirs) {
-			if (packDir == null)
-				continue;
 			PackageScanner scanner = new PackageScanner();
-			if(packDir.indexOf(":")!=-1||packDir.startsWith("/")) {
-				int packMark = packDir.indexOf(".",packDir.lastIndexOf("/"));
-				if(packMark!=-1) {
-					scanner.setClassPath(packDir.substring(0,packMark));
-					scanner.setPackageName(packDir.substring(packMark));
-				}else {
-					scanner.setClassPath(packDir);
-				}
-			}else {
-				scanner.setPackageName(packDir);
-			}
+			scanner.setScanPath(packageDirs);
 			scanner.doScanner(new ClassInter() {
 				@Override
 				public void find(Class<?> cls) {
 					addPlugs(cls);
 				}
 			});
-		}
 		this.associate();
 		available = true;
 		this.initRegisterDescriptionHandler();
@@ -404,7 +389,7 @@ public class PlugsFactory {
 				addPlugsByConfigList(list);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("failed to add plug at file " + file, e);
+			throw new PluginRuntimeException("failed to add plug at file " + file, e);
 		}
 	}
 	/**
@@ -471,7 +456,7 @@ public class PlugsFactory {
 				addPlugsByConfigList(list);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("parse conf failed", e);
+			throw new PluginRuntimeException("parse conf failed", e);
 		}finally{
 			rebuild();
 		}
@@ -635,7 +620,7 @@ public class PlugsFactory {
 		if (impl.isInterface()) {
 			Plug plug = getPlug(impl);
 			if (plug == null)
-				throw new Exception("service interface " + impl.getName() + " could not found or not be regist");
+				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
 			registerDescription = plug.getDefaultRegisterDescription();
 		} else {
 			registerDescription = instance.getRegisterDescription(impl);
@@ -667,7 +652,7 @@ public class PlugsFactory {
 		if (impl.isInterface() && checkAvaliable()) {
 			Plug plug = getPlug(impl);
 			if (plug == null)
-				throw new Exception("service interface " + impl.getName() + " could not found or not be regist");
+				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
 			if (strict)
 				registerDescription = plug.getRegisterDescriptionByAttributeStrict(attribute);
 			else
@@ -684,9 +669,8 @@ public class PlugsFactory {
 		if (impl.isInterface() && checkAvaliable()) {
 			Plug plug = getPlug(impl);
 			if (plug == null)
-				throw new Exception("service interface " + impl.getName() + " could not found or not be regist");
+				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
 			registerDescription = plug.getRegisterDescriptionByInsClass(insClass);
-
 		} else {
 			registerDescription = instance.getRegisterDescription(impl);
 		}
@@ -706,7 +690,7 @@ public class PlugsFactory {
 			// 获取一个注册描述
 			RegisterDescription registerDescription = getRegisterDescrption(impl);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterInstance(impl, args);
 		} catch (Exception e) {
 			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
@@ -728,7 +712,7 @@ public class PlugsFactory {
 			if (registerDescription != null)
 				return registerDescription.getRegisterInstance(impl, args);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 		return null;
 	}
@@ -738,10 +722,10 @@ public class PlugsFactory {
 			// 获取一个注册描述
 			RegisterDescription registerDescription = getRegisterDescrption(impl);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterNewInstance(impl, args);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -758,10 +742,10 @@ public class PlugsFactory {
 
 			RegisterDescription registerDescription = getRegisterDescrption(impl, insClass);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterInstance(impl, args);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -780,10 +764,10 @@ public class PlugsFactory {
 
 			RegisterDescription registerDescription = getRegisterDescrption(impl, attribute, false);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterInstance(impl, args);// instance.getRegisterInstance(impl,registerDescription,args);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -825,7 +809,7 @@ public class PlugsFactory {
 						"plugs unavailable ! this error may arise because a static field uses the PlugsFactory's proxy");
 			Plug plug = getPlug(impl);
 			if (plug == null)
-				throw new Exception("service interface " + impl.getName() + " could not found or not be regist");
+				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
 			List<T> objectList = new ArrayList<T>();
 			List<RegisterDescription> registerDescriptionList = plug.getRegisterDescriptionListByAttribute(attribute);
 			Iterator<RegisterDescription> iterator = registerDescriptionList.iterator();
@@ -833,7 +817,7 @@ public class PlugsFactory {
 				objectList.add(iterator.next().getRegisterInstance(impl, args));
 			return objectList;
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -853,7 +837,7 @@ public class PlugsFactory {
 						"plugs unavailable ! this error may arise because a static field uses the PlugsFactory's proxy");
 			Plug plug = getPlug(impl);
 			if (plug == null)
-				throw new Exception("service interface " + impl.getName() + " could not found or not be regist");
+				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
 			List<T> objectList = new ArrayList<T>();
 			List<RegisterDescription> registerDescriptionList = plug.getRegisterDescriptionList();
 			Iterator<RegisterDescription> iterator = registerDescriptionList.iterator();
@@ -861,7 +845,7 @@ public class PlugsFactory {
 				objectList.add(iterator.next().getRegisterInstance(impl, args));
 			return objectList;
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -1074,12 +1058,12 @@ public class PlugsFactory {
 		if (field == null)
 			field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getDeclaredField("CGLIB$CALLBACK_0");
 		if (field == null)
-			throw new RuntimeException("instance \"" + proxyInstance + "\" is not proxy object");
+			throw new PluginRuntimeException("instance \"" + proxyInstance + "\" is not proxy object");
 		PlugsHandler plugsHandler = null;
 		try {
 			plugsHandler = ClassLoader.getFieldValue(field, proxyInstance);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new RuntimeException("failed to get instance's PlugsHandler", e);
+			throw new PluginRuntimeException("failed to get instance's PlugsHandler", e);
 		}
 		return plugsHandler;
 	}
@@ -1087,7 +1071,7 @@ public class PlugsFactory {
 	public static <T> T getBean(String beanId) {
 		T t = BeanContainer.getContext().getBean(beanId);
 		if (t == null)
-			throw new RuntimeException("colud not find bean defined id is \"" + beanId + "\"");
+			throw new PluginRuntimeException("colud not find bean defined id is \"" + beanId + "\"");
 		return t;
 	}
 
@@ -1096,7 +1080,7 @@ public class PlugsFactory {
 		if (t == null)
 			t = getPlugsInstance(beanClass);
 		if (t == null)
-			throw new RuntimeException("colud not find bean defined class is \"" + beanClass.getName() + "\"");
+			throw new PluginRuntimeException("colud not find bean defined class is \"" + beanClass.getName() + "\"");
 		return t;
 	}
 
@@ -1105,10 +1089,10 @@ public class PlugsFactory {
 			// 获取一个注册描述
 			RegisterDescription registerDescription = getRegisterDescrption(impl);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterNewInstanceByParamType(impl, parameterType, arguments);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 
@@ -1117,10 +1101,10 @@ public class PlugsFactory {
 			// 获取一个注册描述
 			RegisterDescription registerDescription = getRegisterDescrption(impl);
 			if (registerDescription == null)
-				throw new Exception("service interface " + impl.getName() + " could not found any registrar");
+				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 			return registerDescription.getRegisterInstanceByParamType(impl, parameterType, arguments);
 		} catch (Exception e) {
-			throw new RuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
 		}
 	}
 

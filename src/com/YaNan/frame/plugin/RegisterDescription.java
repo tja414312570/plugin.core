@@ -1369,6 +1369,8 @@ public class RegisterDescription {
 			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		if (this.initMethod != null) {
 			for (Method method : this.initMethod) {
+				if(method == null)
+					throw new PluginInitException("could not found init method "+method+" at class "+this.clzz.getName());
 				method.setAccessible(true);
 				method.invoke(proxy);
 				method.setAccessible(false);
