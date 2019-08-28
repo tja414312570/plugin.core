@@ -103,8 +103,8 @@ public class ProxyHandler implements MethodInterceptor {
 			if(linkMethod==null){
 				synchronized (this) {
 					if(linkMethod==null){
-						RegisterDescription linkRegister = this.registerDescription.getLinkRegister();
-						linkMethod = linkRegister.getRegisterClass().getMethod(method.getName(), method.getParameterTypes());
+//						RegisterDescription linkRegister = this.registerDescription.getLinkRegister();
+						linkMethod = linkObject.getClass().getMethod(method.getName(), method.getParameterTypes());//linkRegister.getRegisterClass()
 						this.methods.put(method, linkMethod);
 					}
 				}
