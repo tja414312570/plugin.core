@@ -8,9 +8,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.YaNan.frame.plugin.RegisterDescription;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -248,7 +245,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 						return mh.getInterruptResult();
 				}
 			}
-			throw processException(e);
+			throw e;
 		}
 	}
 
