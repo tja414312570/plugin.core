@@ -40,11 +40,11 @@ public class ErrorPlugsHandler implements InvokeHandler,InstanceHandler{
 						sb.append("[").append(par).append("]  ");
 					}
 				}else sb.append("Void");
-				log.error("An error occurred  \r\nat method :"
-			+methodHandler.getMethod()+"\r\nparameter :"
+				log.error("An error occurred  \r\n\t\tat method :"
+			+methodHandler.getMethod()+"\r\n\t\tparameter :"
 						+sb.toString(), e);;
 			}
-			if(error.value()!="")
+			if(!error.value().equals(""))
 				methodHandler.interrupt(error.value());
 		}
 		e.printStackTrace();
@@ -79,8 +79,8 @@ public class ErrorPlugsHandler implements InvokeHandler,InstanceHandler{
 						sb.append("[").append(par).append("]  ");
 					}
 				}else sb.append("Void");
-				log.error("An error occurred  \r\nat method :"
-			+constructor+"\r\nparameter :"
+				log.error("An error occurred  \r\n\t\tat method :"
+			+constructor+"\r\n\t\tnparameter :"
 						+sb.toString(), throwable);;
 			}
 		}
