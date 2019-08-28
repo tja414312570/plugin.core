@@ -150,7 +150,7 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 					if (!scanner.contains(file)) {
 						String clzzName = ResourceManager.getClassPath(file);
 						clzzName = clzzName.substring(0, clzzName.length() - 6);
-						Class<?> clzz;
+						Class<?> clzz = null;
 						try {
 							iterator.remove();
 							clzz = Class.forName(clzzName);
@@ -161,8 +161,8 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 									+ (clzz == null ? "" : "proxy class:" + clzz.getName()));
 							proxy.remove(clzz);
 							notifyListener(clzz, null, null, null);// 通知删除
-						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
+						} catch (Throwable e) {
+							log.error("failed to update class "+clzz.getName(),e);
 						}
 					}
 				}
