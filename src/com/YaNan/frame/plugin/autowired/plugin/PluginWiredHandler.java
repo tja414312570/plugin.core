@@ -115,9 +115,8 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 				}
 				field.setAccessible(false);
 			} catch (IllegalArgumentException | IllegalAccessException e) {
-				throw new RuntimeException("failed to autowired service ! "
-						+ "\"service is null\r\nat class : " + registerDescription.getRegisterClass().getName()
-						+ "\r\nat field : " + desc.getField().getName());
+				throw new RuntimeException("failed to autowired service ! at class : " + registerDescription.getRegisterClass().getName()
+						+ "at field : " + desc.getField().getName(),e);
 			}
 	}
 
