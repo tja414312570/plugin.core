@@ -617,7 +617,7 @@ public class PlugsFactory {
 	public static RegisterDescription getRegisterDescrption(Class<?> impl) throws Exception {
 		RegisterDescription registerDescription = null;
 		checkAvaliable();
-		if (impl.isInterface()) {
+		if (impl.isInterface() || impl.getAnnotation(Service.class)!= null) {
 			Plug plug = getPlug(impl);
 			if (plug == null)
 				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
