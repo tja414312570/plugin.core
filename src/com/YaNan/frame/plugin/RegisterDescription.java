@@ -279,7 +279,7 @@ public class RegisterDescription {
 			try {
 				this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
 				if(this.initMethod[i] == null)
-					throw new PluginInitException("could not found init method "+methods[i]+" at class "+this.clzz.getName());
+					throw new PluginInitException("could not found init method ["+methods[i]+"] at class "+this.clzz.getName());
 			} catch (NoSuchMethodException | SecurityException e) {
 				throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
 			}
