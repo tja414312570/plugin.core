@@ -269,10 +269,17 @@ public class RegisterDescription {
 		this.proxyModel = register.model();
 		String[] methods = register.method();
 		this.initMethod = new Method[methods.length];
+		if(this.initMethod != null && this.initMethod != null 
+				&& this.proxyModel != ProxyModel.BOTH 
+				&& this.proxyModel != ProxyModel.CGLIB) {
+			this.proxyModel = ProxyModel.CGLIB;
+		}
 		int i = 0;
 		for (; i < methods.length; i++)
 			try {
 				this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
+				if(this.initMethod[i] == null)
+					throw new PluginInitException("could not found init method "+methods[i]+" at class "+this.clzz.getName());
 			} catch (NoSuchMethodException | SecurityException e) {
 				throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
 			}

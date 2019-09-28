@@ -36,7 +36,6 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 		for (int i = 0; i < parameters.length; i++) {
 			Parameter parameter = parameters[i];
 			property = parameter.getAnnotation(Property.class);
-			System.out.println(parameter+":"+property);
 			if (property != null) {
 				propertyName = property.value();
 				if (property != null) {
