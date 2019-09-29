@@ -26,9 +26,9 @@ public @interface Property {
 	 */
 	String defaultValue() default "";
 	/**
-	 * 非空，默认false
+	 * 是否必填
 	 * @return
 	 */
-	boolean notNull() default false;
+	boolean required() default false;
 	
 }

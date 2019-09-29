@@ -85,18 +85,16 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			propertyValue = PropertyManager.getInstance().getProperty(propertyName);
 			if (propertyValue == null &&property!=null&& !property.defaultValue().equals(""))
 				propertyValue = property.defaultValue();
-			if (propertyValue == null)
-				throw new RuntimeException("failed to autowired parameter ! property name \"" + propertyName
-						+ "\" value is null\r\nat class : " + registerDescription.getRegisterClass().getName()
-						+ "\r\nat field : " + desc.getField().getName());
+			if (propertyValue == null && property.required())
+				throw new RuntimeException("the required property '"+propertyName+"' value is null");
 			new ClassLoader(target).set(desc.getField(),
 					desc.getField().getType().isArray()
 							? ClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
 							: propertyValue);
 		} catch (Exception e) {
-			log.error("Error to process property ! \r\nat class : " + registerDescription.getRegisterClass().getName()
-					+ "\r\nat field : " + desc.getField().getName() + "\r\nat property : " + propertyName
-					+ "\r\nat property value : " + propertyValue, e);
+			throw new PropertyAutowiredFailedException("failed to autowired parameter ! property name \"" + propertyName
+					+ "\" value is null\r\nat class : " + registerDescription.getRegisterClass().getName()
+					+ "\r\nat field : " + desc.getField().getName(),e);
 		}
 	}
 
