@@ -269,7 +269,7 @@ public class RegisterDescription {
 		this.proxyModel = register.model();
 		String[] methods = register.method();
 		this.initMethod = new Method[methods.length];
-		if(this.initMethod != null && this.initMethod != null 
+		if(methods != null && methods.length > 0
 				&& this.proxyModel != ProxyModel.BOTH 
 				&& this.proxyModel != ProxyModel.CGLIB) {
 			this.proxyModel = ProxyModel.CGLIB;
