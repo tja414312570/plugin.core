@@ -14,3 +14,4 @@
 	* 单例与非单例支持
 	* 热更新功能（ClassHotUpdater）
 	* 调用加密功能（@Encrypt）
+![avatar](https://ufomedia.oss-cn-beijing.aliyuncs.com/QQ20191014-190318.png)
