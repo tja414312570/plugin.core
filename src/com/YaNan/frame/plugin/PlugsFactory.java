@@ -322,7 +322,7 @@ public class PlugsFactory {
 	private void inited() {
 		List<PlugsListener> listeners = PlugsFactory.getPlugsInstanceList(PlugsListener.class);
 		for (PlugsListener listen : listeners)
-			listen.excute(this);
+			listen.execute(this);
 	}
 
 	/**

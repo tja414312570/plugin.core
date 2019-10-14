@@ -8,7 +8,7 @@ import com.YaNan.frame.plugin.interfacer.PlugsListener;
 public class PropertyWiredHandlerPlugin implements PlugsListener{
 
 	@Override
-	public void excute(PlugsFactory plugsFactory) {
+	public void execute(PlugsFactory plugsFactory) {
 		PropertyManager pm = PropertyManager.getInstance();
 		pm.scanAllProperty();
 	}
