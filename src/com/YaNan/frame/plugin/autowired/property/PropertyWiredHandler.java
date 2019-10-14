@@ -92,7 +92,8 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 							? ClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
 							: propertyValue);
 		} catch (Exception e) {
-			throw new PropertyAutowiredFailedException("failed to autowired parameter ! property name \"" + propertyName
+			if(property.required())
+				throw new PropertyAutowiredFailedException("failed to autowired parameter ! property name \"" + propertyName
 					+ "\" value is null\r\nat class : " + registerDescription.getRegisterClass().getName()
 					+ "\r\nat field : " + desc.getField().getName(),e);
 		}
