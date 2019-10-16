@@ -397,11 +397,26 @@ public class RegisterDescription {
 			if (className != null) {
 				this.loader = new ClassLoader(className, false);
 				this.clzz = loader.getLoadedClass();
-				this.priority = config.getInt("priority", 0);
-				this.signlton = config.getBoolean("signlton", true);
-				this.attribute = config.getString("attribute", "*").split(",");
-				this.description = config.getString("description", "");
-				String model = config.getString("model", "DEFAULT");
+				Register register = this.clzz.getAnnotation(Register.class);
+				this.priority = config.getInt("priority", 
+						register == null ? 0 : register.priority());
+				this.signlton = config.getBoolean("signlton",
+						register == null ? true : register.signlTon());
+				String attributs = config.getString("attribute");
+				if( attributs== null) {
+					if(register != null) {
+						this.attribute = register.attribute();
+					}else {
+						this.attribute = new String[1];
+						this.attribute[0] = "*";
+					}
+				}else {
+					this.attribute =attributs.split(",");
+				}
+				this.description = config.getString("description", 
+						register == null ? "":register.description());
+				String model = config.getString("model", 
+						register == null?"DEFAULT":register.model().toString());
 				this.proxyModel = ProxyModel.getProxyModel(model);
 				// 获取实现类
 				if (config.isConfigList("field")) {
@@ -414,8 +429,16 @@ public class RegisterDescription {
 						this.configField(field);
 				}
 				// 获取实现类所在的接口
-				String declareRegister = config.getString("service", "*");
-				this.plugs = getPlugs(clzz, declareRegister);
+				String services =  config.getString("service");
+				if(services == null) {
+					if(register!= null) {
+						this.plugs = register.register();
+					}else {
+						this.plugs = getPlugs(clzz, "*");
+					}
+				}else {
+					this.plugs = getPlugs(clzz, services);
+				}
 				// if (this.plugs == null || this.plugs.length == 0)
 				// throw new Exception("register " + clzz.getName() + " not
 				// implements any interface");
