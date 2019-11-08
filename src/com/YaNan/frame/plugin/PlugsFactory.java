@@ -27,6 +27,7 @@ import com.typesafe.config.impl.SimpleConfigObject;
 
 import com.YaNan.frame.utils.reflect.ClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
+import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.PackageScanner;
 import com.YaNan.frame.utils.resource.PackageScanner.ClassInter;
 import com.YaNan.frame.utils.resource.Path;
@@ -145,9 +146,9 @@ public class PlugsFactory {
 					PlugsFactory instance = getInstance();
 					if(resources==null||resources.length==0){
 						try {
-							List<File> file = ResourceManager.getResource(ResourceManager.classPath()+File.separatorChar+"plugin.conf");
+							List<AbstractResourceEntry> file = ResourceManager.getResource(ResourceManager.classPath()+File.separatorChar+"plugin.conf");
 							if(file!=null&&file.size()>0)
-							instance.configureLocation.add(file.get(0));
+							instance.configureLocation.add(file.get(0).getFile());
 						}catch (ResourceNotFoundException r) {
 						}
 					}
@@ -155,9 +156,9 @@ public class PlugsFactory {
 			}
 		}
 		for (String res : resources) {
-			List<File> resourceFiles = ResourceManager.getResource(res);
-			for (File file : resourceFiles)
-				instance.configureLocation.add(file);
+			List<AbstractResourceEntry> resourceFiles = ResourceManager.getResource(res);
+			for (AbstractResourceEntry file : resourceFiles)
+				instance.configureLocation.add(file.getFile());
 		}
 		instance.init0();
 	}
@@ -282,18 +283,18 @@ public class PlugsFactory {
 				if (conf.isList("includes")) {
 					List<String> dirs = conf.getStringList("includes");
 					for (String dir : dirs) {
-						List<File> resource = ResourceManager.getResource(dir);
-						for (File file : resource) {
-							addPlugs(file);
+						List<AbstractResourceEntry> resource = ResourceManager.getResource(dir);
+						for (AbstractResourceEntry file : resource) {
+							addPlugs(file.getFile());
 						}
 					}
 				} else {
 					String confDirs = conf.getString("includes");
 					String[] dirs = confDirs.split(",");
 					for (String dir : dirs) {
-						List<File> resource = ResourceManager.getResource(dir);
-						for (File file : resource) {
-							addPlugs(file);
+						List<AbstractResourceEntry> resource = ResourceManager.getResource(dir);
+						for (AbstractResourceEntry file : resource) {
+							addPlugs(file.getFile());
 						}
 					}
 				}

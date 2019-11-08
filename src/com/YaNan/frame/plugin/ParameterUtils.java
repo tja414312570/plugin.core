@@ -3,18 +3,16 @@ package com.YaNan.frame.plugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import org.apache.tools.ant.taskdefs.XSLTProcess.ParamType;
-
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.beans.BeanContainer;
 import com.YaNan.frame.utils.reflect.ClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
+import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.ResourceManager;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
@@ -270,9 +268,8 @@ public class ParameterUtils {
 		if (type.equals(File.class)) {// 文件类型特俗处理
 			File file;
 			try {
-				List<File> files = ResourceManager.getResource(value.toString());
-				file = files.get(0);
-
+				List<AbstractResourceEntry> files = ResourceManager.getResource(value.toString());
+				file = files.get(0).getFile();
 			} catch (Throwable t) {
 				file = new File(ResourceManager.getPathExress(value.toString()));
 			}
