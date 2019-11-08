@@ -24,6 +24,7 @@ import com.YaNan.frame.plugin.interfacer.PlugsListener;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.SimpleConfigObject;
+
 import com.YaNan.frame.utils.reflect.ClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
 import com.YaNan.frame.utils.resource.PackageScanner;
@@ -84,6 +85,9 @@ public class PlugsFactory {
 				this.packageDirs = pathCache;
 			}
 		}
+	}
+	public void addScanPath(Class<?>... clzzs) {
+		addScanPath(ResourceManager.getClassPath(clzzs));
 	}
 	/**
 	 * add a instance as bean
