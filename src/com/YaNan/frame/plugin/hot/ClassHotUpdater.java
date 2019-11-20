@@ -22,6 +22,8 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.YaNan.frame.plugin.ConfigContext;
 import com.YaNan.frame.plugin.PlugsFactory;
 import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
@@ -31,16 +33,17 @@ import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.resource.FileUtils;
 import com.YaNan.frame.utils.resource.Path;
 import com.YaNan.frame.utils.resource.Path.PathInter;
-import com.YaNan.frame.utils.resource.ResourceManager;
+import com.typesafe.config.Config;
 
 /**
  * 类更新监控
  * 
  * @author yanan
- *
  */
 public class ClassHotUpdater implements Runnable, ServletContextListener {
-	public Logger log = LoggerFactory.getLogger( ClassHotUpdater.class);
+	public List<ContextPath> contextPathList = new ArrayList<ContextPath>();//扫描上下文路劲
+	private Map<String,String> classNameCache = new HashMap<>();
+	public Logger log = LoggerFactory.getLogger(ClassHotUpdater.class);
 	private boolean cache;// 是否已经扫描
 	private List<String> scanner = new ArrayList<String>(100);// 用于存储已经扫描到的文件
 	static Map<String, FileToken> fileToken = new HashMap<String, FileToken>(100);// 用于存文件hash
@@ -78,6 +81,7 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 
 	@Override
 	public void run() {
+		final ContextPath currentContextPath = new ContextPath(null, null);
 		PathInter filePathInter = new PathInter() {
 			@Override
 			public void find(File file) {
@@ -90,8 +94,7 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 					//将扫描的文件推送到已扫描队列
 					scanner.add(fileMark);
 					//获取类名
-					String clzzName = ResourceManager.getClassPath(file.getAbsolutePath());
-					clzzName = clzzName.substring(0, clzzName.length() - 6);
+					String clzzName = getClassName(file.getAbsolutePath(),currentContextPath.getContextPath());
 					try {
 						Class<?> clzz = Class.forName(clzzName);
 						java.lang.ClassLoader loader = clzz == null ? this.getClass().getClassLoader()
@@ -139,34 +142,45 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 			}
 		};
 		while (true) {
-			Path path = new Path(ResourceManager.classPath());
-			path.filter("**.class");
-			path.scanner(filePathInter);
-			//如果是第一次之后的扫描  需要将已删除的文件找出来
-			if (cache) {
-				Iterator<String> iterator =fileToken.keySet().iterator();
-				while (iterator.hasNext()) {
-					String file = iterator.next();
-					if (!scanner.contains(file)) {
-						String clzzName = ResourceManager.getClassPath(file);
-						clzzName = clzzName.substring(0, clzzName.length() - 6);
-						Class<?> clzz = null;
-						try {
-							iterator.remove();
-							clzz = Class.forName(clzzName);
-							Class<?> cp = (Class<?>) proxy.get(clzz);
-							if (cp != null)
-								clzz = cp;
-							log.debug(clzzName + "  remvoe success!"
-									+ (clzz == null ? "" : "proxy class:" + clzz.getName()));
-							proxy.remove(clzz);
-							notifyListener(clzz, null, null, null);// 通知删除
-						} catch (Throwable e) {
-							log.error("failed to update class "+clzz.getName(),e);
+			if(this.contextPathList.isEmpty())
+				break;
+			for(ContextPath contextPath : contextPathList) {
+				Path path = new Path(contextPath.getContextPath());
+				path.filter(contextPath.getFilter());
+				currentContextPath.setContextPath(contextPath.getContextPath());
+				currentContextPath.setFilter(contextPath.getFilter());
+				path.scanner(filePathInter);
+				//如果是第一次之后的扫描  需要将已删除的文件找出来
+				if (cache) {
+					Iterator<String> iterator =fileToken.keySet().iterator();
+					while (iterator.hasNext()) {
+						String file = iterator.next();
+						if (!scanner.contains(file) && file.startsWith(contextPath.getContextPath())) {
+							String clzzName = getClassName(file,contextPath.getContextPath());
+							clzzName = clzzName.substring(0, clzzName.length() - 6);
+							Class<?> clzz = null;
+							try {
+								iterator.remove();
+								clzz = Class.forName(clzzName);
+								Class<?> cp = (Class<?>) proxy.get(clzz);
+								if (cp != null)
+									clzz = cp;
+								log.debug(clzzName + "  remvoe success!"
+										+ (clzz == null ? "" : "proxy class:" + clzz.getName()));
+								proxy.remove(clzz);
+								notifyListener(clzz, null, null, null);// 通知删除
+							} catch (Throwable e) {
+								if(clzz != null)
+									log.error("failed to update class "+clzz.getName(),e);
+								else
+									log.error("failed to load class file "+file,e);
+							}
 						}
 					}
+					scanner.clear();
+					currentContextPath.setContextPath(null);
+					currentContextPath.setFilter(null);
 				}
-				scanner.clear();
 			}
 			try {
 				cache = true;
@@ -175,6 +189,16 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	private String getClassName(String fileName, String contextPath) {
+		String className = classNameCache.get(fileName);
+		if(className == null) {
+			className = fileName.substring(contextPath.length()+1,fileName.length()-6)
+					.replace(File.separator,".");
+			classNameCache.put(fileName, className);
+		}
+		return className;
 	}
 
 	protected Class<?> loadClass(java.lang.ClassLoader loader,String className,String clzzName,byte[] content) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -230,11 +254,11 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 						||(nc!=null&&ClassLoader.implementOf(nc, ClassUpdateListener.class))
 						||(oc!=null&&ClassLoader.implementOf(oc, ClassUpdateListener.class)))
 					continue;
-				System.out.println(listener+"   "+listener.getClass().getClassLoader());
 				listener.updateClass(clzz, nc, oc, file);
 			}
 		}catch (Throwable t) {
-			log.error("could not found updater listener for class "+nc.getName(),t);
+			if(nc != null)
+				log.error("could not found updater listener for class "+nc.getName(),t);
 		}
 		
 	}
@@ -273,9 +297,68 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 	public void contextInitialized(ServletContextEvent arg0) {
 		log.debug("enable class hot update deployment service!");
 		ClassHotUpdater test = PlugsFactory.getPlugsInstance(ClassHotUpdater.class);
+		if(PlugsFactory.getPlug(ClassUpdateListener.class) == null)
+			PlugsFactory.getInstance().addPlugs(ClassUpdateListener.class);
+		if(test.contextPathList.isEmpty()) {
+			Config config = ConfigContext.getInstance().getGlobalConfig();
+			config.allowKeyNull();
+			config  = config.getConfig("ClassHotUpdater");
+			if(config != null) {
+				if(config.hasPath("contextPath")) {
+					if(config.isList("contextPath")) {
+						List<String> contextPaths = config.getStringList("contextPath");
+						test.addContextPath(contextPaths);
+					}else {
+						String contextPath = config.getString("contextPath");
+						test.addContextPath(contextPath.split(","));
+					}
+				}
+				
+			}
+		}
 		Thread thread = new Thread(test);
 		thread.setName("Plugin class hot update monitor server");
 		thread.setDaemon(true);
 		thread.start();
+	}
+
+	private void addContextPath(List<String> contextPaths) {
+		this.addContextPath(contextPaths.toArray(new String[]{}));
+	}
+	private void addContextPath(String... contextPaths) {
+		for(String contextPath : contextPaths) {
+			String context = contextPath;
+			String filte = "**.class";
+			int sp = context.indexOf(".",context.lastIndexOf("/"));
+			if(sp>0) {
+				context = contextPath.substring(0,sp);
+				filte = contextPath.substring(sp+1);
+				if(!filte.endsWith(".class")){
+					filte = filte.concat(".class");
+				}
+			}
+			this.contextPathList.add(new ContextPath(context,filte));
+		}
+	}
+	public static class ContextPath{
+		public String getContextPath() {
+			return contextPath;
+		}
+		public void setContextPath(String contextPath) {
+			this.contextPath = contextPath;
+		}
+		public String getFilter() {
+			return filter;
+		}
+		public void setFilter(String filter) {
+			this.filter = filter;
+		}
+		public ContextPath(String contextPath, String filter) {
+			super();
+			this.contextPath = contextPath;
+			this.filter = filter;
+		}
+		private String contextPath;
+		private String filter;
 	}
 }
