@@ -1,6 +1,7 @@
 package com.YaNan.frame.plugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
@@ -216,22 +217,33 @@ public class PlugsFactory {
 			try {
 				abstractResourceEntry =ResourceManager.getResource("classpath:plugin.conf");
 			}catch(Exception e) {
-				
 			}
-			
 			// 如果文件不存在，扫描所有的文件
 			if (abstractResourceEntry == null) {
-				ResourceScanner rs = new ResourceScanner(ResourceManager.classPath());
-				rs.filter("**.conf");
-				rs.scanner(new ResourceInter() {
-					
-					@Override
-					public void find(AbstractResourceEntry resource) {
-						addPlugs(resource.getInputStream(),STREAM_TYPT.CONF,null);
+				if(packageDirs != null && packageDirs.length>0) {
+					for(String dir : packageDirs) {
+						try {
+							abstractResourceEntry =ResourceManager.getResource((dir.endsWith("/")?dir:dir+"/")+"plugin.conf");
+						}catch(Exception e) {
+						}
+						if(abstractResourceEntry != null) 
+							break;
 					}
-				});
+				}
+				if(abstractResourceEntry == null) {
+					ResourceScanner rs = new ResourceScanner(ResourceManager.classPath());
+					rs.filter("**.conf");
+					rs.scanner(new ResourceInter() {
+						@Override
+						public void find(AbstractResourceEntry resource) {
+							addPlugs(resource);
+						}
+					});
+				} else {// 否则加入文件
+					addPlugs(abstractResourceEntry);
+				}
 			} else {// 否则加入文件
-				addPlugs(abstractResourceEntry.getInputStream(),STREAM_TYPT.CONF,null);
+				addPlugs(abstractResourceEntry);
 			}
 		} else {
 			for (File file : this.configureLocation) {
@@ -292,8 +304,8 @@ public class PlugsFactory {
 					List<String> dirs = conf.getStringList("includes");
 					for (String dir : dirs) {
 						List<AbstractResourceEntry> resource = ResourceManager.getResources(dir);
-						for (AbstractResourceEntry file : resource) {
-							addPlugs(file.getFile());
+						for (AbstractResourceEntry abstractResourceEntry : resource) {
+							addPlugs(abstractResourceEntry);
 						}
 					}
 				} else {
@@ -301,8 +313,8 @@ public class PlugsFactory {
 					String[] dirs = confDirs.split(",");
 					for (String dir : dirs) {
 						List<AbstractResourceEntry> resource = ResourceManager.getResources(dir);
-						for (AbstractResourceEntry file : resource) {
-							addPlugs(file.getFile());
+						for (AbstractResourceEntry abstractResourceEntry : resource) {
+							addPlugs(abstractResourceEntry);
 						}
 					}
 				}
@@ -374,7 +386,39 @@ public class PlugsFactory {
 	public static Plug getPlug(Class<?> plugClass) {
 		return instance.plugsList.get(plugClass);
 	}
-
+	/**
+	 * 添加组件 当通过扫描comps文件与plugs文件时，需要通过此方法将组件添加到容器中
+	 * 
+	 * @param file
+	 *            组件描述文件
+	 */
+	public void addPlugs(AbstractResourceEntry resourceEntry) {
+		InputStream is = null;
+		InputStreamReader reader = null;
+		try {
+			is = resourceEntry.getInputStream();
+			reader = new InputStreamReader(is);
+			Config config = ConfigFactory.parseReader(reader);
+			ConfigContext.getInstance().mergeConfig(config);
+			config.allowKeyNull(true);
+			List<? extends Object> list = config.getValueListUnwrapper("plugins");
+			addPlugsByConfigList(list);
+		} catch (Exception e) {
+			throw new PluginRuntimeException("failed to add plug at file " + resourceEntry.getPath(), e);
+		}finally {
+			try {
+				if(reader != null) {
+					reader.close();
+				}
+				if(is != null) {
+					is.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+		}
+	}
 	/**
 	 * 添加组件 当通过扫描comps文件与plugs文件时，需要通过此方法将组件添加到容器中
 	 * 
