@@ -577,7 +577,7 @@ public class RegisterDescription {
 											if (parameterTypes[i].equals(File.class)) {// 文件类型特俗处理
 												File file;
 												try {
-													List<AbstractResourceEntry> files = ResourceManager.getResource(value.toString());
+													List<AbstractResourceEntry> files = ResourceManager.getResources(value.toString());
 													file = files.get(0).getFile();
 												} catch (Throwable t) {
 													file = new File(ResourceManager.getPathExress(value.toString()));
@@ -642,7 +642,7 @@ public class RegisterDescription {
 										if (parameterType[i].equals(File.class)) {// 文件类型特俗处理
 											File file;
 											try {
-												List<AbstractResourceEntry> files = ResourceManager.getResource(value.toString());
+												List<AbstractResourceEntry> files = ResourceManager.getResources(value.toString());
 												file = files.get(0).getFile();
 
 											} catch (Throwable t) {

@@ -34,6 +34,8 @@ import com.YaNan.frame.utils.resource.Path;
 import com.YaNan.frame.utils.resource.Path.PathInter;
 import com.YaNan.frame.utils.resource.ResourceManager;
 import com.YaNan.frame.utils.resource.ResourceNotFoundException;
+import com.YaNan.frame.utils.resource.ResourceScanner;
+import com.YaNan.frame.utils.resource.ResourceScanner.ResourceInter;
 
 /**
  * Plugin factory,initial Plugin Context and manager & register & get Plugin Instance 2018 7-27
@@ -146,7 +148,7 @@ public class PlugsFactory {
 					PlugsFactory instance = getInstance();
 					if(resources==null||resources.length==0){
 						try {
-							List<AbstractResourceEntry> file = ResourceManager.getResource(ResourceManager.classPath()+File.separatorChar+"plugin.conf");
+							List<AbstractResourceEntry> file = ResourceManager.getResources(ResourceManager.classPath()+File.separatorChar+"plugin.conf");
 							if(file!=null&&file.size()>0)
 							instance.configureLocation.add(file.get(0).getFile());
 						}catch (ResourceNotFoundException r) {
@@ -156,7 +158,7 @@ public class PlugsFactory {
 			}
 		}
 		for (String res : resources) {
-			List<AbstractResourceEntry> resourceFiles = ResourceManager.getResource(res);
+			List<AbstractResourceEntry> resourceFiles = ResourceManager.getResources(res);
 			for (AbstractResourceEntry file : resourceFiles)
 				instance.configureLocation.add(file.getFile());
 		}
@@ -209,21 +211,27 @@ public class PlugsFactory {
 		this.addPlugsByDefault(InvokeHandler.class);// InvokeHandler用于提供方法拦截接口的支持
 		// 判断资源文件是否存在,如果无资源文件，直接扫描所有的plugs文件
 		if (this.configureLocation.isEmpty()) {
+			AbstractResourceEntry abstractResourceEntry = null;
 			// 获取基础的配置文件
-			File baseFile = new File(this.getClass().getClassLoader().getResource("").getPath().replace("%20", " "),
-					"plugin.conf");
+			try {
+				abstractResourceEntry =ResourceManager.getResource("classpath:plugin.conf");
+			}catch(Exception e) {
+				
+			}
+			
 			// 如果文件不存在，扫描所有的文件
-			if (!baseFile.exists()) {
-				Path path = new Path(this.getClass().getClassLoader().getResource("").getPath().replace("%20", " "));
-				path.filter("**.plugs", "**.comps", "**.conf");
-				path.scanner(new PathInter() {
+			if (abstractResourceEntry == null) {
+				ResourceScanner rs = new ResourceScanner(ResourceManager.classPath());
+				rs.filter("**.conf");
+				rs.scanner(new ResourceInter() {
+					
 					@Override
-					public void find(File file) {
-						addPlugs(file);
+					public void find(AbstractResourceEntry resource) {
+						addPlugs(resource.getInputStream(),STREAM_TYPT.CONF,null);
 					}
 				});
 			} else {// 否则加入文件
-				addPlugs(baseFile);
+				addPlugs(abstractResourceEntry.getInputStream(),STREAM_TYPT.CONF,null);
 			}
 		} else {
 			for (File file : this.configureLocation) {
@@ -283,7 +291,7 @@ public class PlugsFactory {
 				if (conf.isList("includes")) {
 					List<String> dirs = conf.getStringList("includes");
 					for (String dir : dirs) {
-						List<AbstractResourceEntry> resource = ResourceManager.getResource(dir);
+						List<AbstractResourceEntry> resource = ResourceManager.getResources(dir);
 						for (AbstractResourceEntry file : resource) {
 							addPlugs(file.getFile());
 						}
@@ -292,7 +300,7 @@ public class PlugsFactory {
 					String confDirs = conf.getString("includes");
 					String[] dirs = confDirs.split(",");
 					for (String dir : dirs) {
-						List<AbstractResourceEntry> resource = ResourceManager.getResource(dir);
+						List<AbstractResourceEntry> resource = ResourceManager.getResources(dir);
 						for (AbstractResourceEntry file : resource) {
 							addPlugs(file.getFile());
 						}
