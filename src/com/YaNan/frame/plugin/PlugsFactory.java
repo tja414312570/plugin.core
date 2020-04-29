@@ -31,8 +31,6 @@ import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.PackageScanner;
 import com.YaNan.frame.utils.resource.PackageScanner.ClassInter;
-import com.YaNan.frame.utils.resource.Path;
-import com.YaNan.frame.utils.resource.Path.PathInter;
 import com.YaNan.frame.utils.resource.ResourceManager;
 import com.YaNan.frame.utils.resource.ResourceNotFoundException;
 import com.YaNan.frame.utils.resource.ResourceScanner;
@@ -149,7 +147,7 @@ public class PlugsFactory {
 					PlugsFactory instance = getInstance();
 					if(resources==null||resources.length==0){
 						try {
-							List<AbstractResourceEntry> file = ResourceManager.getResources(ResourceManager.classPath()+File.separatorChar+"plugin.conf");
+							List<AbstractResourceEntry> file = ResourceManager.getResources(ResourceManager.classPath()+File.separatorChar+"plugin.yc");
 							if(file!=null&&file.size()>0)
 							instance.configureLocation.add(file.get(0).getFile());
 						}catch (ResourceNotFoundException r) {
@@ -215,7 +213,7 @@ public class PlugsFactory {
 			AbstractResourceEntry abstractResourceEntry = null;
 			// 获取基础的配置文件
 			try {
-				abstractResourceEntry =ResourceManager.getResource("classpath:plugin.conf");
+				abstractResourceEntry =ResourceManager.getResource("classpath:plugin.yc");
 			}catch(Exception e) {
 			}
 			// 如果文件不存在，扫描所有的文件
@@ -223,7 +221,7 @@ public class PlugsFactory {
 				if(packageDirs != null && packageDirs.length>0) {
 					for(String dir : packageDirs) {
 						try {
-							abstractResourceEntry =ResourceManager.getResource((dir.endsWith("/")?dir:dir+"/")+"plugin.conf");
+							abstractResourceEntry =ResourceManager.getResource((dir.endsWith("/")?dir:dir+"/")+"plugin.yc");
 						}catch(Exception e) {
 						}
 						if(abstractResourceEntry != null) 
@@ -232,7 +230,7 @@ public class PlugsFactory {
 				}
 				if(abstractResourceEntry == null) {
 					ResourceScanner rs = new ResourceScanner(ResourceManager.classPath());
-					rs.filter("**.conf");
+					rs.filter("**.yc");
 					rs.scanner(new ResourceInter() {
 						@Override
 						public void find(AbstractResourceEntry resource) {
@@ -438,7 +436,7 @@ public class PlugsFactory {
 				RegisterDescription registerDescription = new RegisterDescription(file);
 				RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
 			}
-			if (type.equals(".conf")) {
+			if (type.equals(".yc")) {
 				Config config = ConfigFactory.parseFile(file);
 				ConfigContext.getInstance().mergeConfig(config);
 				config.allowKeyNull(true);

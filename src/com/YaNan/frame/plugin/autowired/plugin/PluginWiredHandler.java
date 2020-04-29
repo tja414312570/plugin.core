@@ -19,6 +19,7 @@ import com.YaNan.frame.plugin.handler.FieldHandler;
 import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.MethodHandler;
+import com.YaNan.frame.utils.StringUtil;
 import com.YaNan.frame.utils.reflect.ClassLoader;
 
 /**
@@ -102,12 +103,20 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 				}else{
 					Object obj = null;
 					try{
-						obj=  PlugsFactory.getPlugsInstanceByAttributeStrict(type,service.attribute());
-					}catch(Throwable t){
+						//from field name
+						obj = BeanContainer.getContext().getBean(field.getName());
+					}catch(Throwable t){}
+					if(obj == null) {
 						try {
+							//from type
 							obj = BeanContainer.getContext().getBean(type);
-						}catch (Throwable e) {
-						}
+						}catch (Throwable e) {}
+					}
+					if(obj == null && StringUtil.isNotEmpty(service.attribute())) {
+						try {
+							//from attris
+							obj=  PlugsFactory.getPlugsInstanceByAttributeStrict(type,service.attribute());
+						}catch (Throwable e) {}
 					}
 					if(obj==null)
 						throw new PluginRuntimeException("could not found register or bean for field \""+field.getName()+"\" type \""+field.getType() +"\" for "+registerDescription.getRegisterClass());
