@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 
+import com.YaNan.frame.plugin.PlugsFactory;
 import com.YaNan.frame.utils.resource.Path;
 import com.YaNan.frame.utils.resource.Path.PathInter;
 
@@ -19,20 +22,40 @@ public class PropertyManager {
 	private Map<String,String> propertyPools;
 	private PropertyManager(){
 		propertyPools  = new HashMap<String,String>();
+		initSystemPropertyPools();
+	}
+	private void initSystemPropertyPools() {
+		Properties properties = System.getProperties();
+		Iterator<Entry<Object,Object>> entryIterator = properties.entrySet().iterator();
+		while (entryIterator.hasNext()) {
+			Entry<Object,Object> entry = entryIterator.next();
+			propertyPools.put(Objects.toString(entry.getKey()), Objects.toString(entry.getValue()));
+		}
 	}
 	public static PropertyManager getInstance(){
 		if(manager==null)
 			synchronized (PropertyManager.class) {
-				if(manager == null)
+				if(manager == null) {
 					manager = new PropertyManager();
+				}
 			}
 		return manager;
+	}
+	public String setProperty(String name,Object value){
+		return this.propertyPools.put(name, Objects.toString(value));
 	}
 	public String getProperty(String name){
 		return this.propertyPools.get(name);
 	}
 	public void scanAllProperty(){
-		File dir = new File(this.getClass().getClassLoader().getResource("").getPath().replace("%20"," "));
+		String[] scanPaths = PlugsFactory.getInstance().getScanPath();
+		for(String scanPath : scanPaths) {
+			scanPath(scanPath);
+		}
+		this.rebuild();
+	}
+	private void scanPath(String scanPath) {
+		File dir = new File(scanPath);
 		Path path = new Path(dir);
 		path.filter("**.properties");
 		path.scanner(new PathInter() {
@@ -54,7 +77,6 @@ public class PropertyManager {
 				}
 			}
 		});
-		this.rebuild();
 	}
 	public synchronized void rebuild(){
 		Map<String,String> tempProp = propertyPools;
