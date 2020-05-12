@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.beans.BeanContainer;
+import com.YaNan.frame.utils.asserts.Assert;
 import com.YaNan.frame.utils.reflect.ClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
@@ -97,8 +98,9 @@ public class ParameterUtils {
 			for (int i = 0; i < parameterType.length; i++) {
 				Class<?> type = parameterType[i];
 				Object value = values.get(i);
-				if (!isEffectiveParameter(type, value))
+				if (!isEffectiveParameter(type, value)) {
 					continue con;
+				}
 			}
 			constructor = cons;
 		}
@@ -123,8 +125,9 @@ public class ParameterUtils {
 			for (int i = 0; i < parameterType.length; i++) {
 				Class<?> type = parameterType[i];
 				Object value = parameters[i];
-				if (!isEffectiveParameter(type, value))
+				if (!isEffectiveParameter(type, value)) {
 					continue con;
+				}
 			}
 			method = cons;
 		}
@@ -133,9 +136,10 @@ public class ParameterUtils {
 
 	private static boolean isEffectiveParameter(Class<?> type, Object value) {
 		try {
-			if (value == null && (type == int.class || type == long.class || type == short.class
-					|| type == boolean.class || type == float.class || type == double.class))
+			if (value == null && Assert.equalsAny(type,
+					int.class,long.class,short.class,boolean.class,float.class,double.class)) {
 				return false;
+			}
 			if (type.equals(value.getClass()) || ClassLoader.extendsOf(value.getClass(), type)
 					|| ClassLoader.implementsOf(value.getClass(), type))
 				return true;
@@ -268,7 +272,7 @@ public class ParameterUtils {
 		if (type.equals(File.class)) {// 文件类型特俗处理
 			File file;
 			try {
-				List<AbstractResourceEntry> files = ResourceManager.getResources(value.toString());
+				List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
 				file = files.get(0).getFile();
 			} catch (Throwable t) {
 				file = new File(ResourceManager.getPathExress(value.toString()));
@@ -278,8 +282,7 @@ public class ParameterUtils {
 			String beanId = value.toString();
 			value = BeanContainer.getContext().getBean(beanId);
 		} else {
-			value = ClassLoader.castType(value,
-					type);
+			value = ClassLoader.castType(value,type);
 		}
 		return value;
 	}

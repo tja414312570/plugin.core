@@ -40,20 +40,24 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 				propertyName = property.value();
 				if (property != null) {
 					propertyName = property.value();
-					if (propertyName.equals(""))
+					if (propertyName.equals("")) {
 						propertyName = parameter.getName();
+					}
 					propertyValue = PropertyManager.getInstance().getProperty(propertyName);
 					try {
-						if (propertyValue == null && property.defaultValue().equals(""))
+						if (propertyValue == null && property.defaultValue().equals("")) {
 							throw new RuntimeException("failed to autowired parameter ! property name \"" + propertyName
 									+ "\" value is null\r\n at class " + methodHandler.getPlugsProxy().getProxyClass()
 									+ "\r\n at parameter " + parameter.getName());
-						if (propertyValue == null && !property.defaultValue().equals(""))
+						}
+						if (propertyValue == null && !property.defaultValue().equals("")) {
 							propertyValue = property.defaultValue();
-						if (arguments[i] == null)
+						}
+						if (arguments[i] == null) {
 							arguments[i] = parameter.getType().isArray() ? ClassLoader
 									.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
 									: ClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
+						}
 					} catch (Exception e) {
 						log.error("Error to process property \r\nat class:"
 								+ methodHandler.getPlugsProxy().getProxyClass() + "\r\nat parameter:" + parameter
@@ -83,10 +87,12 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			propertyName = desc.getField().getName();
 		try {
 			propertyValue = PropertyManager.getInstance().getProperty(propertyName);
-			if (propertyValue == null &&property!=null&& !property.defaultValue().equals(""))
+			if (propertyValue == null &&property!=null&& !property.defaultValue().equals("")) {
 				propertyValue = property.defaultValue();
-			if (propertyValue == null && property.required())
+			}
+			if (propertyValue == null && property.required()) {
 				throw new RuntimeException("the required property '"+propertyName+"' value is null");
+			}
 			new ClassLoader(target).set(desc.getField(),
 					desc.getField().getType().isArray()
 							? ClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
@@ -111,18 +117,21 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			property = parameter.getAnnotation(Property.class);
 			if (property != null) {
 				propertyName = property.value();
-				if (propertyName.equals(""))
+				if (propertyName.equals("")) {
 					propertyName = parameter.getName();
+				}
 				propertyValue = PropertyManager.getInstance().getProperty(propertyName);
 				try {
-					if (propertyValue == null && property.defaultValue().equals(""))
+					if (propertyValue == null && property.defaultValue().equals("")) {
 						throw new RuntimeException("failed to autowired parameter ! property name \"" + propertyName
 								+ "\" value is null\r\n at class : " + registerDescription.getRegisterClass().getName()
 								+ "\" value is null\r\n at constructor : "
 								+ registerDescription.getRegisterClass().getName() + "\r\n at parameter : "
 								+ parameter.getName());
-					if (propertyValue == null && !property.defaultValue().equals(""))
+					}
+					if (propertyValue == null && !property.defaultValue().equals("")) {
 						propertyValue = property.defaultValue();
+					}
 					args[i] = parameter.getType().isArray()
 							? ClassLoader.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
 							: ClassLoader.parseBaseType(parameter.getType(), propertyValue, null);

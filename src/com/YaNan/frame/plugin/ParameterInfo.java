@@ -1,5 +1,7 @@
 package com.YaNan.frame.plugin;
 
+import com.YaNan.frame.utils.asserts.Assert;
+
 public class ParameterInfo {
 	Class<?>[] parameterTypes = null;
 	Object[] parameters = null;
@@ -9,8 +11,7 @@ public class ParameterInfo {
 		parameters = new Object[size];
 	}
 	public void addParameter(Class<?> type,Object value){
-		if(next+1>=parameterTypes.length)
-			throw new IndexOutOfBoundsException("parameter index more than parameter array size");
+		Assert.isTrue(next+1>=parameterTypes.length,new IndexOutOfBoundsException("parameter index more than parameter array size"));
 		parameterTypes[next] = type;
 		parameters[next++] = value;
 	}

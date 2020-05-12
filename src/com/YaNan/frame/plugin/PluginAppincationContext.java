@@ -29,12 +29,14 @@ public class PluginAppincationContext implements ServletContextListener {
 	private ServletContext servletContext;
 	@Override
 	public void contextDestroyed(ServletContextEvent arg0) {
-		if(contextListernerList!=null)
+		if(contextListernerList!=null) {
 			for(ServletContextListener contenxtInitListener :contextListernerList){
 				contenxtInitListener.contextDestroyed(arg0);
 			}
-		if(log!=null)
+		}
+		if(log!=null) {
 			log.debug("Plugin conetxt has destory at "+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		}
 	}
 
 	@Override

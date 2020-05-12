@@ -279,8 +279,9 @@ public class RegisterDescription {
 		for (; i < methods.length; i++)
 			try {
 				this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
-				if(this.initMethod[i] == null)
+				if(this.initMethod[i] == null) {
 					throw new PluginInitException("could not found init method ["+methods[i]+"] at class "+this.clzz.getName());
+				}
 			} catch (NoSuchMethodException | SecurityException e) {
 				throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
 			}
@@ -385,7 +386,7 @@ public class RegisterDescription {
 		}
 	}
 
-	public RegisterDescription(Config config) throws Exception {
+	public RegisterDescription(Config config){
 		try {
 			config.allowKeyNull(true);
 			this.config = config;
@@ -577,7 +578,7 @@ public class RegisterDescription {
 											if (parameterTypes[i].equals(File.class)) {// 文件类型特俗处理
 												File file;
 												try {
-													List<AbstractResourceEntry> files = ResourceManager.getResources(value.toString());
+													List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
 													file = files.get(0).getFile();
 												} catch (Throwable t) {
 													file = new File(ResourceManager.getPathExress(value.toString()));
@@ -642,7 +643,7 @@ public class RegisterDescription {
 										if (parameterType[i].equals(File.class)) {// 文件类型特俗处理
 											File file;
 											try {
-												List<AbstractResourceEntry> files = ResourceManager.getResources(value.toString());
+												List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
 												file = files.get(0).getFile();
 
 											} catch (Throwable t) {
@@ -853,31 +854,35 @@ public class RegisterDescription {
 	private void cleanSizeNotEquals(List<Constructor<?>> constructorList, int argSize) {
 		Iterator<Constructor<?>> iterator = constructorList.iterator();
 		while (iterator.hasNext()) {
-			if (argSize != iterator.next().getParameterCount())
+			if (argSize != iterator.next().getParameterCount()) {
 				iterator.remove();
+			}
 		}
 	}
-
-	private Object getNewBean() throws Exception {
+	private Object invokeMethod(Config config,Object ref) {
+		String methodStr = config.getString("method");
+		Method method = ClassHelper.getClassHelper(clzz).getDeclaredMethod(methodStr);
+		if (method == null) {
+			throw new RuntimeException("method \"" + methodStr + "\" is not exists");
+		}
+		try {
+			return method.invoke(ref);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new PluginRuntimeException(e);
+		}
+	}
+	private Object getNewBean(){
 		String refConf = config.getString("ref");
 		if (refConf != null) {
 			Object ref = PlugsFactory.getBean(refConf);
 			if (config.hasPath("method")) {
-				String methodStr = config.getString("method");
-				Method method = ClassHelper.getClassHelper(clzz).getDeclaredMethod(methodStr);
-				if (method == null)
-					throw new RuntimeException("method \"" + methodStr + "\" is not exists");
-				return method.invoke(ref);
+				return invokeMethod(config,ref);
 			} else {
 				return PlugsFactory.getBeanRegister(refConf).getNewBean();
 			}
 		} else {
 			if (config.hasPath("method")) {
-				String methodStr = config.getString("method");
-				Method method = ClassHelper.getClassHelper(clzz).getDeclaredMethod(methodStr);
-				if (method == null)
-					throw new RuntimeException("method \"" + methodStr + "\" is not exists");
-				return method.invoke(null);
+				return invokeMethod(config,null);
 			} else {
 				return this.getRegisterNewInstance(this.clzz);
 			}
@@ -910,7 +915,7 @@ public class RegisterDescription {
 		}
 	}
 
-	private FieldDesc getSupportField(FieldDesc desc) throws Exception {
+	private FieldDesc getSupportField(FieldDesc desc){
 		if (desc != null) {
 			Plug cplug = PlugsFactory.getPlug(FieldHandler.class);
 			if (cplug == null)
@@ -940,7 +945,7 @@ public class RegisterDescription {
 		return null;
 	}
 
-	private FieldDesc getSupportField(Field field) throws Exception {
+	private FieldDesc getSupportField(Field field){
 		Plug cplug = PlugsFactory.getPlug(FieldHandler.class);
 		if (cplug == null)
 			return null;
@@ -1272,14 +1277,14 @@ public class RegisterDescription {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T getRegisterNewInstance(Class<T> plug, Object... args) throws Exception {
+	public <T> T getRegisterNewInstance(Class<T> plug, Object... args){
 		// 获取构造器
 		Constructor<?> constructor = this.getConstructor(args);
 		return this.getNewInstance(plug, constructor, args);
 	}
 
 	public <T> T getRegisterNewInstanceByParamType(Class<T> plug, Class<?>[] paramTypes, Object... args)
-			throws Exception {
+			{
 		// 获取构造器
 		Constructor<?> constructor = this.getConstructor(paramTypes);
 		// 获取构造器拦截器
@@ -1463,7 +1468,7 @@ public class RegisterDescription {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getRegisterInstance(Class<T> plug, Object... args) throws Exception {
+	public <T> T getRegisterInstance(Class<T> plug, Object... args){
 		Object proxy = null;
 		if (config != null) {
 			String ref = config.getString("ref");
@@ -1487,12 +1492,16 @@ public class RegisterDescription {
 		}
 		if (this.method != null) {
 			Object[] parameter = new Object[this.method.getParameters().length];
-			proxy = method.invoke(proxy, parameter);
+			try {
+				proxy = method.invoke(proxy, parameter);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				throw new PluginRuntimeException(e);
+			}
 		}
 		return (T) proxy;
 	}
 
-	private Object getRegisterInstance0(Class<?> plug, Object[] args) throws Exception {
+	private Object getRegisterInstance0(Class<?> plug, Object[] args){
 		Object proxy;
 		// 判断是否单例
 		if (this.signlton) {
@@ -1508,7 +1517,7 @@ public class RegisterDescription {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> T getRegisterInstanceByParamType(Class<T> plug, Class<?>[] paramType, Object... args) throws Exception {
+	public <T> T getRegisterInstanceByParamType(Class<T> plug, Class<?>[] paramType, Object... args) {
 		Object proxy = null;
 		// 判断是否单例
 		if (this.signlton) {
@@ -1539,14 +1548,18 @@ public class RegisterDescription {
 		return PlugsHandler.newMapperProxy(plug, this, obj);
 	}
 
-	public Object getProxyTargetByJdk(Object... args) throws Exception {
-		Object target;
-		if (args.length == 0) {
-			target = this.clzz.newInstance();
-		} else {
-			Constructor<?> constructor = getConstructor(args);
-			target = constructor.newInstance(args);
-		}
+	public Object getProxyTargetByJdk(Object... args){
+		Object target = null;
+			try {
+				if (args.length == 0) {
+					target = this.clzz.newInstance();
+				} else {
+					Constructor<?> constructor = getConstructor(args);
+					target = constructor.newInstance(args);
+				} 
+			} catch (Exception e) {
+				new PluginRuntimeException(e);
+			}
 		return target;
 	}
 

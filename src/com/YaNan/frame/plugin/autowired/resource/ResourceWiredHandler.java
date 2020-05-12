@@ -18,11 +18,13 @@ public class ResourceWiredHandler implements FieldHandler{
 	public void preparedField(RegisterDescription registerDescription, Object proxy, Object target, FieldDesc desc,
 			Object[] args) {
 		String path = desc.getValue();
-		if(path==null&&desc.getAnnotation()!=null)
+		if(path==null&&desc.getAnnotation()!=null) {
 			path = ((Resource)desc.getAnnotation()).value();
-		if(path==null)
+		}
+		if(path==null) {
 			throw new RuntimeException("Resource value is null !\r\nat class : "+target.getClass().getName()
 					+"\r\nat field : "+desc.getField().getName());
+		}
 		int cpIndex = path.indexOf(CLASSPATH);
 		File file =null;
 		try {

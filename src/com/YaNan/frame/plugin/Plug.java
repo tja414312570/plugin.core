@@ -26,14 +26,16 @@ public class Plug {
 		this.description = descrption;
 	}
 	public void addRegister(RegisterDescription registerDescription) {
-		if(registerList.indexOf(registerDescription)!=-1)
+		if(registerList.indexOf(registerDescription)!=-1) {
 			return;
+		}
 		//设置默认注册组件
 		synchronized (this) {
-			if(this.defaultRegisterDescription==null)
+			if(this.defaultRegisterDescription==null) {
 				this.defaultRegisterDescription = registerDescription;
-			else if(this.defaultRegisterDescription.getPriority()>registerDescription.getPriority())
+			}else if(this.defaultRegisterDescription.getPriority()>registerDescription.getPriority()) {
 				this.setDefaultRegisterDescription(registerDescription);
+			}
 		}
 		//为了保持与默认注册组件有相同的优先级，采用倒叙对比法进行优先级运算 比如 原始数据 0  0  2  3 现在需要插入 1  则插入后应该为 0 0 1 2 3
 		if(this.registerList.size()==0){
@@ -63,15 +65,18 @@ public class Plug {
 	}
 	public List<RegisterDescription> getRegisterDescriptionListByAttribute(String attribute) {
 		List<RegisterDescription> retistDescriptionList = new ArrayList<RegisterDescription>();
-		for(int i = 0;i<registerList.size();i++)
-			if(StringUtil.match(attribute, registerList.get(i).getAttribute()))
+		for(int i = 0;i<registerList.size();i++) {
+			if(StringUtil.match(attribute, registerList.get(i).getAttribute())) {
 				retistDescriptionList.add(registerList.get(i));
+			}
+		}
 		return retistDescriptionList;
 	}
 	public RegisterDescription getRegisterDescriptionByAttributeStrict(String attribute) {
 		for(int i = 0;i<registerList.size();i++){
-			if(StringUtil.match(attribute, registerList.get(i).getAttribute()))
+			if(StringUtil.match(attribute, registerList.get(i).getAttribute())) {
 				return registerList.get(i);
+			}
 		}
 		return null;
 	}
@@ -97,9 +102,11 @@ public class Plug {
 		return this.registerList;
 	}
 	public RegisterDescription getRegisterDescriptionByInsClass(Class<?> insClass) {
-		for(RegisterDescription rd :registerList)
-			if(rd.getRegisterClass().equals(insClass))
+		for(RegisterDescription rd :registerList) {
+			if(rd.getRegisterClass().equals(insClass)) {
 				return rd;
+			}
+		}
 		return null;
 	}
 	
