@@ -275,8 +275,7 @@ public class RegisterDescription {
 				&& this.proxyModel != ProxyModel.CGLIB) {
 			this.proxyModel = ProxyModel.CGLIB;
 		}
-		int i = 0;
-		for (; i < methods.length; i++)
+		for (int i = 0; i < methods.length; i++) {
 			try {
 				this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
 				if(this.initMethod[i] == null) {
@@ -285,6 +284,7 @@ public class RegisterDescription {
 			} catch (NoSuchMethodException | SecurityException e) {
 				throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
 			}
+		}
 		checkPlugs(this.plugs);
 		PlugsFactory.getInstance().addRegisterHandlerQueue(this);
 	}
