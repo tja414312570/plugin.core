@@ -6,19 +6,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 
-import com.YaNan.frame.plugin.PlugsFactory;
+import com.YaNan.frame.plugin.ConfigContext;
+import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.Path;
+import com.YaNan.frame.utils.resource.ResourceManager;
+import com.typesafe.config.Config;
 
 public class PropertyManager {
 	private static volatile PropertyManager manager;
 	private Map<String,String> propertyPools;
 	private PropertyManager(){
 		propertyPools  = new HashMap<String,String>();
+		scanAllProperty();
 		initSystemPropertyPools();
 	}
 	/**
@@ -66,13 +71,47 @@ public class PropertyManager {
 	 * scan property files to pools
 	 */
 	public void scanAllProperty(){
-		String[] scanPaths = PlugsFactory.getInstance().getScanPath();
-		for(String scanPath : scanPaths) {
-			scanPath(scanPath);
-		}
+		Properties properties = new Properties();
+		//propertyScan
+		List<AbstractResourceEntry> scanPaths = getScanResourceByConfig();
+		scanPaths.forEach((resource)->{
+			try {
+				properties.load(resource.getInputStream());
+				properties.entrySet().forEach((entry) -> {
+					if(entry.getValue()!=null)
+						propertyPools.put(entry.getKey().toString(),entry.getValue().toString());
+				});
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 		this.rebuild();
 	}
-	private void scanPath(String scanPath) {
+	private List<AbstractResourceEntry> getScanResourceByConfig() {
+		Config config = ConfigContext.getInstance().getGlobalConfig();
+		List<AbstractResourceEntry> resourceList = null;
+		//propertyScan
+		if(config != null) {
+			config.allowKeyNull();
+			if(config.hasPath("propertyScan")) {
+				String scanPaths = config.getString("propertyScan");
+				String[] scanPathArrays = scanPaths.split(",");
+				for(String scanPath : scanPathArrays) {
+					List<AbstractResourceEntry> resourceEntryList = 
+							ResourceManager.getResourceList(scanPath);
+					if(resourceList == null) {
+						resourceList = resourceEntryList;
+					}else {
+						resourceList.addAll(resourceEntryList);
+					}
+				}
+			}
+			config.allowKeyNull(false);
+		}
+		return resourceList;
+	}
+	@Deprecated
+	public void scanPath(String scanPath) {
 		File dir = new File(scanPath);
 		Path path = new Path(dir);
 		path.filter("**.properties");
