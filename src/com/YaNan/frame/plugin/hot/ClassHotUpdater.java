@@ -12,8 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -28,6 +26,7 @@ import com.YaNan.frame.plugin.PlugsFactory;
 import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Service;
+import com.YaNan.frame.plugin.interfacer.PlugsListener;
 import com.YaNan.frame.utils.reflect.ClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.resource.FileUtils;
@@ -40,7 +39,7 @@ import com.typesafe.config.Config;
  * 
  * @author yanan
  */
-public class ClassHotUpdater implements Runnable, ServletContextListener {
+public class ClassHotUpdater implements Runnable, PlugsListener {
 	public List<ContextPath> contextPathList = new ArrayList<ContextPath>();//扫描上下文路劲
 	private Map<String,String> classNameCache = new HashMap<>();
 	public Logger log = LoggerFactory.getLogger(ClassHotUpdater.class);
@@ -287,41 +286,6 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 		return nc;
 	}
 
-	@Override
-	public void contextDestroyed(ServletContextEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void contextInitialized(ServletContextEvent arg0) {
-		log.debug("enable class hot update deployment service!");
-		ClassHotUpdater test = PlugsFactory.getPlugsInstance(ClassHotUpdater.class);
-		if(PlugsFactory.getPlug(ClassUpdateListener.class) == null)
-			PlugsFactory.getInstance().addPlugs(ClassUpdateListener.class);
-		if(test.contextPathList.isEmpty()) {
-			Config config = ConfigContext.getInstance().getGlobalConfig();
-			config.allowKeyNull();
-			config  = config.getConfig("ClassHotUpdater");
-			if(config != null) {
-				if(config.hasPath("contextPath")) {
-					if(config.isList("contextPath")) {
-						List<String> contextPaths = config.getStringList("contextPath");
-						test.addContextPath(contextPaths);
-					}else {
-						String contextPath = config.getString("contextPath");
-						test.addContextPath(contextPath.split(","));
-					}
-				}
-				
-			}
-		}
-		Thread thread = new Thread(test);
-		thread.setName("Plugin class hot update monitor server");
-		thread.setDaemon(true);
-		thread.start();
-	}
-
 	private void addContextPath(List<String> contextPaths) {
 		this.addContextPath(contextPaths.toArray(new String[]{}));
 	}
@@ -360,5 +324,33 @@ public class ClassHotUpdater implements Runnable, ServletContextListener {
 		}
 		private String contextPath;
 		private String filter;
+	}
+	@Override
+	public void execute(PlugsFactory plugsFactory) {
+		log.debug("enable class hot update deployment service!");
+		ClassHotUpdater test = PlugsFactory.getPlugsInstance(ClassHotUpdater.class);
+		if(PlugsFactory.getPlug(ClassUpdateListener.class) == null)
+			PlugsFactory.getInstance().addPlugs(ClassUpdateListener.class);
+		if(test.contextPathList.isEmpty()) {
+			Config config = ConfigContext.getInstance().getGlobalConfig();
+			config.allowKeyNull();
+			config  = config.getConfig("ClassHotUpdater");
+			if(config != null) {
+				if(config.hasPath("contextPath")) {
+					if(config.isList("contextPath")) {
+						List<String> contextPaths = config.getStringList("contextPath");
+						test.addContextPath(contextPaths);
+					}else {
+						String contextPath = config.getString("contextPath");
+						test.addContextPath(contextPath.split(","));
+					}
+				}
+				
+			}
+		}
+		Thread thread = new Thread(test);
+		thread.setName("Plugin class hot update monitor server");
+		thread.setDaemon(true);
+		thread.start();
 	}
 }

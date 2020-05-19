@@ -94,6 +94,8 @@ public class ParameterUtils {
 		con: for (Constructor<?> cons : constructorList) {
 			// 获取构造器的参数类型的集合
 			Class<?>[] parameterType = cons.getParameterTypes();
+			if(values.size() != cons.getParameterCount())
+				continue con;
 			// 遍历构造器
 			for (int i = 0; i < parameterType.length; i++) {
 				Class<?> type = parameterType[i];
@@ -103,6 +105,36 @@ public class ParameterUtils {
 				}
 			}
 			constructor = cons;
+		}
+		return constructor;
+	}
+	/**
+	 * 获取一个有效的构造器
+	 * 
+	 * @param constructorList
+	 * @param values
+	 * @return
+	 */
+	public static Constructor<?> getEffectiveConstructor(Constructor<?>[] constructorList,
+			Class<?>[] parameterTypes) {
+		Constructor<?> constructor = null;
+		// 遍历所有的构造器
+		con: for (Constructor<?> cons : constructorList) {
+			// 获取构造器的参数类型的集合
+			Class<?>[] argsTypes = cons.getParameterTypes();
+			if(argsTypes.length != cons.getParameterCount())
+				continue con;
+			// 遍历构造器
+			for (int i = 0; i < argsTypes.length; i++) {
+				if(parameterTypes[i] == null)
+					continue;
+				Class<?> argType = argsTypes[i];
+				Class<?> parameterType = parameterTypes[i];
+				if (!argType.equals(parameterType) && !ClassLoader.extendsOf(parameterType,argType)
+						&& !ClassLoader.implementsOf(parameterType,argType))
+					continue con;
+				}
+			return cons;
 		}
 		return constructor;
 	}

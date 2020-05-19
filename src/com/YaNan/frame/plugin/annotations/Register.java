@@ -53,6 +53,6 @@ public @interface Register {
 	 * 组件实例化并在Field赋值完成后之后执行的方法
 	 * @return
 	 */
-	String[] method() default {};
+	String[] init() default {};
 	
 }

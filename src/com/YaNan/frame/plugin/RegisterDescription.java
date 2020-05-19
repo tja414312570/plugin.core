@@ -441,6 +441,25 @@ public class RegisterDescription {
 				}else {
 					this.plugs = getPlugs(clzz, services);
 				}
+				if(!config.hasPath("init")) {
+					String[] methods = register.method();
+					this.initMethod = new Method[methods.length];
+					if(methods != null && methods.length > 0
+							&& this.proxyModel != ProxyModel.BOTH 
+							&& this.proxyModel != ProxyModel.CGLIB) {
+						this.proxyModel = ProxyModel.CGLIB;
+					}
+					for (int i = 0; i < methods.length; i++) {
+						try {
+							this.initMethod[i] = this.loader.getDeclaredMethod(methods[i]);
+							if(this.initMethod[i] == null) {
+								throw new PluginInitException("could not found init method ["+methods[i]+"] at class "+this.clzz.getName());
+							}
+						} catch (NoSuchMethodException | SecurityException e) {
+							throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
+						}
+					}
+				}
 				// if (this.plugs == null || this.plugs.length == 0)
 				// throw new Exception("register " + clzz.getName() + " not
 				// implements any interface");
@@ -533,7 +552,7 @@ public class RegisterDescription {
 
 	}
 
-	public void initHandler() {
+	public void initHandler() {	
 		handlerMapping = new HashMap<Method, InvokeHandlerSet>();
 		if (plugs != null)
 			for (Class<?> interfacer : plugs) {
@@ -653,6 +672,7 @@ public class RegisterDescription {
 										} else if (parameterType[i].equals(Service.class)) {// bean类型
 											String beanId = value.toString();
 											parameters[i] = BeanContainer.getContext().getBean(beanId);
+											parameterType[i] = parameters[i].getClass();
 										} else {
 											parameters[i] = ClassLoader.castType(entry.getValue().unwrapped(),
 													parameterType[i]);
@@ -807,13 +827,6 @@ public class RegisterDescription {
 					}
 					if (instance == null) {
 						instance = this.getNewBean();
-						if (this.config.hasPath("init")) {
-							try {
-								this.initProxyMethod(instance);
-							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-								throw new PluginInitException("failed to invoke register init method", e);
-							}
-						}
 					}
 					PlugsFactory.addBeanRegister(instance, this);
 				} catch (Exception e) {
@@ -944,7 +957,10 @@ public class RegisterDescription {
 		}
 		return null;
 	}
-
+	@Override
+	public String toString() {
+		return "register description for class "+this.clzz;
+	}
 	private FieldDesc getSupportField(Field field){
 		Plug cplug = PlugsFactory.getPlug(FieldHandler.class);
 		if (cplug == null)
@@ -1208,7 +1224,7 @@ public class RegisterDescription {
 			Class<?>[] cls = clzz.getInterfaces();
 			for (int i = 0; i < cls.length; i++) {
 				for (int j = 0; j < plugs.length; j++) {
-					if (declareRegister[j].equals(cls[i].getName())) {
+					if (declareRegister[j].equals(cls[i])) {
 						plugs[index++] = cls[i];
 					}
 				}
@@ -1586,9 +1602,15 @@ public class RegisterDescription {
 		}
 		return constructor;
 	}
-
+	/**
+	 * 通过参数类型获取构造器
+	 * @param paramTypes
+	 * @return
+	 */
 	public Constructor<?> getConstructor(Class<?>[] paramTypes) {
-		Constructor<?> constructor = ClassInfoCache.getClassHelper(this.clzz).getConstructor(paramTypes);// this.cl.getConstructor(parameterTypes);
+		//排除掉数量不同的构造器
+		Constructor<?> constructor = ParameterUtils.getEffectiveConstructor(ClassHelper.getClassHelper(clzz).getConstructors(),
+				paramTypes);
 		if (constructor == null) {
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < paramTypes.length; i++) {

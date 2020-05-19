@@ -114,13 +114,16 @@ public class PlugsFactory {
 			if(!registerList.contains(registerDescription))
 				this.registerList.add(registerDescription);
 		}
+//		registerDescription.initHandler();
 		this.initRegisterDescriptionHandler();
 	}
 
 	private void initRegisterDescriptionHandler() {
 		if (this.available && !this.registerList.isEmpty()) {
 			synchronized (registerList) {
-				registerList.removeIf(registerDescription ->{
+				List<RegisterDescription> register = new ArrayList<RegisterDescription>(this.registerList);
+				this.registerList.clear();
+				register.removeIf(registerDescription ->{
 					registerDescription.initHandler();
 					return true;
 				});
@@ -141,10 +144,10 @@ public class PlugsFactory {
 					instance = getInstance();
 					if(resources==null||resources.length==0){
 						try {
-							List<AbstractResourceEntry> file = ResourceManager
-									.getResourceList(ResourceManager.classPath()+File.separatorChar+"plugin.yc");
+							AbstractResourceEntry file = ResourceManager
+									.getResource(ResourceManager.classPath()+"plugin.yc");
 							if(file!=null&&file.size()>0) {
-								instance.configureLocation.add(file.get(0).getFile());
+								instance.configureLocation.add(file.getFile());
 							}
 						}catch (ResourceNotFoundException r) {
 						}
@@ -459,7 +462,7 @@ public class PlugsFactory {
 						((SimpleConfigObject) conf).toConfig());
 				RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
 			}
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			throw new PluginInitException("failed to add plug at conf  " + conf, e);
 		}
 	}

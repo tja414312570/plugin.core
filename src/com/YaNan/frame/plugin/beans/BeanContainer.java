@@ -1,5 +1,6 @@
 package com.YaNan.frame.plugin.beans;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,28 +36,44 @@ public class BeanContainer {
 		if(this.beanContainer.containsKey(id))
 			throw new RuntimeException("bean id \""+id+"\" is exists!");
 		this.beanContainer.put(id, bean);
-		this.addBean(description.getRegisterClass(), bean);
-		if(description.getPlugs()!=null)
-		for(Class<?> clzz: description.getPlugs()){
-			this.addBean(clzz,bean);
+		if(description.getPlugs() != null && description.getPlugs().length > 0) {
+			this.addBean(description.getRegisterClass(), bean);
+			for(Class<?> clzz: description.getPlugs()){
+				this.addBean(clzz,bean);
+			}
+		}else {
+			Class<?> tempClass = description.getRegisterClass();
+			while(tempClass != null && !tempClass.equals(Object.class)) {
+				this.addBean(tempClass, bean);
+				for(Class<?> interfacer : tempClass.getInterfaces())
+					this.addBean(interfacer, bean);
+				tempClass = tempClass.getSuperclass();
+			}
 		}
 	}
 	private void addBean(Class<?> registerClass, Object bean) {
 		List<Object> list = this.beanClassContainer.get(registerClass);
 		if(list==null){
-			BeanManagerLock.tryLock(registerClass);
-			if(list==null){
-				list = new LinkedList<Object>();
-				this.beanClassContainer.put(registerClass, list);
+			try {
+				BeanManagerLock.tryLock(registerClass);
+				if(list==null){
+					list = new LinkedList<Object>();
+					this.beanClassContainer.put(registerClass, list);
+				}
+			}finally {
+				BeanManagerLock.release(registerClass);
 			}
-			BeanManagerLock.release(registerClass);
+			
 		}
 		list.add(bean);
 	}
 	@SuppressWarnings("unchecked")
 	public <T> T getBean(String beanId) {
 		checkPluginAvailable();
-		return (T) this.beanContainer.get(beanId);
+		T bean =  (T) this.beanContainer.get(beanId);
+		if(bean == null)
+			throw new PluginRuntimeException("could not found bean for id \""+beanId+"\"");
+		return bean;
 	}
 	private void checkPluginAvailable() {
 		if(this.beanContainer==null){
@@ -69,7 +86,7 @@ public class BeanContainer {
 	public <T> T getBean(Class<?> beanClass) {
 		List<Object> list = getBeans(beanClass);
 		if(list==null)
-			return null;
+			throw new PluginRuntimeException("could not found bean for class \""+beanClass+"\"");
 		if(list.size()>1)
 			throw new PluginRuntimeException("could not get bean for \""+beanClass+"\" cause the need one but found "+list.size());
 		return (T) list.get(0);

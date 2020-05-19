@@ -2,6 +2,7 @@ package com.YaNan.frame.plugin;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 组件初始化锁
@@ -79,8 +80,8 @@ public class PlugsInitLock {
 		lock.tryLock();
 	}
 	public static void checkLock(){
-		if(lock.isLock()){
-			Thread thread = Thread.currentThread();
+		Thread thread = Thread.currentThread();
+		if(lock.isLock() &&  PlugsInitLock.lockHolder != thread){
 			PlugsInitLock.lockQueue.add(thread);
 			while(lock.isLock()){
 				Thread.yield();
