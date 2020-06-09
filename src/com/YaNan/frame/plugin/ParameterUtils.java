@@ -120,10 +120,11 @@ public class ParameterUtils {
 		Constructor<?> constructor = null;
 		// 遍历所有的构造器
 		con: for (Constructor<?> cons : constructorList) {
+			if((parameterTypes == null && cons.getParameterCount() == 0) 
+					|| parameterTypes.length != cons.getParameterCount())
+				continue con;
 			// 获取构造器的参数类型的集合
 			Class<?>[] argsTypes = cons.getParameterTypes();
-			if(argsTypes.length != cons.getParameterCount())
-				continue con;
 			// 遍历构造器
 			for (int i = 0; i < argsTypes.length; i++) {
 				if(parameterTypes[i] == null)
@@ -307,7 +308,7 @@ public class ParameterUtils {
 				List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
 				file = files.get(0).getFile();
 			} catch (Throwable t) {
-				file = new File(ResourceManager.getPathExress(value.toString()));
+				file = new File(ResourceManager.getPathExress(value.toString())[0]);
 			}
 			value = file;
 		} else if (type.equals(Service.class)) {// bean类型

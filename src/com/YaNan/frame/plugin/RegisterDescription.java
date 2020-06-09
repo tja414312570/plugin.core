@@ -268,7 +268,7 @@ public class RegisterDescription {
 		this.attribute = register.attribute();
 		this.description = register.description();
 		this.proxyModel = register.model();
-		String[] methods = register.method();
+		String[] methods = register.init();
 		this.initMethod = new Method[methods.length];
 		if(methods != null && methods.length > 0
 				&& this.proxyModel != ProxyModel.BOTH 
@@ -441,8 +441,8 @@ public class RegisterDescription {
 				}else {
 					this.plugs = getPlugs(clzz, services);
 				}
-				if(!config.hasPath("init")) {
-					String[] methods = register.method();
+				if(!config.hasPath("init") && register != null) {
+					String[] methods = register.init();
 					this.initMethod = new Method[methods.length];
 					if(methods != null && methods.length > 0
 							&& this.proxyModel != ProxyModel.BOTH 
@@ -600,7 +600,7 @@ public class RegisterDescription {
 													List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
 													file = files.get(0).getFile();
 												} catch (Throwable t) {
-													file = new File(ResourceManager.getPathExress(value.toString()));
+													file = new File(ResourceManager.getPathExress(value.toString())[0]);
 												}
 												parameters[i] = file;
 											} else if (parameterTypes[i].equals(Service.class)) {
@@ -666,7 +666,7 @@ public class RegisterDescription {
 												file = files.get(0).getFile();
 
 											} catch (Throwable t) {
-												file = new File(ResourceManager.getPathExress(value.toString()));
+												file = new File(ResourceManager.getPathExress(value.toString())[0]);
 											}
 											parameters[i] = file;
 										} else if (parameterType[i].equals(Service.class)) {// bean类型
@@ -856,12 +856,16 @@ public class RegisterDescription {
 	private Object instanceBeanByMethod(Config config, Method method, Object... parameters)
 			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		String refConf = config.getString("ref");
+		Object instance = null;
 		if (refConf != null) {
 			Object ref = PlugsFactory.getBean(refConf);
-			return method.invoke(ref, parameters);
+			instance = method.invoke(ref, parameters);
 		} else {
-			return method.invoke(null, parameters);
+			instance = method.invoke(null, parameters);
 		}
+		// 实例化对象
+		this.initProxyMethod(instance);
+		return instance;
 	}
 
 	private void cleanSizeNotEquals(List<Constructor<?>> constructorList, int argSize) {
@@ -875,6 +879,7 @@ public class RegisterDescription {
 	private Object invokeMethod(Config config,Object ref) {
 		String methodStr = config.getString("method");
 		Method method = ClassHelper.getClassHelper(clzz).getDeclaredMethod(methodStr);
+		System.out.println(method);
 		if (method == null) {
 			throw new RuntimeException("method \"" + methodStr + "\" is not exists");
 		}

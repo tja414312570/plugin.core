@@ -48,7 +48,7 @@ public class PlugsFactory {
 	 *
 	 */
 	public static enum STREAM_TYPT {
-		CLASS,CONF,COMP
+		CLASS,CONF,COMP,PROPERTIES,XML
 	}
 	//Plugin instance is signal
 	private static volatile PlugsFactory instance;
@@ -521,6 +521,7 @@ public class PlugsFactory {
 			try {
 				RegisterDescription registerDescription = new RegisterDescription(register, cls);
 				RegisterContatiner.put(cls, registerDescription);
+				this.associate();
 			} catch (Throwable e) {
 				throw e;
 			}
@@ -788,7 +789,20 @@ public class PlugsFactory {
 			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
 		return registerDescription.getRegisterInstance(impl, args);
 	}
-
+	/**
+	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
+	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
+	 * 
+	 * @param impl
+	 * @param args
+	 * @return
+	 */
+	public static <T> T getPlugsInstanceByInsClass(Class<T> impl, Class<?> insClass,Class<?>[] types, Object... args) {
+		RegisterDescription registerDescription = getRegisterDescrption(impl, insClass);
+		if (registerDescription == null)
+			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
+		return registerDescription.getRegisterInstanceByParamType(impl,types, args);
+	}
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，返回一个默认组件，因此这是一种不严谨的组件获取方式，如果需要使用严谨模式（当 匹配值不通过时，返回null），需要使用方法
