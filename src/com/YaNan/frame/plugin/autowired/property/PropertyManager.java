@@ -74,6 +74,7 @@ public class PropertyManager {
 		Properties properties = new Properties();
 		//propertyScan
 		List<AbstractResourceEntry> scanPaths = getScanResourceByConfig();
+		if(scanPaths != null )
 		scanPaths.forEach((resource)->{
 			try {
 				properties.load(resource.getInputStream());
@@ -90,23 +91,31 @@ public class PropertyManager {
 	private List<AbstractResourceEntry> getScanResourceByConfig() {
 		Config config = ConfigContext.getInstance().getGlobalConfig();
 		List<AbstractResourceEntry> resourceList = null;
+		String[] scanPathArrays = null ;
 		//propertyScan
 		if(config != null) {
 			config.allowKeyNull();
 			if(config.hasPath("propertyScan")) {
 				String scanPaths = config.getString("propertyScan");
-				String[] scanPathArrays = scanPaths.split(",");
-				for(String scanPath : scanPathArrays) {
-					List<AbstractResourceEntry> resourceEntryList = 
-							ResourceManager.getResourceList(scanPath);
-					if(resourceList == null) {
-						resourceList = resourceEntryList;
-					}else {
-						resourceList.addAll(resourceEntryList);
-					}
-				}
+				scanPathArrays = scanPaths.split(",");
 			}
 			config.allowKeyNull(false);
+		}
+		if(scanPathArrays == null) {
+			scanPathArrays = new String[]{ResourceManager.classPath()};
+		}
+		if(scanPathArrays != null && scanPathArrays.length >0)
+		for(String scanPath : scanPathArrays) {
+			if (scanPath != null && !scanPath.endsWith(".properties")) {
+				scanPath = scanPath+"**.properties";
+			}
+			List<AbstractResourceEntry> resourceEntryList = 
+					ResourceManager.getResourceList(scanPath);
+			if(resourceList == null) {
+				resourceList = resourceEntryList;
+			}else {
+				resourceList.addAll(resourceEntryList);
+			}
 		}
 		return resourceList;
 	}
