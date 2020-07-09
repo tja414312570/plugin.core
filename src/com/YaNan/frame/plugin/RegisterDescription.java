@@ -32,7 +32,7 @@ import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandlerSet;
 import com.YaNan.frame.plugin.handler.PlugsHandler;
 import com.YaNan.frame.plugin.handler.ProxyHandler;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
@@ -61,7 +61,7 @@ public class RegisterDescription {
 	/**
 	 * 类加载器
 	 */
-	private ClassLoader loader;
+	private AppClassLoader loader;
 	/**
 	 * 注册注解 通过注解注册时有效
 	 */
@@ -98,6 +98,7 @@ public class RegisterDescription {
 	 * 代理方式
 	 */
 	private ProxyModel proxyModel = ProxyModel.DEFAULT;
+
 	/**
 	 * 方法拦截器 映射
 	 */
@@ -107,7 +108,7 @@ public class RegisterDescription {
 	 */
 	private Config config;
 
-	public ClassLoader getLoader() {
+	public AppClassLoader getLoader() {
 		return loader;
 	}
 
@@ -158,7 +159,7 @@ public class RegisterDescription {
 		return linkProxy;
 	}
 
-	public ClassLoader getProxyClassLoader() {
+	public AppClassLoader getProxyAppClassLoader() {
 		return loader;
 	}
 
@@ -252,14 +253,14 @@ public class RegisterDescription {
 		this.signlton = true;
 		this.description = "default register description :" + clzz.getName();
 		// 获取实现类
-		this.loader = new ClassLoader(clzz, false);
+		this.loader = new AppClassLoader(clzz, false);
 		this.clzz = loader.getLoadedClass();
 		// 获取实现类所在的接口
 		this.plugs = clzz.getInterfaces();
 		PlugsFactory.getInstance().addRegisterHandlerQueue(this);
 	}
 	public void buildByAnnotation(Register register, Class<?> clzz) {
-		this.loader = new ClassLoader(register.declare().equals(Object.class) ? clzz : register.declare(), false);
+		this.loader = new AppClassLoader(register.declare().equals(Object.class) ? clzz : register.declare(), false);
 		this.clzz = loader.getLoadedClass();
 		this.register = register;
 		this.plugs = register.register().length == 0 ? this.clzz.getInterfaces() : register.register();
@@ -346,7 +347,7 @@ public class RegisterDescription {
 			String model = properties.getProperty("comps.model", "DEFAULT");
 			this.proxyModel = ProxyModel.getProxyModel(model);
 			// 获取实现类
-			this.loader = new ClassLoader(className, false);
+			this.loader = new AppClassLoader(className, false);
 			this.clzz = loader.getLoadedClass();
 			String fieldTag = "comps.field.";
 			// 遍历需要赋值的属性
@@ -397,7 +398,7 @@ public class RegisterDescription {
 				throw new RuntimeException("could not fond class property and no reference any at \""
 						+ config.origin().url() + "\" at line : " + config.origin().lineNumber());
 			if (className != null) {
-				this.loader = new ClassLoader(className, false);
+				this.loader = new AppClassLoader(className, false);
 				this.clzz = loader.getLoadedClass();
 				Register register = this.clzz.getAnnotation(Register.class);
 				this.priority = config.getInt("priority", 
@@ -551,7 +552,9 @@ public class RegisterDescription {
 		}
 
 	}
-
+	public void setProxyModel(ProxyModel proxyModel) {
+		this.proxyModel = proxyModel;
+	}
 	public void initHandler() {	
 		handlerMapping = new HashMap<Method, InvokeHandlerSet>();
 		if (plugs != null)
@@ -608,7 +611,7 @@ public class RegisterDescription {
 												Object bean = BeanContainer.getContext().getBean(beanId);
 												parameters[i] = bean;
 											} else {
-												parameters[i] = ClassLoader.castType(value, parameterTypes[i]);
+												parameters[i] = AppClassLoader.castType(value, parameterTypes[i]);
 											}
 										}
 									}
@@ -633,7 +636,7 @@ public class RegisterDescription {
 									Object[] parameters = new Object[values.size()];
 									Class<?>[] parameterTypes = constructor.getParameterTypes();
 									for (int i = 0; i < values.size(); i++) {
-										parameters[i] = ClassLoader.castType(values.get(i), parameterTypes[i]);
+										parameters[i] = AppClassLoader.castType(values.get(i), parameterTypes[i]);
 									}
 									instance = this.getNewInstance(this.clzz, constructor, values.toArray(parameters));
 
@@ -674,7 +677,7 @@ public class RegisterDescription {
 											parameters[i] = BeanContainer.getContext().getBean(beanId);
 											parameterType[i] = parameters[i].getClass();
 										} else {
-											parameters[i] = ClassLoader.castType(entry.getValue().unwrapped(),
+											parameters[i] = AppClassLoader.castType(entry.getValue().unwrapped(),
 													parameterType[i]);
 										}
 										i++;
@@ -775,7 +778,7 @@ public class RegisterDescription {
 					String refConf = config.getString("ref");
 					if (refConf != null) {
 						ref = PlugsFactory.getBean(refConf);
-						this.loader = new ClassLoader(ref.getClass(), false);
+						this.loader = new AppClassLoader(ref.getClass(), false);
 						this.clzz = loader.getLoadedClass();
 						try {
 							RegisterDescription register = PlugsFactory.getBeanRegister(ref);
@@ -1197,7 +1200,7 @@ public class RegisterDescription {
 			} else {
 				try {
 					Class<?> interfacer = Class.forName(str.trim());
-//					if (ClassLoader.implementsOf(clzz, interfacer))// 判断类及父类是否实现某接口
+//					if (AppClassLoader.implementsOf(clzz, interfacer))// 判断类及父类是否实现某接口
 					set.add(interfacer);
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
@@ -1585,7 +1588,7 @@ public class RegisterDescription {
 	}
 
 	public Constructor<?> getConstructor(Object... args) {
-		Class<?>[] parameterTypes = ClassLoader.getParameterTypes(args);
+		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
 		Constructor<?> constructor = null;
 		try {
 			constructor = this.getConstructor(parameterTypes);
@@ -1597,7 +1600,7 @@ public class RegisterDescription {
 				Class<?>[] matchType = con.getParameterTypes();
 				if (matchType.length != args.length)
 					continue;
-				if (ClassLoader.matchType(matchType, parameterTypes)) {
+				if (AppClassLoader.matchType(matchType, parameterTypes)) {
 					constructor = con;
 					break;
 				}

@@ -173,5 +173,12 @@ public class PropertyManager {
 		}
 		return orginValue;
 	}
+	public void put(Properties properties) {
+		properties.entrySet().forEach((entry) -> {
+			if(entry.getValue()!=null)
+				propertyPools.put(entry.getKey().toString(),entry.getValue().toString());
+		});
+		this.rebuild();
+	}
 	
 }

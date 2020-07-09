@@ -24,7 +24,7 @@ import com.YaNan.frame.plugin.interfacer.PlugsListener;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.SimpleConfigObject;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.PackageScanner;
@@ -243,6 +243,7 @@ public class PlugsFactory {
 			}
 		}
 		Config conf = ConfigContext.getInstance().getGlobalConfig();
+		conf.allowKeyNull();
 		if(conf!=null) {
 			conf = conf.getConfig("Plugin");
 		}
@@ -484,7 +485,7 @@ public class PlugsFactory {
 				stream.read(temp,0,temp.length);
 				stream.close();
 				//load class
-				Class<?> clzz =new com.YaNan.frame.utils.reflect.ClassLoader().loadClass(className,temp);
+				Class<?> clzz =new com.YaNan.frame.utils.reflect.AppClassLoader().loadClass(className,temp);
 				//Register
 				PlugsDescription plugsDescription = new PlugsDescription(clzz);
 				Plug plug = new Plug(plugsDescription);
@@ -570,7 +571,12 @@ public class PlugsFactory {
 	public void addPlugsRegister(Class<?> cls) {
 		Register register = cls.getAnnotation(Register.class);
 		try {
-			RegisterDescription registerDescription = new RegisterDescription(register, cls);
+			RegisterDescription registerDescription;
+			if(register == null) {
+				registerDescription = new RegisterDescription(cls);
+			}else {
+				registerDescription = new RegisterDescription(register, cls);
+			}
 			RegisterContatiner.put(cls, registerDescription);
 		} catch (Throwable e) {
 			throw e;
@@ -1017,7 +1023,7 @@ public class PlugsFactory {
 		}
 		PlugsHandler plugsHandler = null;
 		try {
-			plugsHandler = ClassLoader.getFieldValue(field, proxyInstance);
+			plugsHandler = AppClassLoader.getFieldValue(field, proxyInstance);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new PluginRuntimeException("failed to get instance's PlugsHandler", e);
 		}

@@ -27,7 +27,7 @@ import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.interfacer.PlugsListener;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.resource.FileUtils;
 import com.YaNan.frame.utils.resource.Path;
@@ -119,7 +119,7 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 								} else
 									tryAddPlugs(nc);
 								proxy.put(clzz, nc);
-								notifyListener(clzz, nc, new ClassLoader().loadClass(clzzName, content), file);// 通知修改
+								notifyListener(clzz, nc, new AppClassLoader().loadClass(clzzName, content), file);// 通知修改
 								log.debug(clzzName + "  update success!");
 							}
 							
@@ -249,9 +249,9 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 		try {
 			List<ClassUpdateListener> updaterList = PlugsFactory.getPlugsInstanceListByAttribute(ClassUpdateListener.class,nc.getName());
 			for (ClassUpdateListener listener : updaterList){
-				if((clzz!=null&&ClassLoader.implementOf(clzz, ClassUpdateListener.class))
-						||(nc!=null&&ClassLoader.implementOf(nc, ClassUpdateListener.class))
-						||(oc!=null&&ClassLoader.implementOf(oc, ClassUpdateListener.class)))
+				if((clzz!=null&&AppClassLoader.implementOf(clzz, ClassUpdateListener.class))
+						||(nc!=null&&AppClassLoader.implementOf(nc, ClassUpdateListener.class))
+						||(oc!=null&&AppClassLoader.implementOf(oc, ClassUpdateListener.class)))
 					continue;
 				listener.updateClass(clzz, nc, oc, file);
 			}

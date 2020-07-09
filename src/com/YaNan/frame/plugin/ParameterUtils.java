@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 import com.YaNan.frame.plugin.annotations.Service;
 import com.YaNan.frame.plugin.beans.BeanContainer;
 import com.YaNan.frame.utils.asserts.Assert;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.ResourceManager;
@@ -131,8 +131,8 @@ public class ParameterUtils {
 					continue;
 				Class<?> argType = argsTypes[i];
 				Class<?> parameterType = parameterTypes[i];
-				if (!argType.equals(parameterType) && !ClassLoader.extendsOf(parameterType,argType)
-						&& !ClassLoader.implementsOf(parameterType,argType))
+				if (!argType.equals(parameterType) && !AppClassLoader.extendsOf(parameterType,argType)
+						&& !AppClassLoader.implementsOf(parameterType,argType))
 					continue con;
 				}
 			return cons;
@@ -173,8 +173,8 @@ public class ParameterUtils {
 					int.class,long.class,short.class,boolean.class,float.class,double.class)) {
 				return false;
 			}
-			if (type.equals(value.getClass()) || ClassLoader.extendsOf(value.getClass(), type)
-					|| ClassLoader.implementsOf(value.getClass(), type))
+			if (type.equals(value.getClass()) || AppClassLoader.extendsOf(value.getClass(), type)
+					|| AppClassLoader.implementsOf(value.getClass(), type))
 				return true;
 			if (type == int.class || type == long.class || type == short.class) {
 				Integer.valueOf(value.toString());
@@ -284,7 +284,7 @@ public class ParameterUtils {
 					}
 					parameterTypes = method.getParameterTypes();
 					for (int i = 0; i < values.size(); i++) {
-						parameters[i] = ClassLoader.castType(parameters[i], parameterTypes[i]);
+						parameters[i] = AppClassLoader.castType(parameters[i], parameterTypes[i]);
 					}
 					methodDescs[index] = new MethodDesc(method,parameters);
 				}
@@ -315,7 +315,7 @@ public class ParameterUtils {
 			String beanId = value.toString();
 			value = BeanContainer.getContext().getBean(beanId);
 		} else {
-			value = ClassLoader.castType(value,type);
+			value = AppClassLoader.castType(value,type);
 		}
 		return value;
 	}

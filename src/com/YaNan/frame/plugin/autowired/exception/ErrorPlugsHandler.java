@@ -13,7 +13,7 @@ import com.YaNan.frame.plugin.annotations.Support;
 import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.MethodHandler;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
 
 @Support(Error.class)
@@ -31,8 +31,8 @@ public class ErrorPlugsHandler implements InvokeHandler,InstanceHandler{
 	@Override
 	public void error(MethodHandler methodHandler, Throwable e) {
 		Error error = methodHandler.getInvokeHandlerSet().getAnnotation(Error.class);
-		if(error!=null&&(ClassLoader.implementOf(e.getClass(), error.exception())
-				||ClassLoader.extendsOf(e.getClass(), error.exception()))){
+		if(error!=null&&(AppClassLoader.implementOf(e.getClass(), error.exception())
+				||AppClassLoader.extendsOf(e.getClass(), error.exception()))){
 			if(error.recorder()){
 				StringBuilder sb = new StringBuilder();
 				if(methodHandler.getParameters()!=null&&methodHandler.getParameters().length>0){
@@ -70,8 +70,8 @@ public class ErrorPlugsHandler implements InvokeHandler,InstanceHandler{
 		Error error = constructor.getAnnotation(Error.class);
 		if(error==null)
 			error = ClassHelper.getClassHelper(plug).getAnnotation(Error.class);
-		if(error!=null&&(ClassLoader.implementOf(throwable.getClass(), error.exception())
-				||ClassLoader.extendsOf(throwable.getClass(), error.exception()))){
+		if(error!=null&&(AppClassLoader.implementOf(throwable.getClass(), error.exception())
+				||AppClassLoader.extendsOf(throwable.getClass(), error.exception()))){
 			if(error.recorder()){
 				StringBuilder sb = new StringBuilder();
 				if(args!=null&&args.length>0){

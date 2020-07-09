@@ -4,18 +4,18 @@ import com.typesafe.config.Config;
 
 public class ConfigContext {
 	private final static ConfigContext context = new ConfigContext();
-	private Config blobalConfig;
+	private Config globalConfig;
 	public static ConfigContext getInstance() {
 		return context;
 	}
 	public synchronized void mergeConfig(Config config){
-		if(blobalConfig == null) {
-			blobalConfig = config;
+		if(globalConfig == null) {
+			globalConfig = config;
 		}else {
-			blobalConfig.merge(config);
+			globalConfig.merge(config);
 		}
 	}
 	public Config getGlobalConfig() {
-		return blobalConfig;
+		return globalConfig;
 	}
 }

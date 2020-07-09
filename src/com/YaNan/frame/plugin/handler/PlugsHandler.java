@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.YaNan.frame.plugin.RegisterDescription;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
+
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -173,7 +175,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	 * @return
 	 */
 	private Throwable processException(Throwable e) {
-		if(com.YaNan.frame.utils.reflect.ClassLoader.extendsOf(e.getClass(), InvocationTargetException.class)){
+		if(AppClassLoader.extendsOf(e.getClass(), InvocationTargetException.class)){
 			InvocationTargetException exc = (InvocationTargetException) e;
 			if(exc.getTargetException()!=null)
 				e = exc.getTargetException();

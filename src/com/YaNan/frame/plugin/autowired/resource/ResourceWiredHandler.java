@@ -8,7 +8,7 @@ import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Support;
 import com.YaNan.frame.plugin.handler.FieldHandler;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 
 @Support(Resource.class)
 @Register
@@ -33,7 +33,7 @@ public class ResourceWiredHandler implements FieldHandler{
 			}else{
 				file = new File(this.getClass().getClassLoader().getResource("").getPath().replace("%20"," "),path.substring(cpIndex+CLASSPATH.length()));
 			}
-			new ClassLoader(target).set(desc.getField(), file);
+			new AppClassLoader(target).set(desc.getField(), file);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			throw new RuntimeException("Resource wired failed !\r\nat class : "+target.getClass().getName()

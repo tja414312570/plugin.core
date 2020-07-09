@@ -3,7 +3,7 @@ package com.YaNan.frame.plugin;
 import java.io.File;
 
 import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 
 /**
  * 组件描述类
@@ -20,7 +20,7 @@ public class PlugsDescription {
 	public PlugsDescription(File file) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
 		String fileName = file.getName();
 		String clzzStr = fileName.substring(0,fileName.lastIndexOf("."));
-		this.clzz= new ClassLoader(clzzStr,false).getLoadedClass();
+		this.clzz= new AppClassLoader(clzzStr,false).getLoadedClass();
 	}
 
 	public PlugsDescription(Class<?> plugClass) {

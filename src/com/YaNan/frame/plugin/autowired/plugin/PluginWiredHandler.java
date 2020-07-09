@@ -20,7 +20,7 @@ import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.MethodHandler;
 import com.YaNan.frame.utils.StringUtil;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 
 /**
  * 组件注入
@@ -156,13 +156,13 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 					//如果获取到的参数类型为数组
 					}else if(type.isArray()){
 						//获得数组的真实类型
-						Class<?> typeClass = ClassLoader.getListGenericType(parameters[i]);
+						Class<?> typeClass = AppClassLoader.getListGenericType(parameters[i]);
 						List<?> obj = PlugsFactory.getPlugsInstanceListByAttribute(typeClass, service.attribute());
 						Object[] arr = (Object[]) Array.newInstance(typeClass, obj.size());
 						arguments[i] = obj.toArray(arr);
 					}else if(type.getClass().equals(List.class)){
 						//获取数组参数的类型
-						Class<?> typeClass = ClassLoader.getListGenericType(parameters[i]);
+						Class<?> typeClass = AppClassLoader.getListGenericType(parameters[i]);
 						//获取服务返回的所有实现的实例
 						List<?> obj = PlugsFactory.getPlugsInstanceListByAttribute(typeClass, service.attribute());
 						arguments[i] = obj;

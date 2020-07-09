@@ -15,7 +15,7 @@ import com.YaNan.frame.plugin.handler.FieldHandler;
 import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.MethodHandler;
-import com.YaNan.frame.utils.reflect.ClassLoader;
+import com.YaNan.frame.utils.reflect.AppClassLoader;
 
 @Support(Property.class)
 @Register(attribute = "*", description = "Property文件的属性的注入")
@@ -52,9 +52,9 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 							propertyValue = property.defaultValue();
 						}
 						if (arguments[i] == null) {
-							arguments[i] = parameter.getType().isArray() ? ClassLoader
+							arguments[i] = parameter.getType().isArray() ? AppClassLoader
 									.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
-									: ClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
+									: AppClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
 						}
 					} catch (Exception e) {
 						log.error("Error to process property \r\nat class:"
@@ -91,9 +91,9 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			if (propertyValue == null && property.required()) {
 				throw new RuntimeException("the required property '"+propertyName+"' value is null");
 			}
-			new ClassLoader(target).set(desc.getField(),
+			new AppClassLoader(target).set(desc.getField(),
 					desc.getField().getType().isArray()
-							? ClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
+							? AppClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
 							: propertyValue);
 		} catch (Exception e) {
 			if(property.required())
@@ -131,8 +131,8 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 						propertyValue = property.defaultValue();
 					}
 					args[i] = parameter.getType().isArray()
-							? ClassLoader.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
-							: ClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
+							? AppClassLoader.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
+							: AppClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
 				} catch (Exception e) {
 					log.error("Error to process property ! \r\nat class : "
 							+ registerDescription.getRegisterClass().getName()
