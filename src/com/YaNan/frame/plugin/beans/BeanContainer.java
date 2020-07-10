@@ -1,6 +1,5 @@
 package com.YaNan.frame.plugin.beans;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,5 +99,11 @@ public class BeanContainer {
 			beanContainer.clear();
 		if(beanClassContainer!=null)
 			beanClassContainer.clear();
+	}
+	public void removeBean(String beanId,Class<?> beanClass) {
+		if(beanContainer!=null)
+			beanContainer.remove(beanId);
+//		if(beanClassContainer!=null)
+//			beanClassContainer.remove(beanClass);
 	}
 }

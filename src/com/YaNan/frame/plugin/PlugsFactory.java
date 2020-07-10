@@ -59,7 +59,7 @@ public class PlugsFactory {
 	//Plugin context scan package path
 	private String[] packageDirs;
 	//Plugin context plug pools
-	private Map<Class<?>, Plug> plugsList = new HashMap<Class<?>, Plug>();
+	private Map<Class<?>, Plug> plugsContatiner = new HashMap<Class<?>, Plug>();
 	//Plugin context Register pools
 	private Map<Class<?>, RegisterDescription> RegisterContatiner = new HashMap<Class<?>, RegisterDescription>();
 	private volatile List<RegisterDescription> registerList = new LinkedList<RegisterDescription>();
@@ -71,6 +71,21 @@ public class PlugsFactory {
 	 */
 	public String[] getScanPath() {
 		return packageDirs == null?null:Arrays.copyOf(packageDirs, packageDirs.length);
+	}
+	public void removeRegister(Class<?> registerClass) {
+		synchronized (this) {
+			RegisterDescription registerDescription = getRegisterDescription(registerClass);
+			this.RegisterContatiner.remove(registerClass);
+			this.registerList.remove(registerDescription);
+			Class<?>[] plugClassArray = registerDescription.getPlugs();
+			BeanContainer.getContext().removeBean(registerDescription.getBeanId(), registerClass);
+			for(Class<?> plugClass : plugClassArray) {
+				Plug plug = this.plugsContatiner.get(plugClass);
+				if(plug.getDefaultRegisterDescription() != null && plug.getDefaultRegisterDescription().equals(registerDescription))
+					plug.setDefaultRegisterDescription(null);
+				plug.getRegisterList().remove(registerDescription);
+			}
+		}
 	}
 	public void addScanPath(String... paths) {
 		if(paths.length > 0) {
@@ -175,7 +190,7 @@ public class PlugsFactory {
 	 * @return a map contain all service ,the key is service class
 	 */
 	public Map<Class<?>, Plug> getAllPlugs() {
-		return plugsList;
+		return plugsContatiner;
 	}
 	/**
 	 * get PlugsFactory instance
@@ -346,10 +361,10 @@ public class PlugsFactory {
 			Class<?>[] plugs = registerDescription.getPlugs();
 			if (plugs != null) {
 				for (Class<?> plugInterface : plugs) {
-					Plug plug = this.plugsList.get(plugInterface);
+					Plug plug = this.plugsContatiner.get(plugInterface);
 					if (plug == null) {
 						this.addPlugsService(plugInterface);
-						plug = this.plugsList.get(plugInterface);
+						plug = this.plugsContatiner.get(plugInterface);
 						if(plug == null) {
 							throw new PluginInitException(
 									new Exception("register " + registerDescription.getRegisterClass().getName()
@@ -369,7 +384,7 @@ public class PlugsFactory {
 	 * @return
 	 */
 	public static Plug getPlug(Class<?> plugClass) {
-		return instance.plugsList.get(plugClass);
+		return instance.plugsContatiner.get(plugClass);
 	}
 	/**
 	 * 添加组件 当通过扫描comps文件与plugs文件时，需要通过此方法将组件添加到容器中
@@ -417,7 +432,7 @@ public class PlugsFactory {
 			if (type.equals(".plugs")) {
 				PlugsDescription plugsDescription = new PlugsDescription(file);
 				Plug plug = new Plug(plugsDescription);
-				this.plugsList.put(plugsDescription.getPlugClass(), plug);
+				this.plugsContatiner.put(plugsDescription.getPlugClass(), plug);
 			}
 			if (type.equals(".comps")) {
 				RegisterDescription registerDescription = new RegisterDescription(file);
@@ -489,7 +504,7 @@ public class PlugsFactory {
 				//Register
 				PlugsDescription plugsDescription = new PlugsDescription(clzz);
 				Plug plug = new Plug(plugsDescription);
-				this.plugsList.put(plugsDescription.getPlugClass(), plug);
+				this.plugsContatiner.put(plugsDescription.getPlugClass(), plug);
 			}
 			if (type==STREAM_TYPT.CONF) {
 				InputStreamReader reader = new InputStreamReader(stream);
@@ -516,7 +531,7 @@ public class PlugsFactory {
 		if (service != null) {// 如果是Service
 			PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
 			Plug plug = new Plug(plugsDescrption);
-			this.plugsList.put(cls, plug);
+			this.plugsContatiner.put(cls, plug);
 		}
 		if (register != null) {
 			try {
@@ -536,7 +551,7 @@ public class PlugsFactory {
 			if (service != null) {// 如果是Service
 				PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
 				Plug plug = new Plug(plugsDescrption);
-				this.plugsList.put(cls, plug);
+				this.plugsContatiner.put(cls, plug);
 			}
 			if (register != null) {
 				try {
@@ -549,7 +564,7 @@ public class PlugsFactory {
 		} else if (cls.isInterface()) {
 			PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
 			Plug plug = new Plug(plugsDescrption);
-			this.plugsList.put(cls, plug);
+			this.plugsContatiner.put(cls, plug);
 		} else {
 			try {
 				RegisterDescription registerDescription = new RegisterDescription(cls);
@@ -565,7 +580,7 @@ public class PlugsFactory {
 		Service service = cls.getAnnotation(Service.class);
 		PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
 		Plug plug = new Plug(plugsDescrption);
-		this.plugsList.put(cls, plug);
+		this.plugsContatiner.put(cls, plug);
 	}
 
 	public void addPlugsRegister(Class<?> cls) {
@@ -591,7 +606,7 @@ public class PlugsFactory {
 	public void addPlugsByDefault(Class<?> plugClass) {
 		PlugsDescription plugsDescrption = new PlugsDescription(plugClass);
 		Plug plug = new Plug(plugsDescrption);
-		this.plugsList.put(plugClass, plug);
+		this.plugsContatiner.put(plugClass, plug);
 	}
 
 	/**
@@ -652,7 +667,7 @@ public class PlugsFactory {
 	}
 
 	public static List<RegisterDescription> getRegisterList(Class<?> plugsClass) {
-		Plug plug = instance.plugsList.get(plugsClass);
+		Plug plug = instance.plugsContatiner.get(plugsClass);
 		if (plug == null) {
 			throw new PluginRuntimeException("could found plug for " + plugsClass.getName());
 		}
@@ -907,7 +922,7 @@ public class PlugsFactory {
 
 	public void clear() {
 		this.RegisterContatiner.clear();
-		this.plugsList.clear();
+		this.plugsContatiner.clear();
 	}
 
 	public boolean isAvailable() {
