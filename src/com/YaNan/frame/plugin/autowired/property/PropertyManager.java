@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 
-import com.YaNan.frame.plugin.ConfigContext;
+import com.YaNan.frame.plugin.Environment;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
 import com.YaNan.frame.utils.resource.Path;
 import com.YaNan.frame.utils.resource.ResourceManager;
@@ -89,7 +89,7 @@ public class PropertyManager {
 		this.rebuild();
 	}
 	private List<AbstractResourceEntry> getScanResourceByConfig() {
-		Config config = ConfigContext.getInstance().getGlobalConfig();
+		Config config = Environment.getEnviroment().getConfigure();
 		List<AbstractResourceEntry> resourceList = null;
 		String[] scanPathArrays = null ;
 		//propertyScan

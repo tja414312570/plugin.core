@@ -14,7 +14,7 @@ public class EncryptHandler implements InvokeHandler {
 	/**
 	 * 加密类实现类可以定义为单例
 	 */
-	private EncryptService encryptService = PlugsFactory.getPlugsInstance(EncryptService.class);
+	private EncryptService encryptService = PlugsFactory.getPluginsInstance(EncryptService.class);
 
 	@Override
 	public void before(MethodHandler methodHandler) {

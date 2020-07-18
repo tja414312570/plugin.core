@@ -1,19 +1,20 @@
 package com.YaNan.frame.plugin.autowired.property;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.YaNan.frame.plugin.FieldDesc;
-import com.YaNan.frame.plugin.PluginRuntimeException;
-import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Support;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.YaNan.frame.plugin.exception.PluginRuntimeException;
 import com.YaNan.frame.plugin.handler.FieldHandler;
 import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
+import com.YaNan.frame.plugin.handler.InvokeHandlerSet;
 import com.YaNan.frame.plugin.handler.MethodHandler;
 import com.YaNan.frame.utils.reflect.AppClassLoader;
 
@@ -73,16 +74,16 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 	@Override
 	public void error(MethodHandler methodHandler, Throwable e) {
 	}
-
+	
 	@Override
-	public void preparedField(RegisterDescription registerDescription, Object proxy, Object target, FieldDesc desc,
-			Object[] args) {
-		Property property = desc.getAnnotation();
+	public void preparedField(RegisterDefinition registerDefinition, Object proxy, Object target,
+			InvokeHandlerSet handlerSet, Field field) {
+		Property property = handlerSet.getAnnotation(Property.class);
 		String propertyName = null;
 		String propertyValue = null;
-		propertyName = property != null ? property.value() : desc.getValue();
+		propertyName = property.value();
 		if (propertyName.equals(""))
-			propertyName = desc.getField().getName();
+			propertyName = field.getName();
 		try {
 			propertyValue = PropertyManager.getInstance().getProperty(propertyName);
 			if (propertyValue == null &&property!=null&& !property.defaultValue().equals("")) {
@@ -91,20 +92,20 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			if (propertyValue == null && property.required()) {
 				throw new RuntimeException("the required property '"+propertyName+"' value is null");
 			}
-			new AppClassLoader(target).set(desc.getField(),
-					desc.getField().getType().isArray()
-							? AppClassLoader.parseBaseTypeArray(desc.getField().getType(), propertyValue.split(","), null)
+			new AppClassLoader(target).set(field,
+					field.getType().isArray()
+							? AppClassLoader.parseBaseTypeArray(field.getType(), propertyValue.split(","), null)
 							: propertyValue);
 		} catch (Exception e) {
 			if(property.required())
 				throw new PropertyAutowiredFailedException("failed to autowired parameter ! property name \"" + propertyName
-					+ "\" value is null\r\nat class : " + registerDescription.getRegisterClass().getName()
-					+ "\r\nat field : " + desc.getField().getName(),e);
+					+ "\" value is null\r\nat class : " + registerDefinition.getRegisterClass().getName()
+					+ "\r\nat field : " + field.getName(),e);
 		}
 	}
 
 	@Override
-	public void before(RegisterDescription registerDescription, Class<?> plugClass, Constructor<?> constructor,
+	public void before(RegisterDefinition registerDefinition, Class<?> plugClass, Constructor<?> constructor,
 			Object... args) {
 		Property property;
 		String propertyName;
@@ -122,9 +123,9 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 				try {
 					if (propertyValue == null && property.defaultValue().equals("")) {
 						throw new RuntimeException("failed to autowired parameter ! property name \"" + propertyName
-								+ "\" value is null\r\n at class : " + registerDescription.getRegisterClass().getName()
+								+ "\" value is null\r\n at class : " + registerDefinition.getRegisterClass().getName()
 								+ "\" value is null\r\n at constructor : "
-								+ registerDescription.getRegisterClass().getName() + "\r\n at parameter : "
+								+ registerDefinition.getRegisterClass().getName() + "\r\n at parameter : "
 								+ parameter.getName());
 					}
 					if (propertyValue == null && !property.defaultValue().equals("")) {
@@ -135,25 +136,26 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 							: AppClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
 				} catch (Exception e) {
 					log.error("Error to process property ! \r\nat class : "
-							+ registerDescription.getRegisterClass().getName()
+							+ registerDefinition.getRegisterClass().getName()
 							+ "\" value is null\r\n at constructor : "
-							+ registerDescription.getRegisterClass().getName() + "\r\nat parameter : "
+							+ registerDefinition.getRegisterClass().getName() + "\r\nat parameter : "
 							+ parameter.getName() + "\r\nat property : " + propertyName + "\r\nat property value : "
 							+ propertyValue, e);
 				}
 			}
 		}
+		
 	}
 
 	@Override
-	public void after(RegisterDescription registerDescription, Class<?> plugClass, Constructor<?> constructor,
+	public void after(RegisterDefinition registerDefinition, Class<?> plugClass, Constructor<?> constructor,
 			Object proxyObject, Object... args) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
-	public void exception(RegisterDescription registerDescription, Class<?> plug, Constructor<?> constructor,
+	public void exception(RegisterDefinition registerDefinition, Class<?> plug, Constructor<?> constructor,
 			Object proxyObject, PluginRuntimeException throwable, Object... args) {
 		// TODO Auto-generated method stub
 		

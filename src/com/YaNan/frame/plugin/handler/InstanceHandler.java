@@ -2,8 +2,8 @@ package com.YaNan.frame.plugin.handler;
 
 import java.lang.reflect.Constructor;
 
-import com.YaNan.frame.plugin.PluginRuntimeException;
-import com.YaNan.frame.plugin.RegisterDescription;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.YaNan.frame.plugin.exception.PluginRuntimeException;
 
 public interface InstanceHandler {
 	/**
@@ -12,7 +12,7 @@ public interface InstanceHandler {
 	 * @param plugClass
 	 * @param args
 	 */
-	void before(RegisterDescription registerDescription, Class<?> plugClass,Constructor<?> constructor, Object... args);
+	void before(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object... args);
 	/**
 	 * 将代理对象实例化之后
 	 * @param registerDescription
@@ -20,7 +20,7 @@ public interface InstanceHandler {
 	 * @param proxy
 	 * @param args
 	 */
-	void after(RegisterDescription registerDescription, Class<?> plugClass,Constructor<?> constructor, Object proxyObject,Object... args);
+	void after(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject,Object... args);
 	/**
 	 * 对象实例化时异常
 	 * @param registerDescription
@@ -29,6 +29,6 @@ public interface InstanceHandler {
 	 * @param t
 	 * @param args
 	 */
-	void exception(RegisterDescription registerDescription, Class<?> plug,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args);
+	void exception(RegisterDefinition registerDefinition, Class<?> plug,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args);
 
 }

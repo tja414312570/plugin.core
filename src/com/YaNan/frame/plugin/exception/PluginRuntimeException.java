@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin;
+package com.YaNan.frame.plugin.exception;
 
 public class PluginRuntimeException extends RuntimeException{
 	/**

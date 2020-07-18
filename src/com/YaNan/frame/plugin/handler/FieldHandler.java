@@ -1,7 +1,8 @@
 package com.YaNan.frame.plugin.handler;
 
-import com.YaNan.frame.plugin.FieldDesc;
-import com.YaNan.frame.plugin.RegisterDescription;
+import java.lang.reflect.Field;
+
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
 /**
  * 字段拦截器
  * 当实例初始化之后立刻调用
@@ -17,7 +18,7 @@ public interface FieldHandler {
 	 * @param desc
 	 * @param args
 	 */
-	void preparedField(RegisterDescription registerDescription, Object proxy, Object target, FieldDesc desc,
-			Object[] args);
+	void preparedField(RegisterDefinition registerDefinition, Object proxy, Object target, InvokeHandlerSet handlerSet,
+			Field field);
 
 }

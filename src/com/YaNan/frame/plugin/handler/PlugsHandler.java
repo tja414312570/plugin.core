@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.YaNan.frame.plugin.RegisterDescription;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
 import com.YaNan.frame.utils.reflect.AppClassLoader;
 
 import net.sf.cglib.proxy.Enhancer;
@@ -21,7 +21,7 @@ import net.sf.cglib.proxy.MethodProxy;
  * v1.1 支持cglib代理方式
  * v1.2 支持方法拦截
  * v1.2.1 修复方法拦截时无限调用bug
- * v1.2.2 添加获取RegisterDescription方法
+ * v1.2.2 添加获取RegisterDefinition方法
  * v1.2.3 添加每个MethodHandler对应的InvokeHandler
  * 
  * @author yanan
@@ -32,7 +32,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		JDK, CGLIB
 	}
 	private Map<String,Object> attribute = new HashMap<String,Object>();
-	private RegisterDescription registerDescription;// 注册描述类
+	private RegisterDefinition registerDefinition;// 注册描述类
 	private Object proxyObject;// 代理对象
 	private Class<?> proxyClass;// 代理类
 	private Class<?> interfaceClass;// 接口类
@@ -48,12 +48,12 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		return (T) proxyObject;
 	}
 
-	public RegisterDescription getRegisterDescription() {
-		return registerDescription;
+	public RegisterDefinition getRegisterDefinition() {
+		return registerDefinition;
 	}
 
-	public void setRegisterDescription(RegisterDescription registerDescription) {
-		this.registerDescription = registerDescription;
+	public void setRegisterDefinition(RegisterDefinition registerDefinition) {
+		this.registerDefinition = registerDefinition;
 	}
 
 	/**
@@ -73,28 +73,18 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	public Class<?> getInterfaceClass() {
 		return interfaceClass;
 	}
-
-	/**
-	 * return the proxy method handler mapping
-	 * 
-	 * @return
-	 */
-	public Map<Method, InvokeHandlerSet> getHandlerMapping() {
-		return registerDescription == null ? null : registerDescription.getHandlerMapping();
-	}
-
 	/**
 	 * jdk proxy PlugsHandler constructor
 	 * 
 	 * @param target
 	 * @param mapperInterface
 	 */
-	public PlugsHandler(Object target, Class<?> mapperInterface, RegisterDescription registerDescription) {
+	public PlugsHandler(Object target, Class<?> mapperInterface, RegisterDefinition registerDefinition) {
 		super();
 		this.proxyObject = target;
 		this.proxyClass = target.getClass();
 		this.interfaceClass = mapperInterface;
-		this.registerDescription = registerDescription;
+		this.registerDefinition = registerDefinition;
 	}
 
 	/**
@@ -103,13 +93,13 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	 * @param proxyClass
 	 * @param parameters
 	 */
-	public PlugsHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDescription registerDescription) {
+	public PlugsHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDefinition registerDefinition) {
 		this.proxyClass = proxyClass;
 		this.proxyType = ProxyType.CGLIB;
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(proxyClass);
 		enhancer.setCallback(this);
-		this.registerDescription = registerDescription;
+		this.registerDefinition = registerDefinition;
 		if (parameters.length == 0)
 			this.proxyObject = enhancer.create();
 		else
@@ -121,8 +111,8 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable{
 		// if the interface class is InvokeHandler class ,jump the method filter
 		InvokeHandlerSet handler = null;
-		if (registerDescription != null && registerDescription.getHandlerMapping() != null) {
-			handler = registerDescription.getHandlerMapping().get(method);
+		if (registerDefinition != null) {
+			handler = registerDefinition.getMethodHandler(method);
 		}
 		MethodHandler mh = null;
 		if (handler != null) {
@@ -184,18 +174,18 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T newMapperProxy(Class<T> mapperInterface, RegisterDescription registerDescription,
+	public static <T> T newMapperProxy(Class<T> mapperInterface, RegisterDefinition registerDefinition,
 			Object target) {
 		ClassLoader classLoader = mapperInterface.getClassLoader();
 		Class<?>[] interfaces = new Class[1];
 		interfaces[0] = mapperInterface;
-		PlugsHandler plugsHandler = new PlugsHandler(target, mapperInterface, registerDescription);
+		PlugsHandler plugsHandler = new PlugsHandler(target, mapperInterface, registerDefinition);
 		return (T) Proxy.newProxyInstance(classLoader, interfaces, plugsHandler);
 	}
 
-	public static <T> T newCglibProxy(Class<?> proxyClass, RegisterDescription registerDescription,Class<?>[] parameterType,
+	public static <T> T newCglibProxy(Class<?> proxyClass, RegisterDefinition registerDefinition,Class<?>[] parameterType,
 			Object... parameters) {
-		return new PlugsHandler(proxyClass, parameterType,parameters, registerDescription).getProxyObject();
+		return new PlugsHandler(proxyClass, parameterType,parameters, registerDefinition).getProxyObject();
 	}
 
 
@@ -204,8 +194,8 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 			throws Throwable {
 		InvokeHandlerSet handler = null;
 		MethodHandler mh = null;
-		if (registerDescription != null && registerDescription.getHandlerMapping() != null) {
-			handler = registerDescription.getHandlerMapping().get(method);
+		if (registerDefinition != null) {
+			handler = registerDefinition.getMethodHandler(method);
 		}
 		try {
 		if (handler != null) {

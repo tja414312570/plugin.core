@@ -1,9 +1,5 @@
 package com.YaNan.frame.plugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,28 +10,37 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.plugin.beans.BeanContainer;
-import com.YaNan.frame.plugin.handler.InvokeHandler;
+import com.YaNan.frame.plugin.PluginEvent.EventType;
+import com.YaNan.frame.plugin.builder.PluginDefinitionBuilderFactory;
+import com.YaNan.frame.plugin.builder.PluginInstanceFactory;
+import com.YaNan.frame.plugin.builder.PluginInterceptBuilder;
+import com.YaNan.frame.plugin.decoder.ResourceDecoder;
+import com.YaNan.frame.plugin.decoder.StandAbstractResourceDecoder;
+import com.YaNan.frame.plugin.decoder.StandScanResource;
+import com.YaNan.frame.plugin.decoder.StandScanResourceDecoder;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.YaNan.frame.plugin.exception.PluginNotFoundException;
+import com.YaNan.frame.plugin.exception.PluginInitException;
+import com.YaNan.frame.plugin.exception.PluginRuntimeException;
+import com.YaNan.frame.plugin.exception.RegisterNotFound;
 import com.YaNan.frame.plugin.handler.PlugsHandler;
-import com.YaNan.frame.plugin.interfacer.PlugsListener;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.impl.SimpleConfigObject;
+import com.YaNan.frame.utils.StringUtil;
+import com.YaNan.frame.utils.asserts.Assert;
 import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassInfoCache;
 import com.YaNan.frame.utils.resource.AbstractResourceEntry;
-import com.YaNan.frame.utils.resource.PackageScanner;
+import com.YaNan.frame.utils.resource.Resource;
 import com.YaNan.frame.utils.resource.ResourceManager;
-import com.YaNan.frame.utils.resource.ResourceNotFoundException;
-import com.YaNan.frame.utils.resource.ResourceScanner;
 
 /**
- * Plugin factory,initial Plugin Context and manager & register & get Plugin Instance 2018 7-27
- * <p>modify MethodHandler initial when RegisterDescription was initial,cut down proxy execution time 2018 7-12
- * <p>add more than method intercept , update intercept rules ,add intercept handler set</br>
+ * Pluginin factory,initial Pluginin Context and manager & register & get Pluginin Instance 2018 7-27
+ * modify MethodHandler initial when RegisterDefinition was initial,cut down proxy execution time 2018 7-12
+ * add more than method intercept , update intercept rules ,add intercept handler set
+ * 重构组件初始化逻辑 2020 7-14
  * 
  * @author yanan
  *
@@ -50,138 +55,145 @@ public class PlugsFactory {
 	public static enum STREAM_TYPT {
 		CLASS,CONF,COMP,PROPERTIES,XML
 	}
-	//Plugin instance is signal
-	private static volatile PlugsFactory instance;
-	//plugin context is available
-	private boolean available = false;
-	//Plugin context loaded configure file list
-	private List<File> configureLocation;
-	//Plugin context scan package path
-	private String[] packageDirs;
-	//Plugin context plug pools
-	private Map<Class<?>, Plug> plugsContatiner = new HashMap<Class<?>, Plug>();
-	//Plugin context Register pools
-	private Map<Class<?>, RegisterDescription> RegisterContatiner = new HashMap<Class<?>, RegisterDescription>();
-	private volatile List<RegisterDescription> registerList = new LinkedList<RegisterDescription>();
-	private Map<Object, RegisterDescription> objectRegister = new HashMap<Object, RegisterDescription>();
-	private Map<String, RegisterDescription> objectIdRegister = new HashMap<String, RegisterDescription>();
+	private final static String DECODER_ENVIRONMENT_SUFFIX = "-plugin-resource-decoder-";
+	private Environment environment;
+	//Pluginin context loaded configure file list
+	private List<Resource> resourceList;
+	private Set<Resource> resourceLoadedList;
+	//Pluginin context scan package path
+	//Pluginin context plugin pools
+	private Map<Class<?>, Plugin> serviceContatiner = new HashMap<Class<?>, Plugin>();
+	//Pluginin context Register pools
+	private Map<String, RegisterDefinition> registerDefinitionContainer = new HashMap<>();
+	private Set<RegisterDefinition> newRegisterDefinition = new CopyOnWriteArraySet<>();
 	/**
-	 * get plugin context package scan paths
-	 * @return package path 
+	 * 组件全局上下文事件源
 	 */
-	public String[] getScanPath() {
-		return packageDirs == null?null:Arrays.copyOf(packageDirs, packageDirs.length);
+	private PluginEventSource eventSource;
+	/**
+	 * 组件工厂构造器
+	 */
+	private PlugsFactory() {
+		resourceList = new CopyOnWriteArrayList<>();
+		environment = Environment.getEnviroment();
+		eventSource = new PluginEventSource();
+		environment.setVariable(PluginEventSource.class.getName(), eventSource);
+		resourceLoadedList = new CopyOnWriteArraySet<>();
+		addResouceDecoder(StandScanResource.class,new StandScanResourceDecoder());
+		addResouceDecoder(AbstractResourceEntry.class,new StandAbstractResourceDecoder<Resource>());
+		
 	}
+	/**
+	 * 添加资源解析器
+	 * @param resourceClass 资源类
+	 * @param decoder 资源解析器
+	 */
+	public <T extends ResourceDecoder<? extends Resource>> void addResouceDecoder(Class<? extends Resource> resourceClass, T decoder) {
+		environment.setVariable(DECODER_ENVIRONMENT_SUFFIX+resourceClass.getName(), decoder);
+	}
+	/**
+	 * 获取资源解析器
+	 * @param resourceClass 资源类
+	 * @return 资源解析器
+	 */
+	public <T extends ResourceDecoder<? extends Resource>> T getResourceDecoder(Class<? extends Resource> resourceClass) {
+		return environment.getVariable(DECODER_ENVIRONMENT_SUFFIX+resourceClass.getName());
+	}
+	/**
+	 * 移除注册描述
+	 * @param registerClass 注册类
+	 */
 	public void removeRegister(Class<?> registerClass) {
 		synchronized (this) {
-			RegisterDescription registerDescription = getRegisterDescription(registerClass);
-			this.RegisterContatiner.remove(registerClass);
-			this.registerList.remove(registerDescription);
-			Class<?>[] plugClassArray = registerDescription.getPlugs();
-			BeanContainer.getContext().removeBean(registerDescription.getBeanId(), registerClass);
+			RegisterDefinition registerDescription = getRegisterDefinition(registerClass);
+			Class<?>[] plugClassArray = registerDescription.getServices();
 			for(Class<?> plugClass : plugClassArray) {
-				Plug plug = this.plugsContatiner.get(plugClass);
-				if(plug.getDefaultRegisterDescription() != null && plug.getDefaultRegisterDescription().equals(registerDescription))
-					plug.setDefaultRegisterDescription(null);
-				plug.getRegisterList().remove(registerDescription);
+				Plugin plugin = this.serviceContatiner.get(plugClass);
+				plugin.getRegisterList().remove(registerDescription);
 			}
 		}
 	}
 	public void addScanPath(String... paths) {
-		if(paths.length > 0) {
-			if(packageDirs==null) {
-				packageDirs =paths;
-			}else {
-				String[] pathCache = new String[paths.length+packageDirs.length];
-				System.arraycopy(packageDirs, 0, pathCache, 0, packageDirs.length);
-				System.arraycopy(paths, 0, pathCache, packageDirs.length, paths.length);
-				this.packageDirs = pathCache;
-			}
+		for(String path : paths) {
+			addResource(new StandScanResource(path));
 		}
 	}
 	public void addScanPath(Class<?>... clzzs) {
 		addScanPath(ResourceManager.getClassPath(clzzs));
 	}
-	/**
-	 * add a instance as bean
-	 * @param object bean instance
-	 * @param description bean register description info
-	 */
-	public static void addBeanRegister(Object object, RegisterDescription description) {
-		instance.objectRegister.put(object, description);
-		instance.objectIdRegister.put(description.getConfig().getString("id"), description);
-	}
-	/**
-	 * get bean(instance)'s register description info
-	 * @param object bean instance
-	 * @return RegisterDescription info
-	 */
-	public static RegisterDescription getBeanRegister(Object object) {
-		return instance.objectRegister.get(object);
-	}
-	
-	public static RegisterDescription getBeanRegister(String beanId) {
-		return instance.objectIdRegister.get(beanId);
-	}
 
-	public void addRegisterHandlerQueue(RegisterDescription registerDescription) {
-		synchronized (registerList) {
-			if(!registerList.contains(registerDescription))
-				this.registerList.add(registerDescription);
-		}
-//		registerDescription.initHandler();
-		this.initRegisterDescriptionHandler();
-	}
-
-	private void initRegisterDescriptionHandler() {
-		if (this.available && !this.registerList.isEmpty()) {
-			synchronized (registerList) {
-				List<RegisterDescription> register = new ArrayList<RegisterDescription>(this.registerList);
-				this.registerList.clear();
-				register.removeIf(registerDescription ->{
-					registerDescription.initHandler();
-					return true;
-				});
-			}
-		}
-	}
-
-	// registerClass >> registerInstance
-	// Register >> Service array
 	/**
-	 * plugin initial method 
+	 * 初始化组件工厂
 	 * @param resources initial configure file path 
 	 */
 	public static void init(String... resources) {
-		if(instance==null){
-			synchronized (PlugsFactory.class) {
-				if(instance==null){
-					instance = getInstance();
-					if(resources==null||resources.length==0){
-						try {
-							AbstractResourceEntry file = ResourceManager
-									.getResource(ResourceManager.classPath()+"plugin.yc");
-							if(file!=null&&file.size()>0) {
-								instance.configureLocation.add(file.getFile());
-							}
-						}catch (ResourceNotFoundException r) {
-						}
-					}
-				}
-			}
+		PlugsFactory factory = getInstance();
+		if(resources == null || resources.length == 0){
+			resources = new String[]{"classpath:plugin.yc"};
 		}
 		for (String res : resources) {
-			ResourceManager.getResourceList(res).forEach((file -> instance.configureLocation.add(file.getFile())));
+			ResourceManager.getResourceList(res).forEach((resource -> 
+			factory.addResource(resource)));
 		}
-		instance.init0();
+		factory.refresh();
 	}
-
+	public static void init() {
+		PlugsFactory factory = getInstance();
+		String resourceDesc = "classpath:plugin.yc";
+		ResourceManager.getResourceList(resourceDesc).forEach((resource -> 
+		factory.addResource(resource)));
+		factory.refresh();
+	}
+	public static void init(Resource... resources) {
+		PlugsFactory factory = getInstance();
+		for(Resource resource : resources) {
+			 factory.addResource(resource);
+		}
+		factory.refresh();
+	}
+	public RegisterDefinition getRegisterDefinition(Class<?> registerClass) {
+		return getRegisterDefinition(registerClass.getClass().getName());
+	}
+	public RegisterDefinition getRegisterDefinition(String registerId) {
+		RegisterDefinition registerDefinition = registerDefinitionContainer.get(registerId);
+		Assert.isNull(registerDefinition,"the register definition is null for ["+registerId+"]");
+		return registerDefinition;
+	}
+	
+	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
+		String id = registerDefinition.getId();
+		if(StringUtil.isEmpty(id)) {
+			id = registerDefinition.getRegisterClass().getName();
+		}
+		if(this.registerDefinitionContainer.containsKey(id))
+			throw new PluginInitException("the register is exists for ["+id+"]");
+		this.registerDefinitionContainer.put(id, registerDefinition);
+		Class<?>[] serviceClassArray = registerDefinition.getServices();
+		for(Class<?> serviceClass : serviceClassArray) {
+			Plugin plugin = this.serviceContatiner.get(serviceClass);
+			if(plugin == null) {
+				plugin = PluginDefinitionBuilderFactory.getInstance().builderPluginDefinition(serviceClass);
+				this.serviceContatiner.put(serviceClass, plugin);
+			}
+			plugin.addRegister(registerDefinition);
+		}
+		newRegisterDefinition.add(registerDefinition);
+	}
+	private void addResource(Resource resource) {
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_resource,resource));
+		if(!resourceList.contains(resource)) {
+			synchronized (resourceList) {
+				resourceList.add(resource);
+			}
+		}
+	}
 	/**
 	 * get all register pools 
 	 * @return a map container register class with description
 	 */
-	public Map<Class<?>, RegisterDescription> getAllRegister() {
-		return RegisterContatiner;
+	public Map<String, RegisterDefinition> getAllRegisterDefinition() {
+		return registerDefinitionContainer;
 	}
 
 	/**
@@ -189,430 +201,143 @@ public class PlugsFactory {
 	 * 
 	 * @return a map contain all service ,the key is service class
 	 */
-	public Map<Class<?>, Plug> getAllPlugs() {
-		return plugsContatiner;
+	public Map<Class<?>, Plugin> getAllPlugin() {
+		return serviceContatiner;
 	}
 	/**
 	 * get PlugsFactory instance
-	 * <p> the PlugsFacotry type is a sign instance
+	 * <p> the PluginsFacotry type is a sign instance
 	 * @return a instance
 	 */
 	public static PlugsFactory getInstance() {
-		if (instance == null) {
-			synchronized (PlugsFactory.class) {
-				if (instance == null) {
-					synchronized (PlugsFactory.class) {
-						instance = new PlugsFactory();
-						instance.configureLocation = new ArrayList<File>();
-					}
-				}
-			}
-		}
-		return instance;
+		return PlugsFactorysInstanceHolder.instance;
+	}
+	private static class PlugsFactorysInstanceHolder{
+		static private PlugsFactory instance = new PlugsFactory();
 	}
 	/**
-	 * initial plug context ,need use {@link #associate()} to associate all service
-	 * with register when plug context scan all class
+	 * initial plugin context ,need use {@link #associate()} to associate all service
+	 * with register when plugin context scan all class
 	 * 
 	 */
-	public void init0() {
-		PlugsInitLock.tryLock();
-		this.addPlugsByDefault(PlugsListener.class);// 添加两个Plugin自身支持需要的组件接口
-													// PlugsListener
-													// 用于组件初始化完成时的监听
-		this.addPlugsByDefault(InvokeHandler.class);// InvokeHandler用于提供方法拦截接口的支持
+	public void refresh() {
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.refresh,this));
 		// 判断资源文件是否存在,如果无资源文件，直接扫描所有的plugs文件
-		if (this.configureLocation.isEmpty()) {
-			AbstractResourceEntry abstractResourceEntry = null;
-			// 获取基础的配置文件
-			try {
-				abstractResourceEntry =ResourceManager.getResource("classpath:plugin.yc");
-			}catch(Exception e) {
-			}
+		if (this.resourceList.isEmpty()) {
 			// 如果文件不存在，扫描所有的文件
-			if (abstractResourceEntry == null) {
-				if(packageDirs != null && packageDirs.length>0) {
-					for(String dir : packageDirs) {
-						try {
-							abstractResourceEntry =ResourceManager.getResource((dir.endsWith("/")?dir:dir+"/")+"plugin.yc");
-						}catch(Exception e) {
-						}
-						if(abstractResourceEntry != null) {
-							break;
-						}
-					}
-				}
-				if(abstractResourceEntry == null) {
-					ResourceScanner rs = new ResourceScanner(ResourceManager.classPath());
-					rs.filter("**.yc");
-					rs.scanner((resource) -> addPlugs(resource));
-				} else {// 否则加入文件
-					addPlugs(abstractResourceEntry);
-				}
-			} else {// 否则加入文件
-				addPlugs(abstractResourceEntry);
-			}
-		} else {
-			for (File file : this.configureLocation) {
-				addPlugs(file);
-			}
+			throw new PluginInitException("no any resource");
+		} 
+		for (Resource resource : this.resourceList) {
+			if(resourceLoadedList.contains(resource))
+				continue;
+			ResourceDecoder<Resource> resourceDecoder = this.getResourceDecoder(resource.getClass());
+			resourceDecoder.decodeResource(this, resource);
+			resourceLoadedList.add(resource);
 		}
-		Config conf = ConfigContext.getInstance().getGlobalConfig();
-		conf.allowKeyNull();
-		if(conf!=null) {
-			conf = conf.getConfig("Plugin");
-		}
-		if (conf == null) {
-			if(this.packageDirs==null) {
-				this.addScanPath(".");
-			}
-		} else {
-			conf.allowKeyNull();
-			if (conf.hasPath("ScanPackage")) {
-				if (conf.isList("ScanPackage")) {
-					List<String> dirs = conf.getStringList("ScanPackage");
-					if (dirs.size() > 1) {
-						for (int i = 0; i < dirs.size() - 1; i++) {
-							for (int j = i + 1; j < dirs.size(); j++) {
-								if (dirs.get(i) != null && dirs.get(j) != null) {
-									if (dirs.get(i).startsWith(dirs.get(j))) {
-										dirs.set(i, null);
-									} else if (dirs.get(j).startsWith(dirs.get(i))) {
-										dirs.set(j, null);
-									}
-								}
-							}
-						}
-					}
-					packageDirs = dirs.toArray(new String[dirs.size()]);
-				} else {
-					String confDirs = conf.getString("ScanPackage", ".");
-					confDirs = confDirs.replace("*", "");
-					String[] dirs = confDirs.split(",");
-					checkDir(dirs);
-					this.addScanPath(dirs);
-				}
-			} else {
-				if(this.packageDirs==null) {
-					this.addScanPath(".");
-				}
-			}
-			if (conf.hasPath("includes")) {
-				if (conf.isList("includes")) {
-					List<String> dirs = conf.getStringList("includes");
-					dirs.forEach((dir) -> {
-						List<AbstractResourceEntry> resource = ResourceManager.getResourceList(dir);
-						resource.forEach((abstractResourceEntry) -> addPlugs(abstractResourceEntry));
-					});
-				} else {
-					String confDirs = conf.getString("includes");
-					String[] dirs = confDirs.split(",");
-					for (String dir : dirs) {
-						List<AbstractResourceEntry> resource = ResourceManager.getResourceList(dir);
-						resource.forEach((abstractResourceEntry) -> addPlugs(abstractResourceEntry));
-					}
-				}
-			}
-		}
-
-		// 扫描类
-		PackageScanner scanner = new PackageScanner();
-		scanner.setScanPath(packageDirs);
-		scanner.doScanner((cls) -> addPlugs(cls));
-		this.associate();
-		available = true;
-		this.initRegisterDescriptionHandler();
-		this.inited();
-		PlugsInitLock.unLock();
-	}
-	private void checkDir(String[] dirs) {
-		if (dirs.length > 1) {
-			for (int i = 0; i < dirs.length - 1; i++) {
-				for (int j = i + 1; j < dirs.length; j++) {
-					if (dirs[i] != null && dirs[j] != null) {
-						if (dirs[i].startsWith(dirs[j])) {
-							dirs[i] = null;
-						} else if (dirs[j].startsWith(dirs[i])) {
-							dirs[j] = null;
-						}
-					}
-				}
-			}
-		}
-	}
-	public void rebuild() {
-		PlugsInitLock.checkLock();
-		PlugsInitLock.tryLock();
-		this.associate();
-		this.initRegisterDescriptionHandler();
-		this.inited();
-		PlugsInitLock.unLock();
-	}
-	private void inited() {
-		List<PlugsListener> listeners = PlugsFactory.getPlugsInstanceList(PlugsListener.class);
-		listeners.forEach((listen) -> listen.execute(this));
-	}
-
-	/**
-	 * 建立个组件和注册器之间的关联
-	 */
-	public void associate() {
-		RegisterContatiner.values().forEach((registerDescription) -> {
-			Class<?>[] plugs = registerDescription.getPlugs();
-			if (plugs != null) {
-				for (Class<?> plugInterface : plugs) {
-					Plug plug = this.plugsContatiner.get(plugInterface);
-					if (plug == null) {
-						this.addPlugsService(plugInterface);
-						plug = this.plugsContatiner.get(plugInterface);
-						if(plug == null) {
-							throw new PluginInitException(
-									new Exception("register " + registerDescription.getRegisterClass().getName()
-											+ " implements " + plugInterface.getName() + " not exists "));
-						}
-					}
-					plug.addRegister(registerDescription);
-				}
-			}
+		this.newRegisterDefinition.removeIf(registerDefinition->{
+			registerDefinitionInit(registerDefinition);
+			return true;
 		});
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
-
+	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
+		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
+		if(StringUtil.isNotEmpty(registerDefinition.getId())) {
+			PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getRegisterClass());
+		}
+	}
 	/**
 	 * 
-	 * @param plugClass
-	 *            组件类 即接口
+	 * @param plugClass 组件类 即接口
+	 * @return Plugin实例
+	 */
+	public static Plugin getPlugin(Class<?> serviceClass) {
+		return getInstance().serviceContatiner.get(serviceClass);
+	}
+	public synchronized void addPlugininDefinition(Plugin plugin) {
+		this.serviceContatiner.put(plugin.getClass(), plugin);
+	}
+	public void clear() {
+		this.registerDefinitionContainer.clear();
+		this.serviceContatiner.clear();
+	}
+	
+	
+	public List<RegisterDefinition> getRegisterList(Class<?> serviceClass) {
+		Assert.isNull(serviceClass);
+		Plugin plugin = serviceContatiner.get(serviceClass);
+		if (plugin == null) {
+			throw new PluginRuntimeException("could found plugin for " + serviceClass.getName());
+		}
+		return plugin.getRegisterDefinitionList();
+	}
+	public static RegisterDefinition getRegisterDefinitionAllowNull(Class<?> serviceClass) {
+		RegisterDefinition registerDefinition = null;
+		Plugin plugin = getPlugin(serviceClass);
+		if (plugin != null)
+			registerDefinition = plugin.getDefaultRegisterDefinition();
+		return registerDefinition;
+	}
+	public RegisterDefinition getRegisterDefinition(Class<?> serviceClass, String attribute, boolean strict){
+		RegisterDefinition registerDescription = null;
+		Plugin plugin = getPlugin(serviceClass);
+		if (plugin == null) 
+			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+		if (strict) {
+			registerDescription = plugin.getRegisterDefinitionByAttributeStrict(attribute);
+		}else {
+			registerDescription = plugin.getRegisterDefinitionByAttribute(attribute);
+		}
+		return registerDescription;
+	}
+	public static <T> RegisterDefinition getRegisterDefinition(Class<T> serviceClass, Class<?> insClass){
+		RegisterDefinition registerDescription = null;
+		if (serviceClass.isInterface()) {
+			Plugin plugin = getPlugin(serviceClass);
+			if (plugin == null) {
+				throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+			}
+			registerDescription = plugin.getRegisterDefinitionByInsClass(insClass);
+		} else {
+			registerDescription = getInstance().getRegisterDefinition(serviceClass);
+		}
+		return registerDescription;
+	}
+	
+
+	@SuppressWarnings("unchecked")
+	public static <T> T getPluginsInstance(String id) {
+		// 获取一个注册描述
+		RegisterDefinition registerDefinition = getInstance().getRegisterDefinition(id);
+		if (registerDefinition == null) {
+			throw new RegisterNotFound("could not found any register for bean id " + id);
+		}
+		getInstance().checkRegisterDefinition(registerDefinition);
+		return (T) PluginInstanceFactory.getRegisterInstance(registerDefinition,registerDefinition.getRegisterClass());
+	}
+	/**
+	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
+	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
+	 * 
+	 * @param serviceClass
+	 * @param args
 	 * @return
 	 */
-	public static Plug getPlug(Class<?> plugClass) {
-		return instance.plugsContatiner.get(plugClass);
-	}
-	/**
-	 * 添加组件 当通过扫描comps文件与plugs文件时，需要通过此方法将组件添加到容器中
-	 * 
-	 * @param file
-	 *            组件描述文件
-	 */
-	public void addPlugs(AbstractResourceEntry resourceEntry) {
-		InputStream is = null;
-		InputStreamReader reader = null;
-		try {
-			is = resourceEntry.getInputStream();
-			reader = new InputStreamReader(is);
-			Config config = ConfigFactory.parseReader(reader);
-			ConfigContext.getInstance().mergeConfig(config);
-			config.allowKeyNull(true);
-			List<? extends Object> list = config.getValueListUnwrapper("plugins");
-			addPlugsByConfigList(list);
-		} catch (Exception e) {
-			throw new PluginRuntimeException("failed to add plug at file " + resourceEntry.getPath(), e);
-		}finally {
-			try {
-				if(reader != null) {
-					reader.close();
-				}
-				if(is != null) {
-					is.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
+	public static <T> T getPluginsInstance(Class<T> serviceClass, Object... args) {
+		// 获取一个注册描述
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
+		if (registerDescription == null) {
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
 		}
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
-	/**
-	 * 添加组件 当通过扫描comps文件与plugs文件时，需要通过此方法将组件添加到容器中
-	 * 
-	 * @param file
-	 *            组件描述文件
-	 */
-	public void addPlugs(File file) {
-		String fileName = file.getName();
-		String type = fileName.substring(fileName.lastIndexOf("."));
-		try {
-			if (type.equals(".plugs")) {
-				PlugsDescription plugsDescription = new PlugsDescription(file);
-				Plug plug = new Plug(plugsDescription);
-				this.plugsContatiner.put(plugsDescription.getPlugClass(), plug);
-			}
-			if (type.equals(".comps")) {
-				RegisterDescription registerDescription = new RegisterDescription(file);
-				RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
-			}
-			if (type.equals(".yc")) {
-				Config config = ConfigFactory.parseFile(file);
-				ConfigContext.getInstance().mergeConfig(config);
-				config.allowKeyNull(true);
-				List<? extends Object> list = config.getValueListUnwrapper("plugins");
-				addPlugsByConfigList(list);
-			}
-		} catch (Exception e) {
-			throw new PluginRuntimeException("failed to add plug at file " + file, e);
-		}
-	}
-	/**
-	 * 添加组件通过配置列表
-	 * @param list
-	 */
-	public void addPlugsByConfigList(List<? extends Object> list) {
-		for (Object conf : list) {
-			addPlugByConfig(conf);
-		}
-	}
-	/**
-	 * 添加组件通过配置
-	 * @param conf
-	 */
-	public void addPlugByConfig(Object conf) {
-		if (conf == null)
-			throw new PluginInitException("conf is null");
-		try {
-			if (conf.getClass().equals(String.class)) {
-				Class<?> clzz = Class.forName((String) conf);
-				if (clzz.isInterface()) {
-					this.addPlugsService(clzz);
-				} else {
-					this.addPlugsAuto(clzz);
-				}
-			} else if (conf.getClass().equals(SimpleConfigObject.class)) {
-				RegisterDescription registerDescription = new RegisterDescription(
-						((SimpleConfigObject) conf).toConfig());
-				RegisterContatiner.put(registerDescription.getRegisterClass(), registerDescription);
-			}
-		} catch (Throwable e) {
-			throw new PluginInitException("failed to add plug at conf  " + conf, e);
-		}
-	}
-	/**
-	 * add InputStream as plug
-	 * 
-	 * @param stream data stream
-	 * @param type data type
-	 * @param className if is class ,type class name ,other null.
-	 */
-	public void addPlugs(InputStream stream,STREAM_TYPT type,String className) {
-		try {
-			if(!isAvailable()) {
-				this.init0();
-			}
-			if (type==STREAM_TYPT.CLASS) {
-				//read bytes and close stream
-				byte[] temp = new byte[stream.available()];
-				stream.read(temp,0,temp.length);
-				stream.close();
-				//load class
-				Class<?> clzz =new com.YaNan.frame.utils.reflect.AppClassLoader().loadClass(className,temp);
-				//Register
-				PlugsDescription plugsDescription = new PlugsDescription(clzz);
-				Plug plug = new Plug(plugsDescription);
-				this.plugsContatiner.put(plugsDescription.getPlugClass(), plug);
-			}
-			if (type==STREAM_TYPT.CONF) {
-				InputStreamReader reader = new InputStreamReader(stream);
-				Config config = ConfigFactory.parseReader(reader);
-				ConfigContext.getInstance().mergeConfig(config);
-				config.allowKeyNull(true);
-				List<? extends Object> list = config.getValueListUnwrapper("plugins");
-				addPlugsByConfigList(list);
-			}
-		} catch (Exception e) {
-			throw new PluginRuntimeException("parse conf failed", e);
-		}finally{
-			rebuild();
-		}
-	}
-	/**
-	 * 添加组件 当通过扫描类文件（注解）方式时，需要通过此方法将组件添加到容器中
-	 * 
-	 * @param cls
-	 */
-	public void addPlugs(Class<?> cls) {
-		Service service = cls.getAnnotation(Service.class);
-		Register register = cls.getAnnotation(Register.class);
-		if (service != null) {// 如果是Service
-			PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-			Plug plug = new Plug(plugsDescrption);
-			this.plugsContatiner.put(cls, plug);
-		}
-		if (register != null) {
-			try {
-				RegisterDescription registerDescription = new RegisterDescription(register, cls);
-				RegisterContatiner.put(cls, registerDescription);
-				this.associate();
-			} catch (Throwable e) {
-				throw e;
-			}
-		}
-	}
-
-	public void addPlugsAuto(Class<?> cls) {
-		Service service = cls.getAnnotation(Service.class);
-		Register register = cls.getAnnotation(Register.class);
-		if (service != null || register != null) {
-			if (service != null) {// 如果是Service
-				PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-				Plug plug = new Plug(plugsDescrption);
-				this.plugsContatiner.put(cls, plug);
-			}
-			if (register != null) {
-				try {
-					RegisterDescription registerDescription = new RegisterDescription(register, cls);
-					RegisterContatiner.put(cls, registerDescription);
-				} catch (Throwable e) {
-					throw e;
-				}
-			}
-		} else if (cls.isInterface()) {
-			PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-			Plug plug = new Plug(plugsDescrption);
-			this.plugsContatiner.put(cls, plug);
-		} else {
-			try {
-				RegisterDescription registerDescription = new RegisterDescription(cls);
-				RegisterContatiner.put(cls, registerDescription);
-			} catch (Throwable e) {
-				throw e;
-			}
-		}
-
-	}
-
-	public void addPlugsService(Class<?> cls) {
-		Service service = cls.getAnnotation(Service.class);
-		PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-		Plug plug = new Plug(plugsDescrption);
-		this.plugsContatiner.put(cls, plug);
-	}
-
-	public void addPlugsRegister(Class<?> cls) {
-		Register register = cls.getAnnotation(Register.class);
-		try {
-			RegisterDescription registerDescription;
-			if(register == null) {
-				registerDescription = new RegisterDescription(cls);
-			}else {
-				registerDescription = new RegisterDescription(register, cls);
-			}
-			RegisterContatiner.put(cls, registerDescription);
-		} catch (Throwable e) {
-			throw e;
-		}
-	}
-
-	/**
-	 * 通过默认的方式添加组件
-	 * 
-	 * @param plugClass
-	 */
-	public void addPlugsByDefault(Class<?> plugClass) {
-		PlugsDescription plugsDescrption = new PlugsDescription(plugClass);
-		Plug plug = new Plug(plugsDescrption);
-		this.plugsContatiner.put(plugClass, plug);
-	}
-
+	
 	/**
 	 * 获取组件实例，当组件不存在时返回传入的组件实现类的简单组件服务 如果获取组件时服务未完全初始化，则不会对其进行拦截
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 *            组件接口类
 	 * @param defaultClass
 	 *            默认实现类
@@ -620,13 +345,13 @@ public class PlugsFactory {
 	 *            组件参数
 	 * @return 代理对象
 	 */
-	public static <T> T getPlugsInstanceWithDefault(Class<T> impl, Class<? extends T> defaultClass, Object... args) {
+	public static <T> T getPluginsInstanceWithDefault(Class<T> serviceClass, Class<? extends T> defaultClass, Object... args) {
 		try {
-			RegisterDescription registerDescription = getRegisterDescrptionAllowNull(impl);
+			RegisterDefinition registerDescription = getRegisterDefinitionAllowNull(serviceClass);
 			if (registerDescription == null) {
-				registerDescription = getRegisterDescrption(defaultClass);
+				registerDescription = getInstance().getRegisterDefinition(defaultClass);
 			}
-			return registerDescription.getRegisterInstance(impl, args);// instance.getRegisterInstance(impl,registerDescription,args);
+			return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);// instance.getRegisterInstance(serviceClass,registerDescription,args);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -634,165 +359,33 @@ public class PlugsFactory {
 	}
 
 	/**
-	 * 检测服务是否可用
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean checkAvaliable(){
-		if (instance == null) {
-			PlugsFactory.init();
-			if (instance == null) {
-				throw new PluginRuntimeException("YaNan.plugs service not initd");
-			}
-		}
-		if (!instance.isAvailable()) {
-			instance.init0();
-		}
-		if (!instance.isAvailable()) {
-			throw new PluginRuntimeException(
-					"plugs unavailable ! this error may arise because a static field uses the PlugsFactory's proxy");
-		}
-		return instance != null && instance.isAvailable();
-	}
-
-	/**
-	 * 检测服务是否可用
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean checkAvaliableNE() {
-		return instance != null && instance.isAvailable();
-	}
-
-	public static List<RegisterDescription> getRegisterList(Class<?> plugsClass) {
-		Plug plug = instance.plugsContatiner.get(plugsClass);
-		if (plug == null) {
-			throw new PluginRuntimeException("could found plug for " + plugsClass.getName());
-		}
-		return plug.getRegisterDescriptionList();
-	}
-
-	/**
-	 * 获取注册描述器
-	 * 
-	 * @param impl
-	 * @param b
-	 * @param attribute
-	 * @param attribute
-	 * @return
-	 * @throws Exception
-	 */
-	public static RegisterDescription getRegisterDescrption(Class<?> impl){
-		RegisterDescription registerDescription = null;
-		checkAvaliable();
-		if (impl.isInterface() || impl.getAnnotation(Service.class)!= null) {
-			Plug plug = getPlug(impl);
-			if (plug == null) {
-				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
-			}
-			registerDescription = plug.getDefaultRegisterDescription();
-		} else {
-			registerDescription = instance.getRegisterDescription(impl);
-		}
-		return registerDescription;
-	}
-
-	public static RegisterDescription getRegisterDescrptionAllowNull(Class<?> impl) {
-		RegisterDescription registerDescription = null;
-		try {
-			if (impl.isInterface()) {
-				if (checkAvaliableNE()) {
-					Plug plug = getPlug(impl);
-					if (plug != null) {
-						registerDescription = plug.getDefaultRegisterDescription();
-					}
-				}
-			} else {
-				registerDescription = instance.getRegisterDescription(impl);
-			}
-		} catch (Exception e) {
-
-		}
-		return registerDescription;
-	}
-
-	public static RegisterDescription getRegisterDescrption(Class<?> impl, String attribute, boolean strict){
-		RegisterDescription registerDescription = null;
-		if (impl.isInterface() && checkAvaliable()) {
-			Plug plug = getPlug(impl);
-			if (plug == null) {
-				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
-			}
-			if (strict) {
-				registerDescription = plug.getRegisterDescriptionByAttributeStrict(attribute);
-			}else {
-				registerDescription = plug.getRegisterDescriptionByAttribute(attribute);
-			}
-		} else {
-			registerDescription = instance.getRegisterDescription(impl);
-		}
-		return registerDescription;
-	}
-
-	public static <T> RegisterDescription getRegisterDescrption(Class<T> impl, Class<?> insClass){
-		RegisterDescription registerDescription = null;
-		if (impl.isInterface() && checkAvaliable()) {
-			Plug plug = getPlug(impl);
-			if (plug == null) {
-				throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
-			}
-			registerDescription = plug.getRegisterDescriptionByInsClass(insClass);
-		} else {
-			registerDescription = instance.getRegisterDescription(impl);
-		}
-		return registerDescription;
-	}
-
-	/**
-	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
-	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
-	 * 
-	 * @param impl
-	 * @param args
-	 * @return
-	 */
-	public static <T> T getPlugsInstance(Class<T> impl, Object... args) {
-		// 获取一个注册描述
-		RegisterDescription registerDescription = getRegisterDescrption(impl);
-		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
-		}
-		return registerDescription.getRegisterInstance(impl, args);
-	}
-
-	/**
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件，当组件实例为空时，返回null，并不抛出异常
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceAllowNull(Class<T> impl, Object... args) {
+	public static <T> T getPluginsInstanceAllowNull(Class<T> serviceClass, Object... args) {
 		// 获取一个注册描述
-		RegisterDescription registerDescription = getRegisterDescrption(impl);
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 		if (registerDescription != null) {
-			return registerDescription.getRegisterInstance(impl, args);
+			getInstance().checkRegisterDefinition(registerDescription);
+			return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 		}
 		return null;
 	}
 
-	public static <T> T getPlugsInstanceNew(Class<T> impl, Object... args) {
+	public static <T> T getPluginsInstanceNew(Class<T> serviceClass, Object... args) {
 		try {
 			// 获取一个注册描述
-			RegisterDescription registerDescription = getRegisterDescrption(impl);
+			RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 			if (registerDescription == null)
-				throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
-			return registerDescription.getRegisterNewInstance(impl, args);
+				throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+			getInstance().checkRegisterDefinition(registerDescription);
+			return PluginInstanceFactory.getRegisterNewInstance(registerDescription,serviceClass, args,null);
 		} catch (Exception e) {
-			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + serviceClass, e);
 		}
 	}
 
@@ -800,138 +393,119 @@ public class PlugsFactory {
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceByInsClass(Class<T> impl, Class<?> insClass, Object... args) {
-		RegisterDescription registerDescription = getRegisterDescrption(impl, insClass);
+	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass, Object... args) {
+		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
 		if (registerDescription == null)
-			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
-		return registerDescription.getRegisterInstance(impl, args);
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
 	/**
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceByInsClass(Class<T> impl, Class<?> insClass,Class<?>[] types, Object... args) {
-		RegisterDescription registerDescription = getRegisterDescrption(impl, insClass);
+	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass,Class<?>[] types, Object... args) {
+		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
 		if (registerDescription == null)
-			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
-		return registerDescription.getRegisterInstanceByParamType(impl,types, args);
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass,types, args);
 	}
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，返回一个默认组件，因此这是一种不严谨的组件获取方式，如果需要使用严谨模式（当 匹配值不通过时，返回null），需要使用方法
-	 * {@link #getPlugsInstanceByAttributeStrict()}
+	 * {@link #getPluginsInstanceByAttributeStrict()}
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceByAttribute(Class<T> impl, String attribute, Object... args) {
-		RegisterDescription registerDescription = getRegisterDescrption(impl, attribute, false);
+	public static <T> T getPluginsInstanceByAttribute(Class<T> serviceClass, String attribute, Object... args) {
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, false);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register for attr ["+attribute+"]");
 		}
-		return registerDescription.getRegisterInstance(impl, args);// instance.getRegisterInstance(impl,registerDescription,args);
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);// instance.getRegisterInstance(serviceClass,registerDescription,args);
 	}
-
+//
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，会返回null，因此这是一种不严谨的组件获取方式，如果想当匹配不通过时，返回一个 默认组件，需要使用方法
-	 * {@link #getPlugsInstanceByAttribute())
+	 * {@link #getPluginsInstanceByAttribute())
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> T getPlugsInstanceByAttributeStrict(Class<T> impl, String attribute, Object... args) {
-			RegisterDescription registerDescription = getRegisterDescrption(impl, attribute, true);
-			if (registerDescription != null) {
-				return registerDescription.getRegisterInstance(impl, args);// instance.getRegisterInstance(impl,registerDescription,args);
-			}
-		return null;
+	public static <T> T getPluginsInstanceByAttributeStrict(Class<T> serviceClass, String attribute, Object... args) {
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, true);
+		if (registerDescription == null) {
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register for attr ["+attribute+"]");
+		}
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
-
+	private void checkRegisterDefinition(RegisterDefinition registerDefinition) {
+		if(this.newRegisterDefinition.contains(registerDefinition)) {
+			registerDefinitionInit(registerDefinition);
+		}
+	}
+	
+	public <T> Plugin getPluginNonNull(Class<T> serviceClass) {
+		Plugin plugin = getPlugin(serviceClass);
+		if (plugin == null)
+			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+		return plugin;
+	}
 	/**
 	 * 获取组件的实例列表 返回的list按其优先级排序 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> List<T> getPlugsInstanceListByAttribute(Class<T> impl, String attribute, Object... args) {
+	public static <T> List<T> getPluginsInstanceListByAttribute(Class<T> serviceClass, String attribute, Object... args) {
 		try {
-			List<RegisterDescription> registerDescriptionList = getPlugNonNull(impl).getRegisterDescriptionListByAttribute(attribute);
-			List<T> objectList = new ArrayList<T>();
-			registerDescriptionList.forEach((entry)->objectList.add(entry.getRegisterInstance(impl, args)));
-			return objectList;
+			List<RegisterDefinition> registerDescriptionList = getInstance().getPluginNonNull(serviceClass).getRegisterDefinitionListByAttribute(attribute);
+			return getPluginsInstanceList(serviceClass,registerDescriptionList, args);
 		} catch (Exception e) {
-			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + impl, e);
+			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + serviceClass, e);
 		}
 	}
-	public static void checkAvailable() {
-		if (instance == null)
-			throw new PluginRuntimeException("YaNan.plugs service not initd");
-		if (!instance.isAvailable()) 
-			throw new PluginRuntimeException(
-					"plugs unavailable ! this error may arise because a static field uses the PlugsFactory's proxy");
-	}
-	public static <T> Plug getPlugNonNull(Class<T> impl) {
-		checkAvailable();
-		Plug plug = getPlug(impl);
-		if (plug == null)
-			throw new PlugNotFound("service interface " + impl.getName() + " could not found or not be regist");
-		return plug;
+	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass,List<RegisterDefinition> registerDescriptionList,Object... args){
+		List<T> objectList = new ArrayList<T>();
+		registerDescriptionList.forEach(registerDescription->{
+			getInstance().checkRegisterDefinition(registerDescription);
+			objectList.add(PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args));
+		});
+		return objectList;
 	}
 	/**
 	 * 获取组件的实例列表 返回的list按其优先级排序 优先级数值越低，优先级越高
 	 * 
-	 * @param impl
+	 * @param serviceClass
 	 * @param args
 	 * @return
 	 */
-	public static <T> List<T> getPlugsInstanceList(Class<T> impl, Object... args) {
-			List<RegisterDescription> registerDescriptionList = getPlugNonNull(impl)
-					.getRegisterDescriptionList();
-			List<T> objectList = new ArrayList<T>();
-			registerDescriptionList.forEach((entry)->objectList.add(entry.getRegisterInstance(impl, args)));
-			return objectList;
+	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass, Object... args) {
+			List<RegisterDefinition> registerDescriptionList = getInstance().getPluginNonNull(serviceClass)
+					.getRegisterDefinitionList();
+			return getPluginsInstanceList(serviceClass,registerDescriptionList, args);
 	}
 
-	/**
-	 * 通过实例类返回实例描述信息
-	 * 
-	 * @param targetCls
-	 * @return
-	 */
-	public RegisterDescription getRegisterDescription(Class<?> targetCls) {
-		if (this.RegisterContatiner.get(targetCls) == null) {
-			RegisterDescription registerDescription = new RegisterDescription(targetCls);
-			RegisterContatiner.put(targetCls, registerDescription);
-		}
-		return this.RegisterContatiner.get(targetCls);
-	}
+	
 
-	public void clear() {
-		this.RegisterContatiner.clear();
-		this.plugsContatiner.clear();
-	}
-
-	public boolean isAvailable() {
-		return available;
-	}
-
-	public void setAvailable(boolean available) {
-		this.available = available;
-	}
 	public static Map<Class<Annotation>, List<Annotation>> getAnnotationGroup(Annotation[] annotations,List<Class<Annotation>> annoTypes){
 		if (annotations.length == 0) {
 			return null;
@@ -1023,12 +597,12 @@ public class PlugsFactory {
 	}
 	
 	/**
-	 * 获取代理对象的PlugsHandler对象
+	 * 获取代理对象的PluginsHandler对象
 	 * 
 	 * @param proxyInstance
 	 * @return
 	 */
-	public static PlugsHandler getPlugsHandler(Object proxyInstance) {
+	public static PlugsHandler getPluginsHandler(Object proxyInstance) {
 		Field field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getAnyField("h");
 		if (field == null) {
 			field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getDeclaredField("CGLIB$CALLBACK_0");
@@ -1040,47 +614,26 @@ public class PlugsFactory {
 		try {
 			plugsHandler = AppClassLoader.getFieldValue(field, proxyInstance);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new PluginRuntimeException("failed to get instance's PlugsHandler", e);
+			throw new PluginInitException("failed to get instance's PluginsHandler", e);
 		}
 		return plugsHandler;
 	}
-
-	public static <T> T getBean(String beanId) {
-		T t = BeanContainer.getContext().getBean(beanId);
-		if (t == null) {
-			throw new PluginRuntimeException("colud not find bean defined id is \"" + beanId + "\"");
-		}
-		return t;
+//
+	public static <T> T getPluginsInstanceNewByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
+		RegisterDefinition registerDescription =  getRegisterDefinitionNoneNull(serviceClass);
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterNewInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
-
-	public static <T> T getBean(Class<T> beanClass) {
-		T bean = BeanContainer.getContext().getBean(beanClass);
-		if (bean == null) {
-			bean = getPlugsInstance(beanClass);
-		}
-		if (bean == null) {
-			throw new PluginRuntimeException("colud not find bean defined class is \"" + beanClass.getName() + "\"");
-		}
-		return bean;
-	}
-
-	public static <T> T getPlugsInstanceNewByParamType(Class<T> impl, Class<?>[] parameterType, Object... arguments) {
-		return getRegisterDescrptionNoneNull(impl)
-				.getRegisterNewInstanceByParamType(impl, parameterType, arguments);
-	}
-	public static<T> RegisterDescription getRegisterDescrptionNoneNull(Class<T> impl){
-		RegisterDescription registerDescription = getRegisterDescrption(impl);
+	public static<T> RegisterDefinition getRegisterDefinitionNoneNull(Class<T> serviceClass){
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + impl.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
 		}
 		return registerDescription;
 	}
-	public static <T> T getPlugsInstanceByParamType(Class<T> impl, Class<?>[] parameterType, Object... arguments) {
-			return getRegisterDescrptionNoneNull(impl)
-					.getRegisterInstanceByParamType(impl, parameterType, arguments);
-	}
-
-	public List<File> getConfigureLocation() {
-		return configureLocation;
+	public static <T> T getPluginsInstanceByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
+		RegisterDefinition registerDescription = getRegisterDefinitionNoneNull(serviceClass);
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
 }

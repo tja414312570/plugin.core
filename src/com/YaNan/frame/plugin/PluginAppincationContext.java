@@ -15,6 +15,8 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.YaNan.frame.plugin.exception.PluginInitException;
+
 
 /**
  * Web容器的Plug组件的初始化
@@ -60,7 +62,7 @@ public class PluginAppincationContext implements ServletContextListener {
 			log.debug("PLUY             PLUGINPLUGO   PLUGINPLUGINU        PLUGINPLUGIG    PLUGINPLUGIE  PLUG         PLUG");
 			log.debug("");
 			PlugsFactory.init(locations);
-			contextListernerList = PlugsFactory.getPlugsInstanceList(ServletContextListener.class);
+			contextListernerList = PlugsFactory.getPluginsInstanceList(ServletContextListener.class);
 			log.debug("Context Init Plug size:"+contextListernerList.size());
 			for(ServletContextListener contenxtInitListener :contextListernerList){
 				log.debug("Plug Instance:"+contenxtInitListener);

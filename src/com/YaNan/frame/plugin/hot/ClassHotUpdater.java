@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import com.YaNan.frame.plugin.ConfigContext;
 import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Service;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
 import com.YaNan.frame.plugin.interfacer.PlugsListener;
 import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
@@ -111,7 +111,7 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 								Class<?> nc = loadClass(loader, className, clzzName, content);
 								if (!checkClass(nc))
 									return;
-								RegisterDescription registerDescription = PlugsFactory.getRegisterDescrption(clzz);
+								RegisterDefinition registerDescription = PlugsFactory.getRegisterDescrption(clzz);
 								if (registerDescription != null) {
 									if (registerDescription.getLinkRegister() != null)
 										clzz = registerDescription.getLinkRegister().getRegisterClass();

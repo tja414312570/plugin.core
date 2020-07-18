@@ -6,10 +6,10 @@ import java.lang.reflect.Constructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.YaNan.frame.plugin.PluginRuntimeException;
-import com.YaNan.frame.plugin.RegisterDescription;
 import com.YaNan.frame.plugin.annotations.Register;
 import com.YaNan.frame.plugin.annotations.Support;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.YaNan.frame.plugin.exception.PluginRuntimeException;
 import com.YaNan.frame.plugin.handler.InstanceHandler;
 import com.YaNan.frame.plugin.handler.InvokeHandler;
 import com.YaNan.frame.plugin.handler.MethodHandler;
@@ -51,21 +51,21 @@ public class ErrorPlugsHandler implements InvokeHandler,InstanceHandler{
 	}
 
 	@Override
-	public void before(RegisterDescription registerDescription, Class<?> plugClass, Constructor<?> constructor,
+	public void before(RegisterDefinition registerDefinition, Class<?> plugClass, Constructor<?> constructor,
 			Object... args) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void after(RegisterDescription registerDescription, Class<?> plugClass, Constructor<?> constructor,
+	public void after(RegisterDefinition registerDefinition, Class<?> plugClass, Constructor<?> constructor,
 			Object proxyObject, Object... args) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void exception(RegisterDescription registerDescription, Class<?> plug, Constructor<?> constructor,
+	public void exception(RegisterDefinition registerDefinition, Class<?> plug, Constructor<?> constructor,
 			Object proxyObject, PluginRuntimeException throwable, Object... args) {
 		Error error = constructor.getAnnotation(Error.class);
 		if(error==null)

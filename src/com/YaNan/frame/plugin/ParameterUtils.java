@@ -3,21 +3,12 @@ package com.YaNan.frame.plugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.Map.Entry;
-
 import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.plugin.beans.BeanContainer;
+import com.YaNan.frame.plugin.exception.PluginInitException;
 import com.YaNan.frame.utils.asserts.Assert;
 import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.YaNan.frame.utils.reflect.cache.ClassHelper;
-import com.YaNan.frame.utils.resource.AbstractResourceEntry;
-import com.YaNan.frame.utils.resource.ResourceManager;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigValue;
-import com.typesafe.config.ConfigValueType;
 
 public class ParameterUtils {
 	public static class MethodDesc {
@@ -108,6 +99,7 @@ public class ParameterUtils {
 		}
 		return constructor;
 	}
+
 	/**
 	 * 获取一个有效的构造器
 	 * 
@@ -140,6 +132,32 @@ public class ParameterUtils {
 		return constructor;
 	}
 	/**
+	 * 获取一个有效的构造器
+	 * @param targetClass
+	 * @param argsTypes
+	 * @return
+	 */
+	public static Constructor<?> getEffectiveConstructor(Class<?> targetClass, Class<?>[] argsTypes) {
+		Constructor<?>[] constructors = targetClass.getConstructors();
+		for(Constructor<?> constructor : constructors) {
+			if(constructor.getParameterCount() == argsTypes.length 
+					&& isEffectiveTypes(constructor.getParameterTypes(),argsTypes))
+				return constructor;
+		}
+		StringBuilder errorMsg = new StringBuilder("cloud not found an effective method ");
+		errorMsg.append(targetClass.getName()).
+		append(".").
+		append(targetClass.getSimpleName()).
+		append("(");
+		for(int i = 0;i<argsTypes.length;i++) {
+			errorMsg.append(argsTypes[i].getName());
+			if(i<argsTypes.length-1)
+				errorMsg.append(",");
+		}
+		errorMsg.append(")");
+		throw new NoSuchMethodError(errorMsg.toString());
+	}
+	/**
 	 * 获取一个合适的方法。匹配规则是参数可以转换为对应的参数
 	 * @param methods
 	 * @param parameters
@@ -166,210 +184,117 @@ public class ParameterUtils {
 		}
 		return method;
 	}
-
-	private static boolean isEffectiveParameter(Class<?> type, Object value) {
-		try {
-			if (value == null && Assert.equalsAny(type,
-					int.class,long.class,short.class,boolean.class,float.class,double.class)) {
-				return false;
-			}
-			if (type.equals(value.getClass()) || AppClassLoader.extendsOf(value.getClass(), type)
-					|| AppClassLoader.implementsOf(value.getClass(), type))
-				return true;
-			if (type == int.class || type == long.class || type == short.class) {
-				Integer.valueOf(value.toString());
-				// if(value.toString().indexOf(".")>-1||
-				// value.getClass().equals(float.class)||value.getClass().equals(double.class)||
-				// value.getClass().equals(Float.class)||value.getClass().equals(Double.class))
-				// throw new RuntimeException("value "+value+" should be float
-				// or double or string rather than int");
-			} else if (type == boolean.class) {
-				Boolean.valueOf(value.toString());
-			} else if (type == float.class || type == double.class) {
-				Boolean.valueOf(value.toString());
-			} else if (type == byte.class || type == Byte.class) {
-				if (value != null)
-					value.toString().getBytes();
-			} else if (type == char.class || type == Character.class) {
-				if (value != null)
-					value.toString().toCharArray();
-			} else if (type == String.class) {
-				if (value != null)
-					value.toString();
-			}
-			return true;
-		} catch (Throwable t) {
-			return false;
-		}
-	}
 	/**
-	 * 将config转化为参数和方法的集
-	 * @param config
-	 * @param register
+	 * 获取一个合适的方法。匹配规则是参数可以转换为对应的参数
+	 * @param methods
+	 * @param parameters
 	 * @return
 	 */
-	public static MethodDesc[] transformToMethod(Config config, RegisterDescription register) {
-		ClassHelper helper = ClassHelper.getClassHelper(register.getRegisterClass());
-		MethodDesc[] methodDescs = new MethodDesc[config.entrySet().size()];
-		int index = 0;
-		// 获取config的第一个key
-		Iterator<Entry<String, ConfigValue>> citerator = config.entrySet().iterator();
-		while (citerator.hasNext()) {
-			Entry<String, ConfigValue> centry = citerator.next();
-			ConfigValue configValue = centry.getValue();
-			// 获取到数据的key作为方法名
-			String methodName = centry.getKey();
-			// 判断实体的数据类型
-			if (configValue.valueType().equals(ConfigValueType.OBJECT)) {
-				// 获取到config
-				Set<Entry<String, ConfigValue>> entrySet = config.getConfig(methodName).entrySet();
-				int argSize = entrySet.size();
-				Class<?>[] parameterTypes = new Class<?>[argSize];
-				Object[] parameters = new Object[argSize];
-				int i = 0;
-				Iterator<Entry<String, ConfigValue>> argIterator = entrySet.iterator();
-				while (argIterator.hasNext()) {
-					Entry<String, ConfigValue> entry = argIterator.next();
-					parameterTypes[i] = ParameterUtils.getParameterType(entry.getKey());
-					Object value = entry.getValue().unwrapped();
-					parameters[i] = getParameter(parameterTypes[i], value);
-					i++;
+	public static Method getEffectiveMethod(Method[] methods,
+			Class<?>[] parameterTypes) {
+		Method method = null;
+		// 遍历所有的构造器
+		con: for (Method cons : methods) {
+			if(cons.getParameterCount()!=parameterTypes.length)
+				continue con;
+			// 获取构造器的参数类型的集合
+			Class<?>[] parameterTypeInMethod = cons.getParameterTypes();
+			// 遍历构造器
+			for (int i = 0; i < parameterTypeInMethod.length; i++) {
+				Class<?> currentMethodIndexType = parameterTypeInMethod[i];
+				Class<?> currentParameterIndexType = parameterTypes[i];
+				if (!isEffectiveType(currentMethodIndexType, currentParameterIndexType)) {
+					continue con;
 				}
-				Method method = helper.getMethod(methodName, parameterTypes);
-				if (method == null)
-					throw new PluginInitException("could not found method name is \"" + methodName + "\" for parameter "
-							+ entrySet + " at bean id " + register.getBeanId());
-				methodDescs[index] = new MethodDesc(method,parameters);
-			} else if (configValue.valueType().equals(ConfigValueType.NULL)) {
-				Method method = helper.getMethod(methodName);
-				if (method == null)
-					throw new PluginInitException("could not found no parameter method name is \"" + methodName
-							+ "\" for at bean id " + register.getBeanId());
-				methodDescs[index] = new MethodDesc(method,new Object[0]);
-			} else if (configValue.valueType().equals(ConfigValueType.LIST)) {
-				if (config.isConfigList(methodName)) {
-					List<? extends Config> values = config.getConfigList(methodName);
-					Object[] parameters = new Object[values.size()];
-					Class<?>[] parameterTypes = new Class<?>[values.size()];
-					for (int i = 0; i < values.size(); i++) {
-						Config conf = values.get(i);
-						Iterator<Entry<String, Object>> iterator = conf.simpleObjectEntrySet().iterator();
-						if (iterator.hasNext()) {
-							Entry<String, Object> entry = iterator.next();
-							String key = entry.getKey();
-							Object value = entry.getValue();
-							parameterTypes[i] = ParameterUtils.getParameterType(key);
-							parameters[i] = getParameter(parameterTypes[i], value);
-						}
-					}
-					Method method = helper.getMethod(methodName, parameterTypes);
-					if (method == null)
-						throw new PluginInitException("could not found method name is \"" + methodName
-								+ "\" for parameter " + values + " at bean id " + register.getBeanId());
-					methodDescs[index] = new MethodDesc(method,parameters);
-				} else {// 普通数据列表
-					List<? extends Object> values = config.getSimpleObjectList(methodName);
-					Object[] parameters = new Object[values.size()];
-					Class<?>[] parameterTypes = new Class<?>[values.size()];
-					for (int i = 0; i < values.size(); i++) {
-						parameters[i] = values.get(i);
-					}
-					Method method = getEffectiveMethod(helper.getMethods(), parameters);//helper.getMethod(methodName, parameterTypes);
-					if (method == null){
-						String parameterType = "[";
-						for(int i = 0;i<parameterTypes.length;i++)
-							parameterType=parameterType+parameterTypes[i]+(i<parameterTypes.length-1?",":"]");
-						throw new PluginInitException("could not found method name is \"" + methodName
-								+ "\" for parameter " + values+" types " +parameterType+ " at bean id " + register.getBeanId());
-					}
-					parameterTypes = method.getParameterTypes();
-					for (int i = 0; i < values.size(); i++) {
-						parameters[i] = AppClassLoader.castType(parameters[i], parameterTypes[i]);
-					}
-					methodDescs[index] = new MethodDesc(method,parameters);
-				}
-			} else {
-				Object value = config.getSimpleObject(methodName);
-				Method method = helper.getMethod(methodName, value.getClass());
-				if (method == null)
-					throw new PluginInitException("could not found method name is \"" + methodName + "\" for parameter "
-							+ value + " at bean id " + register.getBeanId());
-				methodDescs[index] = new MethodDesc(method,new Object[]{value});
 			}
-			index++;
+			method = cons;
 		}
-		return methodDescs;
+		return method;
+	}
+	public static Method getEffectiveMethod(Class<?> targetClass, String methodName, Class<?>[] argsTypes) throws NoSuchMethodException {
+		Method[] methods = ClassHelper.getClassHelper(targetClass).getMethods();
+		for(Method method : methods) {
+			if(method.getName().equals(methodName) ) {
+				if(method.getParameterCount() == argsTypes.length 
+						&& isEffectiveTypes(method.getParameterTypes(),argsTypes))
+					return method;
+			}
+		}
+		StringBuilder errorMsg = new StringBuilder("cloud not found an effective method ");
+		errorMsg.append(targetClass.getName()).
+		append(".").
+		append(methodName).
+		append("(");
+		for(int i = 0;i<argsTypes.length;i++) {
+			errorMsg.append(argsTypes[i].getName());
+			if(i<argsTypes.length-1)
+				errorMsg.append(",");
+		}
+		errorMsg.append(")");
+		throw new NoSuchMethodException(errorMsg.toString());
+	}
+	private static boolean isEffectiveTypes(Class<?>[] parameterTypes, Class<?>[] argsTypes) {
+		for(int i = 0 ;i < parameterTypes.length;i++) {
+			if(!isEffectiveType(parameterTypes[i], argsTypes[i]))
+				return false;
+		}
+		return true;
 	}
 
-	public static Object getParameter(Class<?> type,Object value) {
-		if (type.equals(File.class)) {// 文件类型特俗处理
-			File file;
-			try {
-				List<AbstractResourceEntry> files = ResourceManager.getResourceList(value.toString());
-				file = files.get(0).getFile();
-			} catch (Throwable t) {
-				file = new File(ResourceManager.getPathExress(value.toString())[0]);
-			}
-			value = file;
-		} else if (type.equals(Service.class)) {// bean类型
-			String beanId = value.toString();
-			value = BeanContainer.getContext().getBean(beanId);
-		} else {
-			value = AppClassLoader.castType(value,type);
+	/**
+	 * 判断两个类型是否匹配
+	 * @param type
+	 * @param valueType
+	 * @return
+	 */
+	public static boolean isEffectiveType(Class<?> type, Class<?> valueType) {
+		if(valueType.isArray() && type.isArray()) {
+			valueType = AppClassLoader.getArrayType(valueType);
+			type = AppClassLoader.getArrayType(type);
 		}
-		return value;
+		if (type.equals(valueType) || AppClassLoader.extendsOf(valueType, type)
+				|| AppClassLoader.implementsOf(valueType, type))
+			return true;
+		if (type == byte.class) {
+			return Assert.equalsAny(valueType, byte.class,Byte.class);
+		} 
+		if (type == short.class) {
+			return Assert.equalsAny(valueType, short.class,Short.class);
+		} 
+		if (type == int.class) {
+			return Assert.equalsAny(valueType, int.class,Integer.class);
+		} 
+		if (type == long.class) {
+			return Assert.equalsAny(valueType, long.class,Long.class);
+		} 
+		if (type == float.class ) {
+			return Assert.equalsAny(valueType, float.class,Float.class);
+		}
+		if (type == double.class ) {
+			return Assert.equalsAny(valueType, double.class,Double.class);
+		}
+		if (type == boolean.class ) {
+			return Assert.equalsAny(valueType, boolean.class,Boolean.class);
+		}
+		if (type == char.class ) {
+			return Assert.equalsAny(valueType, char.class,Character.class);
+		}
+		return false;
 	}
-
-	public static ParameterInfo getParameterInfo(Config config) {
-		ParameterInfo info = null;
-		Class<?> type;
-		Object value;
-		if (config.isList("args")) {
-			// 判断是否是conf集合
-			if (config.isConfigList("args")) {
-				List<? extends Config> values = config.getConfigList("args");
-				info = new ParameterInfo(values.size());
-				for (int i = 0; i < values.size(); i++) {
-					Config conf = values.get(i);
-					Iterator<Entry<String, Object>> iterator = conf.simpleObjectEntrySet()
-							.iterator();
-					if (iterator.hasNext()) {
-						Entry<String, Object> entry = iterator.next();
-						String key = entry.getKey();
-						type = ParameterUtils.getParameterType(key);
-						value = getParameter(type,entry.getValue());
-					}
-					info.addParameter( values.get(i).getClass(),values.get(i));
-				}
-			} else {// 普通数据列表
-				List<? extends Object> values = config.getSimpleObjectList("args");
-				info = new ParameterInfo(values.size());
-				for (int i = 0; i < values.size(); i++) 
-					info.addParameter( values.get(i).getClass(),values.get(i));
-			}
-		}else {// 单参数
-			ConfigValueType valueType = config.getType("args");
-			// 如果是config类型
-			if (valueType == ConfigValueType.OBJECT) {
-				// 获取到config
-				// 获取参数的数量
-				Set<Entry<String, ConfigValue>> entrySet = config.getConfig("args").entrySet();
-				int argSize = entrySet.size();
-				info = new ParameterInfo(argSize);
-				// 排除数量不同的构造器
-				Iterator<Entry<String, ConfigValue>> argIterator = entrySet.iterator();
-				while (argIterator.hasNext()) {
-					Entry<String, ConfigValue> entry = argIterator.next();
-					type = ParameterUtils.getParameterType(entry.getKey());
-					value = getParameter(type,entry.getValue().unwrapped());
-					info.addParameter(type, value);
-				}
-			} else {
-				info = new ParameterInfo(1);
-				value = config.getSimpleObject("args");
-				info.addParameter(value.getClass(),value);
-			}
+	/**
+	 * 判断参数和类型是否匹配
+	 * @param type
+	 * @param value
+	 * @return
+	 */
+	public static boolean isEffectiveParameter(Class<?> type, Object value) {
+		if (value == null && Assert.equalsAny(type,
+				int.class,long.class,short.class,
+				boolean.class,
+				float.class,double.class,
+				byte.class,char.class)) {
+			return false;
 		}
-		return info;
+		return isEffectiveType(type, value.getClass());
 	}
 }

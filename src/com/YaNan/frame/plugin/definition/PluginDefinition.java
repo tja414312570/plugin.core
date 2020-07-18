@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin;
+package com.YaNan.frame.plugin.definition;
 
 import java.io.File;
 
@@ -11,27 +11,23 @@ import com.YaNan.frame.utils.reflect.AppClassLoader;
  * @author yanan
  *
  */
-public class PlugsDescription {
-	public PlugsDescription(Service service, Class<?> cls) {
+public class PluginDefinition {
+	public PluginDefinition(Service service, Class<?> cls) {
 		this.clzz = cls;
 		this.service = service;
 	}
-
-	public PlugsDescription(File file) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
+	public PluginDefinition(File file) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
 		String fileName = file.getName();
 		String clzzStr = fileName.substring(0,fileName.lastIndexOf("."));
 		this.clzz= new AppClassLoader(clzzStr,false).getLoadedClass();
 	}
-
-	public PlugsDescription(Class<?> plugClass) {
+	public PluginDefinition(Class<?> plugClass) {
 		this.clzz = plugClass;
 	}
-
 	/**
 	 * 组件类
 	 */
 	private Class<?> clzz;
-	private PlugsConfigureWrapper plugsConfgureWrapper;
 	public Class<?> getPlugClass() {
 		return clzz;
 	}
@@ -41,18 +37,6 @@ public class PlugsDescription {
 	public Service getService() {
 		return service;
 	}
-	public void setService(Service service) {
-		this.service = service;
-	}
-
-	public PlugsConfigureWrapper getPlugsConfgureWrapper() {
-		return plugsConfgureWrapper;
-	}
-
-	public void setPlugsConfgureWrapper(PlugsConfigureWrapper plugsConfgureWrapper) {
-		this.plugsConfgureWrapper = plugsConfgureWrapper;
-	}
-
 	/**
 	 * Service 注解
 	 */
