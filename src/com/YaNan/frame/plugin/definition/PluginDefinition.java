@@ -1,9 +1,9 @@
-package com.YaNan.frame.plugin.definition;
+package com.yanan.frame.plugin.definition;
 
 import java.io.File;
 
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
+import com.yanan.frame.plugin.annotations.Service;
+import com.yanan.utils.reflect.AppClassLoader;
 
 /**
  * 组件描述类

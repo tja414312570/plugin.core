@@ -1,6 +1,6 @@
-package com.YaNan.frame.plugin.security;
+package com.yanan.frame.plugin.security;
 
-import com.YaNan.frame.plugin.annotations.Service;
+import com.yanan.frame.plugin.annotations.Service;
 
 @Service
 public interface EncryptService {

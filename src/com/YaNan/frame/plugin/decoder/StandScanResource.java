@@ -1,11 +1,11 @@
-package com.YaNan.frame.plugin.decoder;
+package com.yanan.frame.plugin.decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
-import com.YaNan.frame.utils.resource.Resource;
+import com.yanan.utils.resource.Resource;
 
 /**
  * 标准扫描资源

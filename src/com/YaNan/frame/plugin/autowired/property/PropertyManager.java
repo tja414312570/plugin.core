@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.autowired.property;
+package com.yanan.frame.plugin.autowired.property;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,11 +12,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 
-import com.YaNan.frame.plugin.Environment;
-import com.YaNan.frame.utils.resource.AbstractResourceEntry;
-import com.YaNan.frame.utils.resource.Path;
-import com.YaNan.frame.utils.resource.ResourceManager;
 import com.typesafe.config.Config;
+import com.yanan.frame.plugin.Environment;
+import com.yanan.utils.resource.AbstractResourceEntry;
+import com.yanan.utils.resource.ResourceManager;
+import com.yanan.utils.resource.scanner.Path;
 
 public class PropertyManager {
 	private static volatile PropertyManager manager;

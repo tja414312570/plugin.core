@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.autowired.resource;
+package com.yanan.frame.plugin.autowired.resource;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

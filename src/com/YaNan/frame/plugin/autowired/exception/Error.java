@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.autowired.exception;
+package com.yanan.frame.plugin.autowired.exception;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

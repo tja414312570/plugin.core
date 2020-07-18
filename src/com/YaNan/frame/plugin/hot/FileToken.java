@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.hot;
+package com.yanan.frame.plugin.hot;
 
 public class FileToken {
 	private String fileName;

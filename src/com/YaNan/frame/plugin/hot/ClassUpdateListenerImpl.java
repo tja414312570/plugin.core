@@ -1,8 +1,8 @@
-package com.YaNan.frame.plugin.hot;
+package com.yanan.frame.plugin.hot;
 
 import java.io.File;
 
-import com.YaNan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Register;
 
 @Register
 public class ClassUpdateListenerImpl implements ClassUpdateListener{

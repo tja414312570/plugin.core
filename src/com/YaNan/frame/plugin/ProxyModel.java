@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin;
+package com.yanan.frame.plugin;
 /**
  * DEFAULT 默认代理方式，如果调用对象为接口调用，则采用jdk代理,
  *         如果调用对象为普通对象，则采用cglib代理<br/>

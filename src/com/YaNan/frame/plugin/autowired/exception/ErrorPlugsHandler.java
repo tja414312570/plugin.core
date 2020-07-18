@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.autowired.exception;
+package com.yanan.frame.plugin.autowired.exception;
 
 
 import java.lang.reflect.Constructor;
@@ -6,15 +6,15 @@ import java.lang.reflect.Constructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Support;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.exception.PluginRuntimeException;
-import com.YaNan.frame.plugin.handler.InstanceHandler;
-import com.YaNan.frame.plugin.handler.InvokeHandler;
-import com.YaNan.frame.plugin.handler.MethodHandler;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
-import com.YaNan.frame.utils.reflect.cache.ClassHelper;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Support;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
+import com.yanan.frame.plugin.handler.InstanceHandler;
+import com.yanan.frame.plugin.handler.InvokeHandler;
+import com.yanan.frame.plugin.handler.MethodHandler;
+import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.cache.ClassHelper;
 
 @Support(Error.class)
 @Register(attribute="*",priority=Integer.MAX_VALUE)

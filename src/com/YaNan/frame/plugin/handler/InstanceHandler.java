@@ -1,9 +1,9 @@
-package com.YaNan.frame.plugin.handler;
+package com.yanan.frame.plugin.handler;
 
 import java.lang.reflect.Constructor;
 
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.exception.PluginRuntimeException;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
 
 public interface InstanceHandler {
 	/**

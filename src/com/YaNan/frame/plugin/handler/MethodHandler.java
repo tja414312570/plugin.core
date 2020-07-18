@@ -1,10 +1,10 @@
-package com.YaNan.frame.plugin.handler;
+package com.yanan.frame.plugin.handler;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.YaNan.frame.plugin.handler.PlugsHandler.ProxyType;
+import com.yanan.frame.plugin.handler.PlugsHandler.ProxyType;
 
 import net.sf.cglib.proxy.MethodProxy;
 

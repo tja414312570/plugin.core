@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.annotations;
+package com.yanan.frame.plugin.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -12,7 +12,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
-import com.YaNan.frame.plugin.ProxyModel;
+import com.yanan.frame.plugin.ProxyModel;
 @Target({ElementType.TYPE,ElementType.FIELD,ElementType.PARAMETER} )
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Service {

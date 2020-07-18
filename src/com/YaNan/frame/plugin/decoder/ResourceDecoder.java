@@ -1,7 +1,7 @@
-package com.YaNan.frame.plugin.decoder;
+package com.yanan.frame.plugin.decoder;
 
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.utils.resource.Resource;
+import com.yanan.utils.resource.Resource;
+import com.yanan.frame.plugin.PlugsFactory;
 
 public interface ResourceDecoder<T extends Resource> {
 

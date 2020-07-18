@@ -1,6 +1,6 @@
-package com.YaNan.frame.plugin;
+package com.yanan.frame.plugin;
 
-import com.YaNan.frame.plugin.event.AbstractEvent;
+import com.yanan.frame.plugin.event.AbstractEvent;
 
 /**
  * 组件事件

@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.exception;
+package com.yanan.frame.plugin.exception;
 
 public class PluginNotFoundException extends RuntimeException {
 

@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.annotations;
+package com.yanan.frame.plugin.annotations;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;

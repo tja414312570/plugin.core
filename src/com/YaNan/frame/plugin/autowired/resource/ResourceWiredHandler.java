@@ -1,15 +1,15 @@
-package com.YaNan.frame.plugin.autowired.resource;
+package com.yanan.frame.plugin.autowired.resource;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Support;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.handler.FieldHandler;
-import com.YaNan.frame.plugin.handler.InvokeHandlerSet;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Support;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.handler.FieldHandler;
+import com.yanan.frame.plugin.handler.InvokeHandlerSet;
+import com.yanan.utils.reflect.AppClassLoader;
 
 @Support(Resource.class)
 @Register

@@ -1,8 +1,8 @@
-package com.YaNan.frame.plugin.builder.resolver;
+package com.yanan.frame.plugin.builder.resolver;
 import java.util.List;
 
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.typesafe.config.ConfigList;
 @Register(attribute= {"array","arrayS"})
 public class ArrayParameterResolver implements ParameterResolver<ConfigList>{

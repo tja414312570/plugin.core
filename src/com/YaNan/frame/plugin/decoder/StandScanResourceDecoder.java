@@ -1,13 +1,10 @@
-package com.YaNan.frame.plugin.decoder;
+package com.yanan.frame.plugin.decoder;
 
-import java.io.File;
 import java.util.Arrays;
 
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.utils.resource.PackageScanner;
-import com.YaNan.frame.utils.resource.ResourceManager;
+import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.utils.resource.ResourceManager;
+import com.yanan.utils.resource.scanner.PackageScanner;
 
 /**
  * 标准扫描资源

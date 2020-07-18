@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.event;
+package com.yanan.frame.plugin.event;
 
 /**
  * 抽象事件

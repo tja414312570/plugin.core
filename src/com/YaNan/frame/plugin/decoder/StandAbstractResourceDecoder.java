@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.decoder;
+package com.yanan.frame.plugin.decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,22 +6,22 @@ import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.util.List;
 
-import com.YaNan.frame.plugin.Environment;
-import com.YaNan.frame.plugin.Plugin;
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.PlugsFactory.STREAM_TYPT;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.plugin.builder.PluginDefinitionBuilderFactory;
-import com.YaNan.frame.plugin.definition.PluginDefinition;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.exception.PluginInitException;
-import com.YaNan.frame.plugin.exception.PluginRuntimeException;
-import com.YaNan.frame.utils.resource.AbstractResourceEntry;
-import com.YaNan.frame.utils.resource.Resource;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Service;
+import com.yanan.frame.plugin.builder.PluginDefinitionBuilderFactory;
+import com.yanan.frame.plugin.definition.PluginDefinition;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.exception.PluginInitException;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
+import com.yanan.utils.resource.AbstractResourceEntry;
+import com.yanan.utils.resource.Resource;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.SimpleConfigObject;
+import com.yanan.frame.plugin.Environment;
+import com.yanan.frame.plugin.Plugin;
+import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.frame.plugin.PlugsFactory.STREAM_TYPT;
 
 /**
  * 标准抽象资源解析
@@ -71,10 +71,10 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 				stream.read(temp,0,temp.length);
 				stream.close();
 				//load class
-				Class<?> clzz =new com.YaNan.frame.utils.reflect.AppClassLoader().loadClass(className,temp);
+				Class<?> clzz =new com.yanan.utils.reflect.AppClassLoader().loadClass(className,temp);
 				//Register
-				PlugsDescription plugsDescription = new PlugsDescription(clzz);
-				Plug plug = new Plug(plugsDescription);
+				PluginDefinition plugsDescription = new PluginDefinition(clzz);
+				Plugin plug = new Plugin(plugsDescription);
 				this.plugsContatiner.put(plugsDescription.getPlugClass(), plug);
 			}
 			if (type==STREAM_TYPT.CONF) {
@@ -112,8 +112,8 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 		Register register = cls.getAnnotation(Register.class);
 		if (service != null || register != null) {
 			if (service != null) {// 如果是Service
-				PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-				Plug plug = new Plug(plugsDescrption);
+				PluginDefinition plugsDescrption = new PluginDefinition(service, cls);
+				Plugin plug = new Plugin(plugsDescrption);
 				this.plugsContatiner.put(cls, plug);
 			}
 			if (register != null) {
@@ -125,8 +125,8 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 				}
 			}
 		} else if (cls.isInterface()) {
-			PlugsDescription plugsDescrption = new PlugsDescription(service, cls);
-			Plug plug = new Plug(plugsDescrption);
+			PluginDefinition plugsDescrption = new PluginDefinition(service, cls);
+			Plugin plug = new Plugin(plugsDescrption);
 			this.plugsContatiner.put(cls, plug);
 		} else {
 			try {
@@ -142,7 +142,7 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 	public void addPlugsService(Class<?> cls) {
 		Service service = cls.getAnnotation(Service.class);
 		PluginDefinition plugsDescrption = new PluginDefinition(service, cls);
-		Plug plug = new Plug(plugsDescrption);
+		Plugin plug = new Plugin(plugsDescrption);
 		factory.addPluginDefinition(plug);
 		
 	}
@@ -168,8 +168,8 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 	 * @param plugClass
 	 */
 	public void addPlugsByDefault(Class<?> plugClass) {
-		PlugsDescription plugsDescrption = new PlugsDescription(plugClass);
-		Plug plug = new Plug(plugsDescrption);
+		PluginDefinition plugsDescrption = new PluginDefinition(plugClass);
+		Plugin plug = new Plugin(plugsDescrption);
 		this.plugsContatiner.put(plugClass, plug);
 	}
 	@Override

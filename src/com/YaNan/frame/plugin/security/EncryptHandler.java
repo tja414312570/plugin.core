@@ -1,12 +1,12 @@
-package com.YaNan.frame.plugin.security;
+package com.yanan.frame.plugin.security;
 
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Support;
-import com.YaNan.frame.plugin.handler.InvokeHandler;
-import com.YaNan.frame.plugin.handler.MethodHandler;
-import com.YaNan.frame.plugin.security.Encrypt;
-import com.YaNan.frame.plugin.security.EncryptService;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Support;
+import com.yanan.frame.plugin.handler.InvokeHandler;
+import com.yanan.frame.plugin.handler.MethodHandler;
+import com.yanan.frame.plugin.security.Encrypt;
+import com.yanan.frame.plugin.security.EncryptService;
+import com.yanan.frame.plugin.PlugsFactory;
 
 @Support(Encrypt.class)
 @Register(signlTon = true)

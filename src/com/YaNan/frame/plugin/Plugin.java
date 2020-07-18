@@ -1,11 +1,11 @@
-package com.YaNan.frame.plugin;
+package com.yanan.frame.plugin;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.YaNan.frame.plugin.definition.PluginDefinition;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.utils.StringUtil;
+import com.yanan.frame.plugin.definition.PluginDefinition;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.utils.string.StringUtil;
 
 /**
  * 用于描述组件信息

@@ -1,11 +1,11 @@
-package com.YaNan.frame.plugin.builder.resolver;
+package com.yanan.frame.plugin.builder.resolver;
 
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.ProxyModel;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.definition.MethodDefinition;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.definition.MethodDefinition;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.typesafe.config.ConfigValue;
+import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.frame.plugin.ProxyModel;
 
 /**
  * 引用参数解析

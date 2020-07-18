@@ -1,6 +1,6 @@
-package com.YaNan.frame.plugin.interfacer;
+package com.yanan.frame.plugin.interfacer;
 
-import com.YaNan.frame.plugin.PlugsFactory;
+import com.yanan.frame.plugin.PlugsFactory;
 
 public interface PlugsListener {
 

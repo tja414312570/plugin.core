@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.handler;
+package com.yanan.frame.plugin.handler;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

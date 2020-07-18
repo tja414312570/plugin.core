@@ -1,6 +1,6 @@
-package com.YaNan.frame.plugin;
+package com.yanan.frame.plugin;
 
-import com.YaNan.frame.plugin.event.InterestedEventSource;
+import com.yanan.frame.plugin.event.InterestedEventSource;
 
 public class PluginEventSource extends InterestedEventSource{
 	@Override

@@ -1,10 +1,11 @@
-package com.YaNan.frame.plugin.handler;
+package com.yanan.frame.plugin.handler;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.YaNan.frame.plugin.RegisterDescription;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -19,7 +20,7 @@ import net.sf.cglib.proxy.MethodProxy;
  */
 public class ProxyHandler implements MethodInterceptor {
 	private volatile Map<Method,Method> methods = new HashMap<Method,Method>();
-	private RegisterDescription registerDescription;// 注册描述类
+	private RegisterDefinition registerDefinition;// 注册描述类
 	private Object proxyObject;// 代理对象
 	private Class<?> proxyClass;// 代理类
 	private Class<?> interfaceClass;// 接口类
@@ -35,12 +36,12 @@ public class ProxyHandler implements MethodInterceptor {
 		return (T) proxyObject;
 	}
 
-	public RegisterDescription getRegisterDescription() {
-		return registerDescription;
+	public RegisterDefinition getRegisterDefinition() {
+		return registerDefinition;
 	}
 
-	public void setRegisterDescription(RegisterDescription registerDescription) {
-		this.registerDescription = registerDescription;
+	public void setRegisterDefinition(RegisterDefinition registerDefinition) {
+		this.registerDefinition = registerDefinition;
 	}
 
 	/**
@@ -67,7 +68,7 @@ public class ProxyHandler implements MethodInterceptor {
 	 * @return
 	 */
 	public Map<Method, InvokeHandlerSet> getHandlerMapping() {
-		return registerDescription == null ? null : registerDescription.getHandlerMapping();
+		return registerDefinition == null ? null : registerDefinition.getMethodInterceptMapping();
 	}
 
 	/**
@@ -76,13 +77,13 @@ public class ProxyHandler implements MethodInterceptor {
 	 * @param proxyClass
 	 * @param parameters
 	 */
-	public ProxyHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDescription registerDescription,Object linkProxy) {
+	public ProxyHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDefinition registerDefinition,Object linkProxy) {
 		this.proxyClass = proxyClass;
 		this.linkObject = linkProxy;
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(proxyClass);
 		enhancer.setCallback(this);
-		this.registerDescription = registerDescription;
+		this.registerDefinition = registerDefinition;
 		if (parameters.length == 0)
 			this.proxyObject = enhancer.create();
 		else
@@ -91,9 +92,9 @@ public class ProxyHandler implements MethodInterceptor {
 	}
 
 
-	public static <T> T newCglibProxy(Class<?> proxyClass, RegisterDescription registerDescription,Class<?>[] parameterType,Object linkProxy,
+	public static <T> T newCglibProxy(Class<?> proxyClass, RegisterDefinition registerDefinition,Class<?>[] parameterType,Object linkProxy,
 			Object... parameters) {
-		return new ProxyHandler(proxyClass, parameterType,parameters, registerDescription,linkProxy).getProxyObject();
+		return new ProxyHandler(proxyClass, parameterType,parameters, registerDefinition,linkProxy).getProxyObject();
 	}
 
 	@Override
@@ -103,7 +104,7 @@ public class ProxyHandler implements MethodInterceptor {
 			if(linkMethod==null){
 				synchronized (this) {
 					if(linkMethod==null){
-//						RegisterDescription linkRegister = this.registerDescription.getLinkRegister();
+//						RegisterDefinition linkRegister = this.registerDefinition.getLinkRegister();
 						linkMethod = linkObject.getClass().getMethod(method.getName(), method.getParameterTypes());//linkRegister.getRegisterClass()
 						this.methods.put(method, linkMethod);
 					}

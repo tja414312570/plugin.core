@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.hot;
+package com.yanan.frame.plugin.hot;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;

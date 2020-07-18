@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.security;
+package com.yanan.frame.plugin.security;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

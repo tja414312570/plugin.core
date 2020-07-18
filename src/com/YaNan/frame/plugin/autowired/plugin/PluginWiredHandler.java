@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.autowired.plugin;
+package com.yanan.frame.plugin.autowired.plugin;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -6,19 +6,19 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.List;
 
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.plugin.annotations.Support;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.exception.PluginRuntimeException;
-import com.YaNan.frame.plugin.handler.FieldHandler;
-import com.YaNan.frame.plugin.handler.InstanceHandler;
-import com.YaNan.frame.plugin.handler.InvokeHandler;
-import com.YaNan.frame.plugin.handler.InvokeHandlerSet;
-import com.YaNan.frame.plugin.handler.MethodHandler;
-import com.YaNan.frame.utils.StringUtil;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
+import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Service;
+import com.yanan.frame.plugin.annotations.Support;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
+import com.yanan.frame.plugin.handler.FieldHandler;
+import com.yanan.frame.plugin.handler.InstanceHandler;
+import com.yanan.frame.plugin.handler.InvokeHandler;
+import com.yanan.frame.plugin.handler.InvokeHandlerSet;
+import com.yanan.frame.plugin.handler.MethodHandler;
+import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.string.StringUtil;
 
 /**
  * 组件注入

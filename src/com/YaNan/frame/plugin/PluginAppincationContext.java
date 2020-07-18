@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin;
+package com.yanan.frame.plugin;
 
 import java.io.IOException;
 import java.net.URL;
@@ -15,7 +15,7 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.YaNan.frame.plugin.exception.PluginInitException;
+import com.yanan.frame.plugin.exception.PluginInitException;
 
 
 /**

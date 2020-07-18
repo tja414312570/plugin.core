@@ -1,8 +1,8 @@
-package com.YaNan.frame.plugin.handler;
+package com.yanan.frame.plugin.handler;
 
 import java.lang.reflect.Field;
 
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
 /**
  * 字段拦截器
  * 当实例初始化之后立刻调用

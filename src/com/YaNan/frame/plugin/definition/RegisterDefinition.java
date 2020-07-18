@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.definition;
+package com.yanan.frame.plugin.definition;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -11,13 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import com.YaNan.frame.plugin.ConstructorDefinition;
-import com.YaNan.frame.plugin.ProxyModel;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.handler.InvokeHandler;
-import com.YaNan.frame.plugin.handler.InvokeHandlerSet;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
+
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.handler.InvokeHandler;
+import com.yanan.frame.plugin.handler.InvokeHandlerSet;
+import com.yanan.utils.reflect.AppClassLoader;
 import com.typesafe.config.Config;
+import com.yanan.frame.plugin.ConstructorDefinition;
+import com.yanan.frame.plugin.ProxyModel;
 
 /**
  * 组件描述类 用于创建组件时的组件信息 v1.0 支持通过Class的Builder方式 v1.1 支持通过Comp文件的Builder方式 v1.2

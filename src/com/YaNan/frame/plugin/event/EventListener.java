@@ -1,4 +1,4 @@
-package com.YaNan.frame.plugin.event;
+package com.yanan.frame.plugin.event;
 
 /**
  * 统一事件接口

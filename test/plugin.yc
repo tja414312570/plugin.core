@@ -1,0 +1,79 @@
+###################### plugin list
+#组件列表
+plugins:[
+		com.YaNan.frame.plugin.autowired.plugin.PluginWiredHandler, ##服务注入提供
+		com.YaNan.frame.plugin.autowired.resource.ResourceWiredHandler, ##资源类注入
+		com.YaNan.frame.plugin.autowired.property.PropertyWiredHandler, ##属性注入
+		com.YaNan.frame.plugin.autowired.exception.ErrorPlugsHandler, ##错误记录
+		##	 com.YaNan.frame.util.quartz.QuartzManager,##Quartz corn注解服务
+		##com.YaNan.frame.plugin.hot.ClassHotUpdater,##动态更新服务
+		com.YaNan.frame.plugin.builder.resolver.ArrayParameterResolver,#数组解析
+		com.YaNan.frame.plugin.builder.resolver.ReferenceParameterResolver,#引用解析
+		com.YaNan.frame.plugin.builder.resolver.DateParameterResolver,#日期解析
+		{
+			class:com.test.SimpleRegister,
+			id:test1,
+			init:init2
+			field.name:test1 from plug
+			field.date.date:"2020-07-17 09:51:35"
+		},
+		{
+			class:com.test.SimpleRegister,
+			id:test2,
+			method:getInstance
+			args:[hellow world,[as,b,c,d],true]
+			types:[default,-,-]
+			init:[init,init2]
+			field:[
+				{name:test2 hello world sss},
+				{date.date:"2020-07-17 14:18:35"}
+			]
+		},
+		{
+			ref:test2,
+			id:testRef,
+			method:getInstance
+			args:[test ref hellow world,[a,b,c,d],test2]
+			types:[default,arrayS,ref]
+			init:[init,init2]
+		}
+	]
+####################### global configure
+conf:{
+	Plugin:{
+		##ScanPackage:[com.YaNan], ##扫描包位置，多个包用逗号分开或使用数组ScanPackage:[com.YaNan.DZCT,com.YaNan.debug]
+													  ##可以写为ScanPackage:"com.YaNan.DZCT,com.YaNan.debug"
+		includes:"classpath:*.comps",##扫描注册文件
+	},
+	SecurityFilter:{
+		x-frame-options:true,
+		xss-wrapper:{"/**":true}
+		},
+	Token:{
+		Timeout:4000,
+		Secure:false,
+		HttpOnly:true,
+	}
+}
+MVC:{
+	SERVER:{
+			TOMCAT:[
+				{ ## 默认调配器
+					class:org.apache.catalina.servlets.DefaultServlet,
+					priority:2,
+					signlton:true,
+					attribute:"*",
+					service:javax.servlet.Servlet
+				},
+				{ ## 默认JSP调配器
+					class:org.apache.jasper.servlet.JspServlet,
+					priority:1,
+					signlton:true,
+					attribute:".jsp",
+					service:javax.servlet.Servlet
+				},
+			]
+		}
+	}
+app.key.host=localhost
+app.key.port=8080

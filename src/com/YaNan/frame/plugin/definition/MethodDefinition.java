@@ -1,9 +1,9 @@
-package com.YaNan.frame.plugin.definition;
+package com.yanan.frame.plugin.definition;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import com.YaNan.frame.plugin.builder.resolver.ParameterResolver;
+import com.yanan.frame.plugin.builder.resolver.ParameterResolver;
 import com.typesafe.config.ConfigValue;
 
 public class MethodDefinition {

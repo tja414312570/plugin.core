@@ -1,36 +1,36 @@
-package com.YaNan.frame.plugin.builder;
+package com.yanan.frame.plugin.builder;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
-import com.YaNan.frame.plugin.ConstructorDefinition;
-import com.YaNan.frame.plugin.ParameterUtils;
-import com.YaNan.frame.plugin.Plugin;
-import com.YaNan.frame.plugin.PlugsFactory;
-import com.YaNan.frame.plugin.ProxyModel;
-import com.YaNan.frame.plugin.annotations.AfterInstantiation;
-import com.YaNan.frame.plugin.annotations.Register;
-import com.YaNan.frame.plugin.annotations.Service;
-import com.YaNan.frame.plugin.builder.resolver.DelayParameterResolver;
-import com.YaNan.frame.plugin.builder.resolver.ParameterResolver;
-import com.YaNan.frame.plugin.definition.FieldDefinition;
-import com.YaNan.frame.plugin.definition.MethodDefinition;
-import com.YaNan.frame.plugin.definition.PluginDefinition;
-import com.YaNan.frame.plugin.definition.RegisterDefinition;
-import com.YaNan.frame.plugin.exception.PluginInitException;
-import com.YaNan.frame.plugin.handler.PlugsHandler;
-import com.YaNan.frame.utils.StringUtil;
-import com.YaNan.frame.utils.reflect.AppClassLoader;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import com.typesafe.config.impl.SimpleConfigObject;
+import com.yanan.frame.plugin.ConstructorDefinition;
+import com.yanan.frame.plugin.ParameterUtils;
+import com.yanan.frame.plugin.Plugin;
+import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.frame.plugin.ProxyModel;
+import com.yanan.frame.plugin.annotations.AfterInstantiation;
+import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.annotations.Service;
+import com.yanan.frame.plugin.builder.resolver.DelayParameterResolver;
+import com.yanan.frame.plugin.builder.resolver.ParameterResolver;
+import com.yanan.frame.plugin.definition.FieldDefinition;
+import com.yanan.frame.plugin.definition.MethodDefinition;
+import com.yanan.frame.plugin.definition.PluginDefinition;
+import com.yanan.frame.plugin.definition.RegisterDefinition;
+import com.yanan.frame.plugin.exception.PluginInitException;
+import com.yanan.frame.plugin.handler.PlugsHandler;
+import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.string.StringUtil;
 
 public class PluginDefinitionBuilderFactory {
 	public final static class PlugDefinitionBuilderFactoryHolder {
@@ -157,7 +157,6 @@ public class PluginDefinitionBuilderFactory {
 	private void configFields(Config config,RegisterDefinition registerDefinition) {
 		if(!config.hasPath("field")) 
 			return;
-		System.out.println("--------------------------------f");
 		if(config.isList("field")) {
 			ConfigList list = config.getList("field");
 			System.out.println(list);
