@@ -15,7 +15,7 @@
 	* 热更新功能（ClassHotUpdater）
 	* 调用加密功能（@Encrypt）
 ![avatar](https://ufomedia.oss-cn-beijing.aliyuncs.com/QQ20191014-190318.png)
-# 20200718
+# 20200718 动态化，让架构自身成为一个组件
 * 重构plugin核心，分离出实例工厂，组件定义工厂，拦截器构建工厂
 * 提供Environment，用于提供plugin环境的全局变量，全局事件，全局配置
 * 重新定义plugins参数规范
@@ -58,7 +58,7 @@ plugins:[
 			id:testRef,#将id属性覆盖
 			method:getInstance
 			args:[test ref hellow world,[a,b,c,d],test2]
-			types:[default,arrayS,ref]#使用com.YaNan.frame.plugin.builder.resolver.ArrayParameterResolver将第二个参数转化为array格式，使用getInstance(string,array,string)的方法构造实例
+			types:[default,arrayS,ref]#使用ArrayParameterResolver将第二个参数转化为array格式,第三个参数使用ReferenceParameterResolver引用，使用getInstance(string,array,SimpleRegister)的方法构造实例
 		}
 	]
 
@@ -144,6 +144,10 @@ public class SimpleRegister {
 
 ```
 # 参数解析器
+* 参数解析器分为解析时参数ParameterResolver和实例化时参数DelayParameterResolver
+* DelayParameterResolver继承自ParameterResolver
+* 解析时参数表示参数在解析RegisterDefinition时就会初始化调用的值
+* 实例化时参数解析器表示参数在RegisterDefinition实例化时初始化调用值
 
 ```java
 package com.YaNan.frame.plugin.builder.resolver;
