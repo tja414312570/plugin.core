@@ -177,3 +177,18 @@ public class ArrayParameterResolver implements ParameterResolver<ConfigList>{
 * 事件为事件分发时的事件定义
 * 注册事件监听 Environment.registEventListener(InterestedEventSource,EventListener)
 * 分发事件 Environment.distributeEvent(InterestedEventSource,AbstractEvent)
+```java
+	Environment.getEnviroment().registEventListener(new PluginEventSource(), new EventListener<PluginEvent>() {
+		@Override
+		public void onEvent(PluginEvent abstractEvent) {
+			System.out.println("事件:"+abstractEvent.getEventType()+"==>"+abstractEvent.getEventContent());
+		}
+	});
+	PlugsFactory.init("classpath:plugin.yc");
+	
+事件:add_resource==>AbstractResourceEntry
+事件:refresh==>com.YaNan.frame.plugin.PlugsFactory@3d4eac69
+事件:add_registerDefinition==>RegisterDefinition
+事件:register_init==>RegisterDefinition
+事件:inited==>com.YaNan.frame.plugin.PlugsFactory@3d4eac69
+```
