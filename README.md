@@ -15,7 +15,7 @@
 	* 热更新功能（ClassHotUpdater）
 	* 调用加密功能（@Encrypt）
 ![avatar](https://ufomedia.oss-cn-beijing.aliyuncs.com/QQ20191014-190318.png)
-# 20200718 动态化，让架构自身成为一个组件
+# 20200718 
 * 重构plugin核心，分离出实例工厂，组件定义工厂，拦截器构建工厂
 * 提供Environment，用于提供plugin环境的全局变量，全局事件，全局配置
 * 重新定义plugins参数规范
