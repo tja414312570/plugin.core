@@ -1,3 +1,4 @@
+## [WIKI](https://github.com/tja414312570/plugin.core/wiki/home)
 # plugin.core Plugin框架的核心
 	* 提供配置上下文（ConfigContext）
 	* 提供组件代理 （Proxy）
