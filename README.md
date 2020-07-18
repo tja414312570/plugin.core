@@ -15,3 +15,161 @@
 	* 热更新功能（ClassHotUpdater）
 	* 调用加密功能（@Encrypt）
 ![avatar](https://ufomedia.oss-cn-beijing.aliyuncs.com/QQ20191014-190318.png)
+# 20200718
+* 重构plugin核心，分离出实例工厂，组件定义工厂，拦截器构建工厂
+* 提供Environment，用于提供plugin环境的全局变量，全局事件，全局配置
+* 重新定义plugins参数规范
+* 提供参数转化器 ParameterResolver
+```java
+###################### plugin list
+#组件列表
+plugins:[
+		com.YaNan.frame.plugin.autowired.plugin.PluginWiredHandler, ##服务注入提供
+		com.YaNan.frame.plugin.autowired.resource.ResourceWiredHandler, ##资源类注入
+		com.YaNan.frame.plugin.autowired.property.PropertyWiredHandler, ##属性注入
+		com.YaNan.frame.plugin.autowired.exception.ErrorPlugsHandler, ##错误记录
+		##	 com.YaNan.frame.util.quartz.QuartzManager,##Quartz corn注解服务
+		##com.YaNan.frame.plugin.hot.ClassHotUpdater,##动态更新服务
+		com.YaNan.frame.plugin.builder.resolver.ArrayParameterResolver,#数组解析
+		com.YaNan.frame.plugin.builder.resolver.ReferenceParameterResolver,#引用解析
+		com.YaNan.frame.plugin.builder.resolver.DateParameterResolver,#日期解析 解析参数为date的参数，实现了ParameterResolver
+		{
+			#没有args,且没有method，表明使用无参构造器
+			class:com.test.SimpleRegister, #定义类
+			id:test1,#将register定义一个id，拥有ID的register将强制转换
+			init:init2#register初始化后调用init2方法 只能使用数组
+			field.name:test1 from plug #将name1赋值为string类型的内容 field字段支持object和数组-->格式为field.属性名.内容 或则为 field.属性名.格式命名.内容
+			field.date.date:"2020-07-17 09:51:35"#将date字段赋值为data类型的日期 --使用com.YaNan.frame.plugin.builder.resolver.DateParameterResolver这个解析器
+		},
+		{
+			class:com.test.SimpleRegister,
+			id:test2,
+			method:getInstance #表明使用getInstance的方法构造，如果强制cglib代理，则会将getInstance的对象克隆为一个cglib对象
+			args:[hellow world,[as,b,c,d],true] #构造时采用三个参数，此字段只支持数组
+			types:[default,-,-] #参数类型，可选字段，-和default都表示采用默认的类型，这里表示采用string,list,boolean的getInstance方法，getInstance(string,list,boolean)
+			init:[init,init2]
+			field:[ #使用数组类型的属性声明
+				{name:test2 hello world sss},#将name字段赋值为string类型的内容
+				{date.date:"2020-07-17 14:18:35"}#将date字段用DateParameterResolver转化后赋值到date字段
+			]
+		},
+		{
+			ref:test2, #引用test2的定义，此组件声明将继承test2的所有属性，自己的定义将覆盖test2的定义
+			id:testRef,#将id属性覆盖
+			method:getInstance
+			args:[test ref hellow world,[a,b,c,d],test2]
+			types:[default,arrayS,ref]#使用com.YaNan.frame.plugin.builder.resolver.ArrayParameterResolver将第二个参数转化为array格式，使用getInstance(string,array,string)的方法构造实例
+		}
+	]
+
+```
+```java 测试类
+package com.test;
+
+import java.util.Date;
+import java.util.List;
+
+import com.YaNan.frame.plugin.PlugsFactory;
+import com.YaNan.frame.plugin.annotations.AfterInstantiation;
+import com.YaNan.frame.plugin.annotations.Register;
+import com.YaNan.frame.plugin.autowired.property.Property;
+import com.YaNan.frame.plugin.handler.InvokeHandler;
+
+@Register(afterInstance="init2")
+public class SimpleRegister {
+	private String name;
+	private Date date;
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public Date getDate() {
+		return date;
+	}
+	public void setDate(Date date) {
+		this.date = date;
+	}
+//	public SimpleRegister(String name) {
+//		this.name = name;
+//	}
+	public SimpleRegister() {
+		System.out.println("实例化"+this);
+//		new RuntimeException().printStackTrace();
+	}
+	public static SimpleRegister getInstance() {
+		return new SimpleRegister();
+	}
+	public static SimpleRegister getInstance(String str,List<String> list,boolean ok) {
+		System.out.println("多种参数-string-list-booelan");
+		System.out.println(str);
+		System.out.println(list);
+		SimpleRegister simpleRegister = new SimpleRegister();
+		simpleRegister.setName("are you ok 1");
+		return simpleRegister;
+	}
+	public static SimpleRegister getInstance(String str,String[] list,String ok) {
+		System.out.println("多种参数-string-array-booelan");
+		System.out.println(str);
+		System.out.println(list);
+		System.out.println(ok);
+		SimpleRegister simpleRegister = new SimpleRegister();
+		simpleRegister.setName("are you ok 2");
+		return simpleRegister;
+	}
+	public static SimpleRegister getInstance(String str,String[] list,SimpleRegister ref) {
+		System.out.println("多种参数-string-array-ref");
+		System.out.println(str);
+		System.out.println(list);
+		System.out.println(ref);
+		SimpleRegister simpleRegister = new SimpleRegister();
+		simpleRegister.setName("are you ok 3");
+		simpleRegister.setDate(new Date());
+		return simpleRegister;
+	}
+	@AfterInstantiation #构造后执行此方法
+	public void init() {
+		System.out.println(PlugsFactory.getInstance().getPlugin(InvokeHandler.class).getRegisterList());
+		System.out.println("执行init:"+this+"[name=" + name + ", date=" + date + "]");
+	}
+	public void init2() {
+		System.out.println("执行init2:"+this+"[name=" + name + ", date=" + date + "]");
+	}
+	public void init3() {
+		System.out.println("执行init3:"+this+"[name=" + name + ", date=" + date + "]");
+	}
+
+}
+
+```
+# 参数解析器
+
+```java
+package com.YaNan.frame.plugin.builder.resolver;
+import java.util.List;
+
+import com.YaNan.frame.plugin.annotations.Register;
+import com.YaNan.frame.plugin.definition.RegisterDefinition;
+import com.typesafe.config.ConfigList;
+@Register(attribute= {"array","arrayS"}) //表明处理格式命名为array,arrayS的参数
+public class ArrayParameterResolver implements ParameterResolver<ConfigList>{
+	@Override
+	public Object resove(ConfigList configValue, String type, int index, RegisterDefinition registerDefinition) {
+		List<Object> unwrappedList = configValue.unwrapped();
+		switch (type) {
+		case "arrayS":
+			return unwrappedList.toArray(new String[unwrappedList.size()]);
+		default:
+			return unwrappedList.toArray();
+		}
+	}
+}
+
+```
+# 事件管理
+* 事件分为三部分，1：事件源(InterestedEventSource)，2：事件（AbstractEvent），3：监听器（EventListener<T extends AbstractEvent>）
+* 事件源表明事件分发的类型，或则事件监听感兴趣的类型
+* 事件为事件分发时的事件定义
+* 注册事件监听 Environment.registEventListener(InterestedEventSource,EventListener)
+* 分发事件 Environment.distributeEvent(InterestedEventSource,AbstractEvent)
