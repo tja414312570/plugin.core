@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.typesafe.config.Config;
-import com.yanan.frame.plugin.ConfigContext;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.annotations.Service;

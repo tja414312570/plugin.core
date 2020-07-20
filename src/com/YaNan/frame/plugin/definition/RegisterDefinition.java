@@ -16,6 +16,7 @@ import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ShallowClone;
 import com.typesafe.config.Config;
 import com.yanan.frame.plugin.ConstructorDefinition;
 import com.yanan.frame.plugin.ProxyModel;
@@ -36,6 +37,7 @@ public class RegisterDefinition {
 	/**
 	 * 组件类
 	 */
+	@ShallowClone
 	private Class<?> registerClass;
 	/**
 	 * 引用ID
@@ -44,14 +46,17 @@ public class RegisterDefinition {
 	/**
 	 * 类加载器
 	 */
+	@ShallowClone
 	private AppClassLoader loader;
 	/**
 	 * 注册注解 通过注解注册时有效
 	 */
+	@ShallowClone
 	private Register register;
 	/**
 	 * 组件接口类，普通类（为实现服务接口的类）无效
 	 */
+	@ShallowClone
 	private Class<?>[] services;
 	/**
 	 * 优先级，值越大，优先级越低
@@ -70,10 +75,6 @@ public class RegisterDefinition {
 	 */
 	private File file;
 	/**
-	 * 属性值，当组件用文件注册时有效
-	 */
-	private Properties properties;
-	/**
 	 * 描述，用于组件说明等
 	 */
 	private String description = "";
@@ -89,8 +90,9 @@ public class RegisterDefinition {
 	/**
 	 * Config
 	 */
+	@ShallowClone
 	private Config config;
-
+	
 	private MethodDefinition instanceMethod;
 
 	private ConstructorDefinition instanceConstructor;
@@ -128,9 +130,6 @@ public class RegisterDefinition {
 		return loader;
 	}
 
-	public Properties getProperties() {
-		return properties;
-	}
 
 	public ProxyModel getProxyModel() {
 		return proxyModel;
@@ -154,10 +153,6 @@ public class RegisterDefinition {
 
 	public void setLoader(AppClassLoader loader) {
 		this.loader = loader;
-	}
-
-	public void setProperties(Properties properties) {
-		this.properties = properties;
 	}
 
 	public void setConstructorMapping(Map<Constructor<?>, InvokeHandlerSet> constructorMapping) {
@@ -217,23 +212,6 @@ public class RegisterDefinition {
 	public AppClassLoader getProxyAppClassLoader() {
 		return loader;
 	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.hashCode(attribute);
-		result = prime * result + ((registerClass == null) ? 0 : registerClass.hashCode());
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime * result + ((file == null) ? 0 : file.hashCode());
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + afterInstanceExecuteMethod.hashCode();
-		result = prime * result + priority;
-		result = prime * result + ((proxyModel == null) ? 0 : proxyModel.hashCode());
-		result = prime * result + (signlton ? 1231 : 1237);
-		return result;
-	}
-
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -280,11 +258,6 @@ public class RegisterDefinition {
 		if (!Arrays.equals(services, other.services))
 			return false;
 		if (priority != other.priority)
-			return false;
-		if (properties == null) {
-			if (other.properties != null)
-				return false;
-		} else if (!properties.equals(other.properties))
 			return false;
 		if (proxyModel != other.proxyModel)
 			return false;
@@ -426,7 +399,7 @@ public class RegisterDefinition {
 		return "RegisterDefinition [proxyContainer=" + proxyContainer + ", registerClass=" + registerClass
 				+ ", referenceId=" + referenceId + ", loader=" + loader + ", register=" + register + ", services="
 				+ Arrays.toString(services) + ", priority=" + priority + ", attribute=" + Arrays.toString(attribute)
-				+ ", signlton=" + signlton + ", file=" + file + ", properties=" + properties + ", description="
+				+ ", signlton=" + signlton + ", file=" + file + ", description="
 				+ description + ", proxyModel=" + proxyModel + ", methodInterceptMapping=" + methodInterceptMapping
 				+ ", config=" + config + ", instanceMethod=" + instanceMethod + ", instanceConstructor="
 				+ instanceConstructor + ", constructorInterceptMapping=" + constructorInterceptMapping + ", attributes="

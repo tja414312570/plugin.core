@@ -11,9 +11,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import com.yanan.frame.plugin.PluginEvent.EventType;
 import com.yanan.frame.plugin.builder.PluginDefinitionBuilderFactory;
 import com.yanan.frame.plugin.builder.PluginInstanceFactory;
 import com.yanan.frame.plugin.builder.PluginInterceptBuilder;
@@ -22,19 +24,17 @@ import com.yanan.frame.plugin.decoder.StandAbstractResourceDecoder;
 import com.yanan.frame.plugin.decoder.StandScanResource;
 import com.yanan.frame.plugin.decoder.StandScanResourceDecoder;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
-import com.yanan.frame.plugin.exception.PluginNotFoundException;
 import com.yanan.frame.plugin.exception.PluginInitException;
+import com.yanan.frame.plugin.exception.PluginNotFoundException;
 import com.yanan.frame.plugin.exception.PluginRuntimeException;
 import com.yanan.frame.plugin.exception.RegisterNotFound;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.cache.ClassInfoCache;
-import com.yanan.utils.resource.AbstractResourceEntry;
 import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;
 import com.yanan.utils.string.StringUtil;
-import com.yanan.frame.plugin.PluginEvent.EventType;
 
 /**
  * Pluginin factory,initial Pluginin Context and manager & register & get Pluginin Instance 2018 7-27
@@ -46,16 +46,6 @@ import com.yanan.frame.plugin.PluginEvent.EventType;
  *
  */
 public class PlugsFactory {
-	/**
-	 * Stream type
-	 * <p>support stream as Class,Hoconf or Comps
-	 * @author yanan
-	 *
-	 */
-	public static enum STREAM_TYPT {
-		CLASS,CONF,COMP,PROPERTIES,XML
-	}
-	private final static String DECODER_ENVIRONMENT_SUFFIX = "-plugin-resource-decoder-";
 	private Environment environment;
 	//Pluginin context loaded configure file list
 	private List<Resource> resourceList;
@@ -66,6 +56,7 @@ public class PlugsFactory {
 	//Pluginin context Register pools
 	private Map<String, RegisterDefinition> registerDefinitionContainer = new HashMap<>();
 	private Set<RegisterDefinition> newRegisterDefinition = new CopyOnWriteArraySet<>();
+	private volatile boolean before_refresh_ready;
 	/**
 	 * 组件全局上下文事件源
 	 */
@@ -79,25 +70,7 @@ public class PlugsFactory {
 		eventSource = new PluginEventSource();
 		environment.setVariable(PluginEventSource.class.getName(), eventSource);
 		resourceLoadedList = new CopyOnWriteArraySet<>();
-		addResouceDecoder(StandScanResource.class,new StandScanResourceDecoder());
-		addResouceDecoder(AbstractResourceEntry.class,new StandAbstractResourceDecoder<Resource>());
 		
-	}
-	/**
-	 * 添加资源解析器
-	 * @param resourceClass 资源类
-	 * @param decoder 资源解析器
-	 */
-	public <T extends ResourceDecoder<? extends Resource>> void addResouceDecoder(Class<? extends Resource> resourceClass, T decoder) {
-		environment.setVariable(DECODER_ENVIRONMENT_SUFFIX+resourceClass.getName(), decoder);
-	}
-	/**
-	 * 获取资源解析器
-	 * @param resourceClass 资源类
-	 * @return 资源解析器
-	 */
-	public <T extends ResourceDecoder<? extends Resource>> T getResourceDecoder(Class<? extends Resource> resourceClass) {
-		return environment.getVariable(DECODER_ENVIRONMENT_SUFFIX+resourceClass.getName());
 	}
 	/**
 	 * 移除注册描述
@@ -152,7 +125,22 @@ public class PlugsFactory {
 		factory.refresh();
 	}
 	public RegisterDefinition getRegisterDefinition(Class<?> registerClass) {
-		return getRegisterDefinition(registerClass.getClass().getName());
+		RegisterDefinition registerDefinition = null ;
+		try {
+			registerDefinition = getRegisterDefinition(registerClass.getName());
+		}catch (Exception e) {
+			System.out.println(serviceContatiner.keySet());
+			System.out.println(registerClass+" " +getPlugin(registerClass));
+			Plugin plugin = getPlugin(registerClass);
+			if(plugin == null) {
+				registerDefinition = PluginDefinitionBuilderFactory.getInstance().builderRegisterDefinition(registerClass);
+				this.addRegisterDefinition(registerDefinition);
+			}else {
+				registerDefinition = plugin.getDefaultRegisterDefinition();
+			}
+		}
+		Assert.isNull(registerDefinition,"the register definition is null for ["+registerClass.getName()+"]");
+		return registerDefinition;
 	}
 	public RegisterDefinition getRegisterDefinition(String registerId) {
 		RegisterDefinition registerDefinition = registerDefinitionContainer.get(registerId);
@@ -166,8 +154,16 @@ public class PlugsFactory {
 		if(StringUtil.isEmpty(id)) {
 			id = registerDefinition.getRegisterClass().getName();
 		}
-		if(this.registerDefinitionContainer.containsKey(id))
-			throw new PluginInitException("the register is exists for ["+id+"]");
+		if(this.registerDefinitionContainer.containsKey(id)) {
+			if(StringUtil.isEmpty(registerDefinition.getReferenceId())) 
+				throw new PluginInitException("the register is exists for ["+id+"]");
+			else {
+				while(this.registerDefinitionContainer
+						.containsKey(id = id + UUID.randomUUID().toString()));
+			}
+				
+		}
+			
 		this.registerDefinitionContainer.put(id, registerDefinition);
 		Class<?>[] serviceClassArray = registerDefinition.getServices();
 		for(Class<?> serviceClass : serviceClassArray) {
@@ -220,7 +216,9 @@ public class PlugsFactory {
 	 * with register when plugin context scan all class
 	 * 
 	 */
+	@SuppressWarnings("unchecked")
 	public void refresh() {
+		beforeRefreshCheck();
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.refresh,this));
 		// 判断资源文件是否存在,如果无资源文件，直接扫描所有的plugs文件
 		if (this.resourceList.isEmpty()) {
@@ -230,7 +228,8 @@ public class PlugsFactory {
 		for (Resource resource : this.resourceList) {
 			if(resourceLoadedList.contains(resource))
 				continue;
-			ResourceDecoder<Resource> resourceDecoder = this.getResourceDecoder(resource.getClass());
+//			ResourceDecoder<Resource> resourceDecoder = this.getResourceDecoder(resource.getClass());
+			ResourceDecoder<Resource> resourceDecoder = getPluginsInstanceByAttributeStrict(ResourceDecoder.class, resource.getClass().getSimpleName());
 			resourceDecoder.decodeResource(this, resource);
 			resourceLoadedList.add(resource);
 		}
@@ -240,11 +239,31 @@ public class PlugsFactory {
 		});
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
+	/**
+	 * 检查默认的资源解析是否已经装载
+	 */
+	private void beforeRefreshCheck() {
+		if(!before_refresh_ready) {
+			synchronized (this) {
+				if(!before_refresh_ready) {
+					//抽象资源解析
+					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory.getInstance()
+							.builderRegisterDefinition(StandAbstractResourceDecoder.class);
+					this.addRegisterDefinition(registerDefinitions);
+					//扫描资源解析
+					registerDefinitions = PluginDefinitionBuilderFactory.getInstance()
+							.builderRegisterDefinition(StandScanResourceDecoder.class);
+					this.addRegisterDefinition(registerDefinitions);
+					before_refresh_ready = true;
+				}
+			}
+		}
+	}
 	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
 		if(StringUtil.isNotEmpty(registerDefinition.getId())) {
-			PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getRegisterClass());
+			PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getServices()[0]);
 		}
 	}
 	/**
