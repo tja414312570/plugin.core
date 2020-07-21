@@ -13,7 +13,6 @@ import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import com.typesafe.config.impl.SimpleConfigObject;
-import com.yanan.frame.plugin.ConstructorDefinition;
 import com.yanan.frame.plugin.ParameterUtils;
 import com.yanan.frame.plugin.Plugin;
 import com.yanan.frame.plugin.PlugsFactory;
@@ -23,6 +22,7 @@ import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.annotations.Service;
 import com.yanan.frame.plugin.builder.resolver.DelayParameterResolver;
 import com.yanan.frame.plugin.builder.resolver.ParameterResolver;
+import com.yanan.frame.plugin.definition.ConstructorDefinition;
 import com.yanan.frame.plugin.definition.FieldDefinition;
 import com.yanan.frame.plugin.definition.MethodDefinition;
 import com.yanan.frame.plugin.definition.PluginDefinition;
@@ -33,6 +33,10 @@ import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.string.StringUtil;
 
+/**
+ * 组件定义构造工厂
+ * @author yanan
+ */
 public class PluginDefinitionBuilderFactory {
 	private static final String CONFIG_ARGS = "args";
 	private static final String CONFIG_TYPES = "types";
@@ -304,7 +308,7 @@ public class PluginDefinitionBuilderFactory {
 						if(field == null)
 							throw new NoSuchFieldException(name);
 						fieldDefinition = new FieldDefinition(field, type, value,parameterResolver);
-						registerDefinition.addFieldDefinition(fieldDefinition);
+						registerDefinition.addAfterInstanceInitField(fieldDefinition);
 					} catch (NoSuchFieldException | SecurityException e) {
 						throw new PluginInitException("could not found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
 					}
@@ -343,7 +347,7 @@ public class PluginDefinitionBuilderFactory {
 					if(field == null)
 						throw new NoSuchFieldException(name);
 					fieldDefinition = new FieldDefinition(field, type, value,parameterResolver);
-					registerDefinition.addFieldDefinition(fieldDefinition);
+					registerDefinition.addAfterInstanceInitField(fieldDefinition);
 				} catch (NoSuchFieldException | SecurityException e) {
 					throw new PluginInitException("could not found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
 				}
@@ -449,7 +453,7 @@ public class PluginDefinitionBuilderFactory {
 			throw new PluginInitException("the method executed after instantiation does not allow any parameters,but found " + method );
 	}
 
-	public static <T> Class<?>[] getPlugs(Class<?> registerClass, String declareRegister) {
+	private static <T> Class<?>[] getPlugs(Class<?> registerClass, String declareRegister) {
 		Set<Class<?>> set = new HashSet<Class<?>>();
 		String[] strs = declareRegister.split(",");
 		for (String str : strs) {

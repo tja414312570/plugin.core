@@ -1,10 +1,9 @@
-package com.yanan.frame.plugin;
+package com.yanan.frame.plugin.definition;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 import com.yanan.frame.plugin.builder.resolver.ParameterResolver;
-import com.yanan.frame.plugin.definition.MethodDefinition;
 import com.typesafe.config.ConfigValue;
 
 /**
@@ -12,6 +11,7 @@ import com.typesafe.config.ConfigValue;
  * @author yanan
  */
 public class ConstructorDefinition extends MethodDefinition {
+	//需要执行的构造器
 	private Constructor<?> constructor;
 	public ConstructorDefinition(Constructor<?> constructor, Class<?>[] argsType, Object[] args,
 			ParameterResolver<ConfigValue>[] resolvers, String[] type) {

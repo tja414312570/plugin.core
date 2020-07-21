@@ -48,37 +48,19 @@ import com.yanan.utils.string.StringUtil;
  */
 public class PlugsFactory {
 	private Environment environment;
-	//Pluginin context loaded configure file list
+	//容器资源列表
 	private List<Resource> resourceList;
-	public Environment getEnvironment() {
-		return environment;
-	}
-	public List<Resource> getResourceList() {
-		return resourceList;
-	}
-	public Set<Resource> getResourceLoadedList() {
-		return resourceLoadedList;
-	}
-	public Map<Class<?>, Plugin> getServiceContatiner() {
-		return serviceContatiner;
-	}
-	public Set<RegisterDefinition> getNewRegisterDefinition() {
-		return newRegisterDefinition;
-	}
-	public boolean isBefore_refresh_ready() {
-		return before_refresh_ready;
-	}
+	//已加载的资源列表
 	private Set<Resource> resourceLoadedList;
-	//Pluginin context scan package path
-	//Pluginin context plugin pools
+	//服务定义容器
 	private Map<Class<?>, Plugin> serviceContatiner = new HashMap<Class<?>, Plugin>();
-	//Pluginin context Register pools
+	//注册定义容器
 	private Map<String, RegisterDefinition> registerDefinitionContainer = new HashMap<>();
-	private Set<RegisterDefinition> newRegisterDefinition = new CopyOnWriteArraySet<>();
+	//新加入的注册定义集合
+	private Set<RegisterDefinition> newRegisterDefinitionList = new CopyOnWriteArraySet<>();
+	//是否已经容器初始化，主要用于检查容器的一些必要组件是否已经准备妥当
 	private volatile boolean before_refresh_ready;
-	/**
-	 * 组件全局上下文事件源
-	 */
+	//组件全局上下文事件源
 	private PluginEventSource eventSource;
 	/**
 	 * 组件工厂构造器
@@ -92,57 +74,136 @@ public class PlugsFactory {
 		
 	}
 	/**
-	 * 移除注册描述
-	 * @param registerClass 注册类
-	 */
-	public void removeRegister(Class<?> registerClass) {
-		synchronized (this) {
-			RegisterDefinition registerDescription = getRegisterDefinition(registerClass);
-			Class<?>[] plugClassArray = registerDescription.getServices();
-			for(Class<?> plugClass : plugClassArray) {
-				Plugin plugin = this.serviceContatiner.get(plugClass);
-				plugin.getRegisterList().remove(registerDescription);
-			}
-		}
-	}
-	public void addScanPath(String... paths) {
-		for(String path : paths) {
-			addResource(new StandScanResource(path));
-		}
-	}
-	public void addScanPath(Class<?>... clzzs) {
-		addScanPath(ResourceManager.getClassPath(clzzs));
-	}
-
-	/**
-	 * 初始化组件工厂
+	 * 初始化容器
 	 * @param resources initial configure file path 
 	 */
 	public static void init(String... resources) {
 		PlugsFactory factory = getInstance();
-		if(resources == null || resources.length == 0){
-			resources = new String[]{"classpath:plugin.yc"};
-		}
 		for (String res : resources) {
 			ResourceManager.getResourceList(res).forEach((resource -> 
 			factory.addResource(resource)));
 		}
-		factory.refresh();
+		init();
 	}
+	/**
+	 * 初始化容器
+	 */
 	public static void init() {
 		PlugsFactory factory = getInstance();
-		String resourceDesc = "classpath:plugin.yc";
-		ResourceManager.getResourceList(resourceDesc).forEach((resource -> 
-		factory.addResource(resource)));
+		if(factory.getResourceList() == null || factory.getResourceList().isEmpty()) {
+			String resourceDesc = "classpath:plugin.yc";
+			ResourceManager.getResourceList(resourceDesc).forEach((resource -> 
+			factory.addResource(resource)));
+		}
 		factory.refresh();
 	}
+	/**
+	 * 初始化容器
+	 * @param resources 需要加入容器的资源
+	 */
 	public static void init(Resource... resources) {
 		PlugsFactory factory = getInstance();
 		for(Resource resource : resources) {
 			 factory.addResource(resource);
 		}
-		factory.refresh();
+		init();
 	}
+	/**
+	 * 增加扫描路径，支持扫描jar文件
+	 * @param paths 扫描路径表达式
+	 */
+	public void addScanPath(String... paths) {
+		for(String path : paths) {
+			//将路劲转化为抽象扫描资源
+			addResource(new StandScanResource(path));
+		}
+	}
+	/**
+	 * 将资源添加到容器
+	 * @param resources 资源数据
+	 */
+	public void addResource(Resource... resources) {
+		for(Resource resource : resources) {
+			environment.distributeEvent(eventSource, new PluginEvent(EventType.add_resource,resource));
+			synchronized (resourceList) {
+				if(!resourceList.contains(resource)) {
+					resourceList.add(resource);
+				}
+			}
+		}
+	}
+	/**
+	 * 将某个类所属的类路径加入扫描队列
+	 * @param clzzs 需要扫描的类
+	 */
+	public void addScanPath(Class<?>... clzzs) {
+		addScanPath(ResourceManager.getClassPath(clzzs));
+	}
+	/**
+	 * 将一个类作为服务定义添加到容器
+	 * @param serviceClass 服务定义
+	 */
+	public void addPlugininDefinition(Class<?> serviceClass) {
+		Assert.isNull(serviceClass);
+		Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
+		this.addPlugininDefinition(plugin);
+	}
+	/**
+	 * 将一个类做为注册定义添加到容器
+	 * @param registerClass 注册定义
+	 */
+	public void addRegisterDefinition(Class<?> registerClass) {
+		Assert.isNull(registerClass);
+		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
+		this.addRegisterDefinition(registerDefinition);
+	}
+	/**
+	 * 将服务定义添加到容器
+	 * @param plugin 服务定义
+	 */
+	public synchronized void addPlugininDefinition(Plugin plugin) {
+		if(!this.serviceContatiner.containsKey(plugin.getDefinition().getPlugClass())) {
+			this.serviceContatiner.put(plugin.getDefinition().getPlugClass(), plugin);
+		}
+	}
+	/**
+	 * 将注册定义添加到容器
+	 * @param registerDefinition 注册定义
+	 */
+	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
+		newRegisterDefinitionList.add(registerDefinition);
+		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
+		String id = registerDefinition.getId();
+		if(StringUtil.isEmpty(id)) {
+			id = registerDefinition.getRegisterClass().getName();
+		}
+		synchronized (id) {
+			if(this.registerDefinitionContainer.containsKey(id)) {
+				if(StringUtil.isEmpty(registerDefinition.getReferenceId())) 
+					throw new PluginInitException("the register is exists for ["+id+"]");
+				else {
+					while(this.registerDefinitionContainer
+							.containsKey(id = id + UUID.randomUUID().toString()));
+				}
+					
+			}
+			this.registerDefinitionContainer.put(id, registerDefinition);
+			Class<?>[] serviceClassArray = registerDefinition.getServices();
+			for(Class<?> serviceClass : serviceClassArray) {
+				Plugin plugin = this.serviceContatiner.get(serviceClass);
+				if(plugin == null) {
+					plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
+					this.serviceContatiner.put(serviceClass, plugin);
+				}
+				plugin.addRegister(registerDefinition);
+			}
+		}
+	}
+	/**
+	 * 获取某个类的注册定义
+	 * @param registerClass 查找的类
+	 * @return 注册定义
+	 */
 	public RegisterDefinition getRegisterDefinition(Class<?> registerClass) {
 		RegisterDefinition registerDefinition = null ;
 		try {
@@ -159,53 +220,89 @@ public class PlugsFactory {
 		Assert.isNull(registerDefinition,"the register definition is null for ["+registerClass.getName()+"]");
 		return registerDefinition;
 	}
+	/**
+	 * 通过ID的方式查找注册定义
+	 * @param registerId 注册的ID
+	 * @return 注册定义
+	 */
 	public RegisterDefinition getRegisterDefinition(String registerId) {
 		RegisterDefinition registerDefinition = registerDefinitionContainer.get(registerId);
 		Assert.isNull(registerDefinition,"the register definition is null for ["+registerId+"]");
 		return registerDefinition;
 	}
-	public void addPlugininDefinition(Class<?> serviceClass) {
-		Assert.isNull(serviceClass);
-		Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
-		this.addPlugininDefinition(plugin);
+	/**
+	 * 获取服务类的默认实例，允许返回null
+	 * @param serviceClass 服务类
+	 * @return 注册定义
+	 */
+	public static RegisterDefinition getRegisterDefinitionAllowNull(Class<?> serviceClass) {
+		RegisterDefinition registerDefinition = null;
+		Plugin plugin = getPlugin(serviceClass);
+		if (plugin != null)
+			registerDefinition = plugin.getDefaultRegisterDefinition();
+		return registerDefinition;
 	}
-	public void addRegisterDefinition(Class<?> registerClass) {
-		Assert.isNull(registerClass);
-		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
-		this.addRegisterDefinition(registerDefinition);
-	}
-	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
-		newRegisterDefinition.add(registerDefinition);
-		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
-		String id = registerDefinition.getId();
-		if(StringUtil.isEmpty(id)) {
-			id = registerDefinition.getRegisterClass().getName();
+	/**
+	 * 通过服务类，属性，以及严格模式返回注册器，如果为严格模式，容器会以严格模式匹配，不会返回不匹配的注册器
+	 * @param serviceClass 服务类
+	 * @param attribute 查找的属性
+	 * @param strict 严格模式
+	 * @return 注册定义
+	 */
+	public RegisterDefinition getRegisterDefinition(Class<?> serviceClass, String attribute, boolean strict){
+		RegisterDefinition registerDescription = null;
+		Plugin plugin = getPlugin(serviceClass);
+		if (plugin == null) 
+			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+		if (strict) {
+			registerDescription = plugin.getRegisterDefinitionByAttributeStrict(attribute);
+		}else {
+			registerDescription = plugin.getRegisterDefinitionByAttribute(attribute);
 		}
-		if(this.registerDefinitionContainer.containsKey(id)) {
-			if(StringUtil.isEmpty(registerDefinition.getReferenceId())) 
-				throw new PluginInitException("the register is exists for ["+id+"]");
-			else {
-				while(this.registerDefinitionContainer
-						.containsKey(id = id + UUID.randomUUID().toString()));
+		return registerDescription;
+	}
+	/**
+	 * 获取一个确定的注册定义
+	 * @param serviceClass 服务类
+	 * @param insClass 实现类
+	 * @return 注册定义
+	 */
+	public static <T> RegisterDefinition getRegisterDefinition(Class<T> serviceClass, Class<?> insClass){
+		RegisterDefinition registerDescription = null;
+		if (serviceClass.isInterface()) {
+			Plugin plugin = getPlugin(serviceClass);
+			if (plugin == null) {
+				throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
 			}
-				
+			registerDescription = plugin.getRegisterDefinitionByInsClass(insClass);
+		} else {
+			registerDescription = getInstance().getRegisterDefinition(serviceClass);
 		}
-		this.registerDefinitionContainer.put(id, registerDefinition);
-		Class<?>[] serviceClassArray = registerDefinition.getServices();
-		for(Class<?> serviceClass : serviceClassArray) {
-			Plugin plugin = this.serviceContatiner.get(serviceClass);
-			if(plugin == null) {
-				plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
-				this.serviceContatiner.put(serviceClass, plugin);
-			}
-			plugin.addRegister(registerDefinition);
-		}
+		return registerDescription;
 	}
-	private void addResource(Resource resource) {
-		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_resource,resource));
-		if(!resourceList.contains(resource)) {
-			synchronized (resourceList) {
-				resourceList.add(resource);
+	/**
+	 * 获取注册定义和不允许空值
+	 * @param serviceClass 服务类
+	 * @return 注册定义
+	 */
+	public static<T> RegisterDefinition getRegisterDefinitionNoneNull(Class<T> serviceClass){
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
+		if (registerDescription == null) {
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+		}
+		return registerDescription;
+	}
+	/**
+	 * 移除注册描述
+	 * @param registerClass 注册类
+	 */
+	public void removeRegister(Class<?> registerClass) {
+		synchronized (this) {
+			RegisterDefinition registerDescription = getRegisterDefinition(registerClass);
+			Class<?>[] plugClassArray = registerDescription.getServices();
+			for(Class<?> plugClass : plugClassArray) {
+				Plugin plugin = this.serviceContatiner.get(plugClass);
+				plugin.getRegisterList().remove(registerDescription);
 			}
 		}
 	}
@@ -241,7 +338,7 @@ public class PlugsFactory {
 	 * with register when plugin context scan all class
 	 * 
 	 */
-	public void refresh() {
+	public synchronized void refresh() {
 		beforeRefreshCheck();
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.refresh,this));
 		// 判断资源文件是否存在,如果无资源文件，直接扫描所有的plugs文件
@@ -257,7 +354,7 @@ public class PlugsFactory {
 			resourceDecoder.decodeResource(this, resource);
 			resourceLoadedList.add(resource);
 		}
-		this.newRegisterDefinition.removeIf(registerDefinition->{
+		this.newRegisterDefinitionList.removeIf(registerDefinition->{
 			registerDefinitionInit(registerDefinition);
 			return true;
 		});
@@ -283,6 +380,11 @@ public class PlugsFactory {
 			}
 		}
 	}
+	private void checkRegisterDefinition(RegisterDefinition registerDefinition) {
+		if(this.newRegisterDefinitionList.contains(registerDefinition)) {
+			registerDefinitionInit(registerDefinition);
+		}
+	}
 	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
@@ -298,11 +400,6 @@ public class PlugsFactory {
 	public static Plugin getPlugin(Class<?> serviceClass) {
 		return getInstance().serviceContatiner.get(serviceClass);
 	}
-	public synchronized void addPlugininDefinition(Plugin plugin) {
-		if(!this.serviceContatiner.containsKey(plugin.getDefinition().getPlugClass())) {
-			this.serviceContatiner.put(plugin.getDefinition().getPlugClass(), plugin);
-		}
-	}
 	public void clear() {
 		this.registerDefinitionContainer.clear();
 		this.serviceContatiner.clear();
@@ -317,40 +414,11 @@ public class PlugsFactory {
 		}
 		return plugin.getRegisterDefinitionList();
 	}
-	public static RegisterDefinition getRegisterDefinitionAllowNull(Class<?> serviceClass) {
-		RegisterDefinition registerDefinition = null;
-		Plugin plugin = getPlugin(serviceClass);
-		if (plugin != null)
-			registerDefinition = plugin.getDefaultRegisterDefinition();
-		return registerDefinition;
-	}
-	public RegisterDefinition getRegisterDefinition(Class<?> serviceClass, String attribute, boolean strict){
-		RegisterDefinition registerDescription = null;
-		Plugin plugin = getPlugin(serviceClass);
-		if (plugin == null) 
-			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
-		if (strict) {
-			registerDescription = plugin.getRegisterDefinitionByAttributeStrict(attribute);
-		}else {
-			registerDescription = plugin.getRegisterDefinitionByAttribute(attribute);
-		}
-		return registerDescription;
-	}
-	public static <T> RegisterDefinition getRegisterDefinition(Class<T> serviceClass, Class<?> insClass){
-		RegisterDefinition registerDescription = null;
-		if (serviceClass.isInterface()) {
-			Plugin plugin = getPlugin(serviceClass);
-			if (plugin == null) {
-				throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
-			}
-			registerDescription = plugin.getRegisterDefinitionByInsClass(insClass);
-		} else {
-			registerDescription = getInstance().getRegisterDefinition(serviceClass);
-		}
-		return registerDescription;
-	}
-	
-
+	/**
+	 * 通过ID的方式获取实例
+	 * @param id ID
+	 * @return 实例
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getPluginsInstance(String id) {
 		// 获取一个注册描述
@@ -365,9 +433,9 @@ public class PlugsFactory {
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstance(Class<T> serviceClass, Object... args) {
 		// 获取一个注册描述
@@ -382,12 +450,9 @@ public class PlugsFactory {
 	/**
 	 * 获取组件实例，当组件不存在时返回传入的组件实现类的简单组件服务 如果获取组件时服务未完全初始化，则不会对其进行拦截
 	 * 
-	 * @param serviceClass
-	 *            组件接口类
-	 * @param defaultClass
-	 *            默认实现类
-	 * @param args
-	 *            组件参数
+	 * @param serviceClass  组件接口类
+	 * @param defaultClass  默认实现类
+	 * @param args 组件参数
 	 * @return 代理对象
 	 */
 	public static <T> T getPluginsInstanceWithDefault(Class<T> serviceClass, Class<? extends T> defaultClass, Object... args) {
@@ -406,10 +471,10 @@ public class PlugsFactory {
 	/**
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件，当组件实例为空时，返回null，并不抛出异常
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
-	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 *  
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceAllowNull(Class<T> serviceClass, Object... args) {
 		// 获取一个注册描述
@@ -420,7 +485,12 @@ public class PlugsFactory {
 		}
 		return null;
 	}
-
+	/**
+	 * 强制生成一个新的实例并返回
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 实例
+	 */
 	public static <T> T getPluginsInstanceNew(Class<T> serviceClass, Object... args) {
 		try {
 			// 获取一个注册描述
@@ -470,9 +540,9 @@ public class PlugsFactory {
 	 * {@link #getPluginsInstanceByAttributeStrict()}
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceByAttribute(Class<T> serviceClass, String attribute, Object... args) {
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, false);
@@ -485,7 +555,7 @@ public class PlugsFactory {
 //
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
-	 * 如果没有匹配的组件，会返回null，因此这是一种不严谨的组件获取方式，如果想当匹配不通过时，返回一个 默认组件，需要使用方法
+	 * 如果没有匹配的组件，会抛出异常，因此这是一种严谨的组件获取方式
 	 * {@link #getPluginsInstanceByAttribute())
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
@@ -501,11 +571,6 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
-	private void checkRegisterDefinition(RegisterDefinition registerDefinition) {
-		if(this.newRegisterDefinition.contains(registerDefinition)) {
-			registerDefinitionInit(registerDefinition);
-		}
-	}
 	
 	public <T> Plugin getPluginNonNull(Class<T> serviceClass) {
 		Plugin plugin = getPlugin(serviceClass);
@@ -514,11 +579,12 @@ public class PlugsFactory {
 		return plugin;
 	}
 	/**
-	 * 获取组件的实例列表 返回的list按其优先级排序 优先级数值越低，优先级越高
+	 * 获取组件中匹配属性的实例列表 
+	 * 返回的list按其优先级排序 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 服务列表
 	 */
 	public static <T> List<T> getPluginsInstanceListByAttribute(Class<T> serviceClass, String attribute, Object... args) {
 		try {
@@ -528,6 +594,14 @@ public class PlugsFactory {
 			throw new PluginRuntimeException("failed to get plugin instance at plugin class " + serviceClass, e);
 		}
 	}
+	/**
+	 * 获取组件的实例列表，容器会将Plugin的所有RegisterDefinition实例化后加入一个集合返回
+	 * 返回的list按其优先级排序 优先级数值越低，优先级越高
+	 * @param serviceClass 服务类
+	 * @param registerDescriptionList 组件秒速列表
+	 * @param args 参数
+	 * @return 实例的集合
+	 */
 	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass,List<RegisterDefinition> registerDescriptionList,Object... args){
 		List<T> objectList = new ArrayList<T>();
 		registerDescriptionList.forEach(registerDescription->{
@@ -539,9 +613,9 @@ public class PlugsFactory {
 	/**
 	 * 获取组件的实例列表 返回的list按其优先级排序 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param args 参数
+	 * @return 实例列表
 	 */
 	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass, Object... args) {
 			List<RegisterDefinition> registerDescriptionList = getInstance().getPluginNonNull(serviceClass)
@@ -669,17 +743,27 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterNewInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
-	public static<T> RegisterDefinition getRegisterDefinitionNoneNull(Class<T> serviceClass){
-		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
-		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
-		}
-		return registerDescription;
-	}
 	public static <T> T getPluginsInstanceByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
 		RegisterDefinition registerDescription = getRegisterDefinitionNoneNull(serviceClass);
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
-	
+	public Environment getEnvironment() {
+		return environment;
+	}
+	public List<Resource> getResourceList() {
+		return resourceList;
+	}
+	public Set<Resource> getResourceLoadedList() {
+		return resourceLoadedList;
+	}
+	public Map<Class<?>, Plugin> getServiceContatiner() {
+		return serviceContatiner;
+	}
+	public Set<RegisterDefinition> getNewRegisterDefinitionList() {
+		return newRegisterDefinitionList;
+	}
+	public boolean isBefore_refresh_ready() {
+		return before_refresh_ready;
+	}
 }

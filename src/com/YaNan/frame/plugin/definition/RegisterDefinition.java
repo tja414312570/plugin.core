@@ -10,16 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 
+import com.typesafe.config.Config;
+import com.yanan.frame.plugin.ProxyModel;
 import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.utils.reflect.AppClassLoader;
-import com.yanan.utils.reflect.ShallowClone;
-import com.typesafe.config.Config;
-import com.yanan.frame.plugin.ConstructorDefinition;
-import com.yanan.frame.plugin.ProxyModel;
 
 /**
  * 组件描述类 用于创建组件时的组件信息 v1.0 支持通过Class的Builder方式 v1.1 支持通过Comp文件的Builder方式 v1.2
@@ -33,30 +30,29 @@ import com.yanan.frame.plugin.ProxyModel;
  *
  */
 public class RegisterDefinition {
+	/**
+	 * 代理容器，当组件拥有单例属性，此容器用于存放实例
+	 */
 	private volatile Map<Integer, Object> proxyContainer;
 	/**
-	 * 组件类
+	 * 组件类，用于描述此定义所属的具体类
 	 */
-	@ShallowClone
 	private Class<?> registerClass;
 	/**
-	 * 引用ID
+	 * 引用ID，当此定义引用其他定义时拥有此属性
 	 */
 	private String referenceId;
 	/**
 	 * 类加载器
 	 */
-	@ShallowClone
 	private AppClassLoader loader;
 	/**
 	 * 注册注解 通过注解注册时有效
 	 */
-	@ShallowClone
 	private Register register;
 	/**
 	 * 组件接口类，普通类（为实现服务接口的类）无效
 	 */
-	@ShallowClone
 	private Class<?>[] services;
 	/**
 	 * 优先级，值越大，优先级越低
@@ -82,7 +78,6 @@ public class RegisterDefinition {
 	 * 代理方式
 	 */
 	private ProxyModel proxyModel = ProxyModel.DEFAULT;
-
 	/**
 	 * 方法拦截器 映射
 	 */
@@ -90,14 +85,17 @@ public class RegisterDefinition {
 	/**
 	 * Config
 	 */
-	@ShallowClone
 	private Config config;
-	
+	/**
+	 * 实例化的方法，当此属性存在，组件使用此方法获取对象
+	 */
 	private MethodDefinition instanceMethod;
-
+	/**
+	 * 实例化的构造器，当此属性存在，组件使用此构造器实例化对象
+	 */
 	private ConstructorDefinition instanceConstructor;
 	/**
-	 * 构造器拦截器
+	 * 构造器拦截器链路和构造器的拦截器链
 	 */
 	private Map<Constructor<?>, InvokeHandlerSet> constructorInterceptMapping;
 	/**
@@ -105,17 +103,20 @@ public class RegisterDefinition {
 	 */
 	private Map<String, Object> attributes;
 	/**
-	 * 域参数
+	 * 属性拦截器链
 	 */
 	private Map<Field, InvokeHandlerSet> fieldInterceptMapping;
 	/**
-	 * 初始化后执行的方法
+	 * 初始化后执行的方法集合
 	 */
 	private List<MethodDefinition> afterInstanceExecuteMethod;
 	/**
-	 * 初始化后执行的方法
+	 * 初始化后需要处理属性结合
 	 */
 	private List<FieldDefinition> afterInstanceInitField;
+	/**
+	 * 组件ID
+	 */
 	private String id;
 	/**
 	 * 链接对象
@@ -559,8 +560,11 @@ public class RegisterDefinition {
 	public void setInstanceConstructor(ConstructorDefinition instanceConstructor) {
 		this.instanceConstructor = instanceConstructor;
 	}
-
-	public void addFieldDefinition(FieldDefinition fieldDefinition) {
+	/**
+	 * 当实例化后，需要处理的属性
+	 * @param fieldDefinition 属性定义
+	 */
+	public void addAfterInstanceInitField(FieldDefinition fieldDefinition) {
 		if (this.afterInstanceInitField == null) {
 			afterInstanceInitField = new ArrayList<>();
 		}

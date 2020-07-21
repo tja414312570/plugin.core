@@ -8,12 +8,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.typesafe.config.ConfigValue;
-import com.yanan.frame.plugin.ConstructorDefinition;
 import com.yanan.frame.plugin.ParameterUtils;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.ProxyModel;
 import com.yanan.frame.plugin.builder.resolver.DelayParameterResolver;
 import com.yanan.frame.plugin.builder.resolver.ParameterResolver;
+import com.yanan.frame.plugin.definition.ConstructorDefinition;
 import com.yanan.frame.plugin.definition.FieldDefinition;
 import com.yanan.frame.plugin.definition.MethodDefinition;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
@@ -118,7 +118,6 @@ public class PluginInstanceFactory {
 	public static <T> T getRegisterInstance(RegisterDefinition registerDefinition,Class<T> service, Object... args){
 		Object proxy = null;
 		MethodDefinition methodDefinition = null;
-		ConstructorDefinition constructorDefinition = null;
 		//如果存在引用  获取引用对象
 		if(!StringUtil.isEmpty(registerDefinition.getReferenceId())) {
 			proxy = PlugsFactory.getPluginsInstance(registerDefinition.getReferenceId());

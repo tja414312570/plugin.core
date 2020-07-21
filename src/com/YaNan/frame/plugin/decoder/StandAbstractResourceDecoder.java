@@ -30,30 +30,37 @@ import com.yanan.utils.resource.Resource;
  */
 @Register(attribute = { "com.yanan.utils.resource.AbstractResourceEntry", "AbstractResourceEntry" })
 public class StandAbstractResourceDecoder<K extends Resource> implements ResourceDecoder<K> {
-
+	//当前资源名称
 	private String resourceName;
-
+	
 	public void buildPlugsByConfigList(List<? extends Object> list) {
 		for (Object conf : list) {
 			buildPlugByConfig(conf);
 		}
 	}
-
+	/**
+	 * 调用PluginDefinitionBuilderFactory解析配置，并将生成的Definition添加到容器
+	 * @param conf 配置
+	 */
 	public void buildPlugByConfig(Object conf) {
 		if (conf == null)
 			throw new PluginInitException("conf is null");
+		//检查配置类型
 		if(!AppClassLoader.implementsOf(conf.getClass(), ConfigValue.class))
 			throw new UnsupportedOperationException("the config type is not support");
 		ConfigValue configValue = (ConfigValue) conf;
 		Object plugin = null;
 		try {
+			//若果配置值只是字符串类型，调用默认解析方法即可
 			if (configValue.valueType() == ConfigValueType.STRING) {
 				Class<?> clzz = Class.forName((String) configValue.unwrapped());
 				plugin = PluginDefinitionBuilderFactory.builderPluginDefinitionAuto(clzz);
+				//若果是配置类型，调用专用的解析config的方法解析配置
 			} else if (configValue.valueType() == ConfigValueType.OBJECT) {
 				plugin = PluginDefinitionBuilderFactory.buildRegisterDefinitionByConfig(((SimpleConfigObject) configValue).toConfig());
 
 			}
+			//判断解析后的定义类型
 			if(Objects.equals(plugin.getClass(), Plugin.class)) {
 				PlugsFactory.getInstance().addPlugininDefinition((Plugin) plugin);
 			}else {
@@ -73,10 +80,14 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 		try {
 			is = resource.getInputStream();
 			reader = new InputStreamReader(is);
+			//将资源转化为Config
 			Config config = ConfigFactory.parseReader(reader);
+			//将Config添加到全局Config
 			Environment.getEnviroment().mergeConfig(config);
 			config.allowKeyNull(true);
+			//获取plugins列表
 			List<? extends Object> list = config.getValueList("plugins");
+			//解析
 			buildPlugsByConfigList(list);
 		} catch (Exception e) {
 			throw new PluginRuntimeException("failed to add plug at file " + resource.getPath(), e);
