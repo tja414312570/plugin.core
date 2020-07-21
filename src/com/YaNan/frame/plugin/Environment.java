@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.yanan.frame.plugin.event.AbstractEvent;
 import com.yanan.frame.plugin.event.EventListener;
 import com.yanan.frame.plugin.event.InterestedEventSource;
+import com.yanan.utils.asserts.Assert;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -107,6 +108,15 @@ public class Environment {
 	 */
 	public Config getConfigure() {
 		return this.globalConfig;
+	}
+	public Config getConfig(String path) {
+		Assert.isNull(path);
+		if(this.globalConfig == null)
+			return null;
+		this.globalConfig.allowKeyNull(true);
+		Config config = this.globalConfig.getConfig(path);
+		this.globalConfig.allowKeyNull(false);
+		return config;
 	}
 	/**
 	 * merge configure to global configure

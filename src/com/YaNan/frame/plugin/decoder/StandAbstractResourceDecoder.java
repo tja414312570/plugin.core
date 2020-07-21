@@ -45,14 +45,13 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 		if(!AppClassLoader.implementsOf(conf.getClass(), ConfigValue.class))
 			throw new UnsupportedOperationException("the config type is not support");
 		ConfigValue configValue = (ConfigValue) conf;
-		PluginDefinitionBuilderFactory builder = PluginDefinitionBuilderFactory.getInstance();
 		Object plugin = null;
 		try {
 			if (configValue.valueType() == ConfigValueType.STRING) {
 				Class<?> clzz = Class.forName((String) configValue.unwrapped());
-				plugin = builder.builderPluginDefinitionAuto(clzz);
+				plugin = PluginDefinitionBuilderFactory.builderPluginDefinitionAuto(clzz);
 			} else if (configValue.valueType() == ConfigValueType.OBJECT) {
-				plugin = builder.buildRegisterDefinitionByConfig(((SimpleConfigObject) configValue).toConfig());
+				plugin = PluginDefinitionBuilderFactory.buildRegisterDefinitionByConfig(((SimpleConfigObject) configValue).toConfig());
 
 			}
 			if(Objects.equals(plugin.getClass(), Plugin.class)) {

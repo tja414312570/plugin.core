@@ -21,25 +21,19 @@ import com.yanan.utils.resource.scanner.PackageScanner;
 public class StandScanResourceDecoder extends StandAbstractResourceDecoder<StandScanResource> implements ResourceDecoder<StandScanResource>{
 	@AfterInstantiation
 	public void init() {
-		System.out.println("初始化后执行："+this);
-//		new RuntimeException().printStackTrace();
 	}
 	@Override
 	public void decodeResource(PlugsFactory factory,StandScanResource resource) {
-		System.out.println(this);
 		String scanExpress = resource.getPath();
-		System.out.println("扫描资源:"+scanExpress);
 		String[] realPathArray =  ResourceManager.getPathExress(scanExpress);
-		System.out.println("转化后路径:"+Arrays.toString(realPathArray));
 		PackageScanner scanner = new PackageScanner();
-		scanner.setScanPath(realPathArray[0]);
+		scanner.setScanPath(realPathArray);
 		scanner.doScanner((cls) -> tryDecodeDefinition(cls));
 	}
 	private void tryDecodeDefinition(Class<?> cls) {
-		
 		if(cls.getAnnotation(Service.class)!= null) {
 			try {
-				Plugin plugin = PluginDefinitionBuilderFactory.getInstance().builderPluginDefinition(cls);
+				Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(cls);
 				PlugsFactory.getInstance().addPlugininDefinition(plugin);
 			}catch(Throwable t) {
 //				t.printStackTrace();
@@ -47,7 +41,7 @@ public class StandScanResourceDecoder extends StandAbstractResourceDecoder<Stand
 		}
 		if(cls.getAnnotation(Register.class)!= null) {
 			try {
-				RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.getInstance().builderRegisterDefinition(cls);
+				RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(cls);
 				PlugsFactory.getInstance().addRegisterDefinition(registerDefinition);
 			}catch(Throwable t) {
 //				t.printStackTrace();

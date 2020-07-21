@@ -1,13 +1,20 @@
 package com.yanan.frame.plugin.builder.resolver;
 
-import com.typesafe.config.ConfigList;
+import com.typesafe.config.ConfigValue;
+import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
-public class ResourceParameterResolver implements ParameterResolver<ConfigList>{
+import com.yanan.utils.resource.AbstractResourceEntry;
+import com.yanan.utils.resource.ResourceManager;
+@Register(attribute= {"file","resource"})
+public class ResourceParameterResolver implements ParameterResolver<ConfigValue>{
 
 	@Override
-	public Object resove(ConfigList configValue, String typeName, int parameterIndex,
+	public Object resove(ConfigValue configValue, String typeName, int parameterIndex,
 			RegisterDefinition registerDefinition) {
-		// TODO Auto-generated method stub
-		return null;
+		AbstractResourceEntry abstractResourceEntry = ResourceManager.getResource((String) configValue.unwrapped());
+		if(typeName.equals("file")) {
+			return abstractResourceEntry.getFile();
+		}
+		return abstractResourceEntry;
 	}
 }

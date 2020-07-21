@@ -19,6 +19,10 @@ public class StandScanResource implements Resource {
 		this.name = path;
 	}
 	@Override
+	public String toString() {
+		return "StandScanResource [path=" + path + ", name=" + name + "]";
+	}
+	@Override
 	public String getPath() {
 		return this.path;
 	}

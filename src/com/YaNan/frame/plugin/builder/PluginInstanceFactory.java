@@ -195,8 +195,17 @@ public class PluginInstanceFactory {
 	}
 	public static int hash(Object... objects) {
 		int hash = 0;
-		for (int i = 0; i < objects.length; i++)
-			hash += objects[i].hashCode();
+		for (int i = 0; i < objects.length; i++) {
+			if(objects[i] == null) {
+				hash += 0;
+			}else if(objects[i].getClass().isArray()){
+				Object[] arrays = (Object[]) objects[i];
+				hash += hash(arrays);
+			}else {
+				hash += objects[i].hashCode();
+			}
+		}
+			
 		return hash;
 	}
 	@SuppressWarnings("unchecked")

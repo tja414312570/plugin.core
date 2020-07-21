@@ -23,7 +23,6 @@ public class DateParameterResolver implements ParameterResolver<ConfigValue>{
 	public Object resove(ConfigValue configValue, String typeName, int parameterIndex,
 			RegisterDefinition registerDefinition) {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern(globalFormat);
-		System.out.println("日期解析器："+configValue);
 		if(configValue.valueType() == ConfigValueType.STRING) {
 			LocalDateTime localDateTime = LocalDateTime.parse((CharSequence) configValue.unwrapped(),dtf);
 		    Instant instant = localDateTime.atZone(zone).toInstant();

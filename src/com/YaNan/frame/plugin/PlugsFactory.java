@@ -31,6 +31,7 @@ import com.yanan.frame.plugin.exception.RegisterNotFound;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.reflect.cache.ClassInfoCache;
 import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;
@@ -49,6 +50,24 @@ public class PlugsFactory {
 	private Environment environment;
 	//Pluginin context loaded configure file list
 	private List<Resource> resourceList;
+	public Environment getEnvironment() {
+		return environment;
+	}
+	public List<Resource> getResourceList() {
+		return resourceList;
+	}
+	public Set<Resource> getResourceLoadedList() {
+		return resourceLoadedList;
+	}
+	public Map<Class<?>, Plugin> getServiceContatiner() {
+		return serviceContatiner;
+	}
+	public Set<RegisterDefinition> getNewRegisterDefinition() {
+		return newRegisterDefinition;
+	}
+	public boolean isBefore_refresh_ready() {
+		return before_refresh_ready;
+	}
 	private Set<Resource> resourceLoadedList;
 	//Pluginin context scan package path
 	//Pluginin context plugin pools
@@ -129,11 +148,9 @@ public class PlugsFactory {
 		try {
 			registerDefinition = getRegisterDefinition(registerClass.getName());
 		}catch (Exception e) {
-			System.out.println(serviceContatiner.keySet());
-			System.out.println(registerClass+" " +getPlugin(registerClass));
 			Plugin plugin = getPlugin(registerClass);
 			if(plugin == null) {
-				registerDefinition = PluginDefinitionBuilderFactory.getInstance().builderRegisterDefinition(registerClass);
+				registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
 				this.addRegisterDefinition(registerDefinition);
 			}else {
 				registerDefinition = plugin.getDefaultRegisterDefinition();
@@ -147,8 +164,18 @@ public class PlugsFactory {
 		Assert.isNull(registerDefinition,"the register definition is null for ["+registerId+"]");
 		return registerDefinition;
 	}
-	
+	public void addPlugininDefinition(Class<?> serviceClass) {
+		Assert.isNull(serviceClass);
+		Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
+		this.addPlugininDefinition(plugin);
+	}
+	public void addRegisterDefinition(Class<?> registerClass) {
+		Assert.isNull(registerClass);
+		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
+		this.addRegisterDefinition(registerDefinition);
+	}
 	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
+		newRegisterDefinition.add(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
 		String id = registerDefinition.getId();
 		if(StringUtil.isEmpty(id)) {
@@ -163,18 +190,16 @@ public class PlugsFactory {
 			}
 				
 		}
-			
 		this.registerDefinitionContainer.put(id, registerDefinition);
 		Class<?>[] serviceClassArray = registerDefinition.getServices();
 		for(Class<?> serviceClass : serviceClassArray) {
 			Plugin plugin = this.serviceContatiner.get(serviceClass);
 			if(plugin == null) {
-				plugin = PluginDefinitionBuilderFactory.getInstance().builderPluginDefinition(serviceClass);
+				plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
 				this.serviceContatiner.put(serviceClass, plugin);
 			}
 			plugin.addRegister(registerDefinition);
 		}
-		newRegisterDefinition.add(registerDefinition);
 	}
 	private void addResource(Resource resource) {
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_resource,resource));
@@ -216,7 +241,6 @@ public class PlugsFactory {
 	 * with register when plugin context scan all class
 	 * 
 	 */
-	@SuppressWarnings("unchecked")
 	public void refresh() {
 		beforeRefreshCheck();
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.refresh,this));
@@ -229,7 +253,7 @@ public class PlugsFactory {
 			if(resourceLoadedList.contains(resource))
 				continue;
 //			ResourceDecoder<Resource> resourceDecoder = this.getResourceDecoder(resource.getClass());
-			ResourceDecoder<Resource> resourceDecoder = getPluginsInstanceByAttributeStrict(ResourceDecoder.class, resource.getClass().getSimpleName());
+			ResourceDecoder<Resource> resourceDecoder = getPluginsInstanceByAttributeStrict(new TypeToken<ResourceDecoder<Resource>>() {}.getTypeClass(), resource.getClass().getSimpleName());
 			resourceDecoder.decodeResource(this, resource);
 			resourceLoadedList.add(resource);
 		}
@@ -247,11 +271,11 @@ public class PlugsFactory {
 			synchronized (this) {
 				if(!before_refresh_ready) {
 					//抽象资源解析
-					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory.getInstance()
+					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory
 							.builderRegisterDefinition(StandAbstractResourceDecoder.class);
 					this.addRegisterDefinition(registerDefinitions);
 					//扫描资源解析
-					registerDefinitions = PluginDefinitionBuilderFactory.getInstance()
+					registerDefinitions = PluginDefinitionBuilderFactory
 							.builderRegisterDefinition(StandScanResourceDecoder.class);
 					this.addRegisterDefinition(registerDefinitions);
 					before_refresh_ready = true;
@@ -275,7 +299,9 @@ public class PlugsFactory {
 		return getInstance().serviceContatiner.get(serviceClass);
 	}
 	public synchronized void addPlugininDefinition(Plugin plugin) {
-		this.serviceContatiner.put(plugin.getClass(), plugin);
+		if(!this.serviceContatiner.containsKey(plugin.getDefinition().getPlugClass())) {
+			this.serviceContatiner.put(plugin.getDefinition().getPlugClass(), plugin);
+		}
 	}
 	public void clear() {
 		this.registerDefinitionContainer.clear();
@@ -655,4 +681,5 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
+	
 }

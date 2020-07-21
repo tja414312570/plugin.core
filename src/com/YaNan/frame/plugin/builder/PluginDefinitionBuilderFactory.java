@@ -30,25 +30,31 @@ import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.string.StringUtil;
 
 public class PluginDefinitionBuilderFactory {
-	public final static class PlugDefinitionBuilderFactoryHolder {
-		private static final PluginDefinitionBuilderFactory instance = new PluginDefinitionBuilderFactory();
-	}
+	private static final String CONFIG_ARGS = "args";
+	private static final String CONFIG_TYPES = "types";
+	private static final String CONFIG_ID = "id";
+	private static final String CONFIG_PRIORITY = "priority";
+	private static final String CONFIG_ATTRIBUTE = "attribute";
+	private static final String CONFIG_REF = "ref";
+	private static final String CONFIG_CLASS = "class";
+	private static final String CONFIG_MODEL = "model";
+	private static final String CONFIG_SIGNITON = "signlton";
+	private static final String CONFIG_DESCIPTION = "description";
+	private static final String CONFIG_FIELD = "field";
+	private static final String CONFIG_SERVICE = "service";
+	private static final String CONFIG_INIT = "init";
+	private static final String CONFIG_METHOD = "method";
 
-	private PluginDefinitionBuilderFactory() {
-	};
-
-	public static PluginDefinitionBuilderFactory getInstance() {
-		return PlugDefinitionBuilderFactoryHolder.instance;
-	}
 	/**
 	 * 构建一个组件或则注册器
 	 * @param pluginClass
 	 * @return 组件定义或则注册定义
 	 */
-	public Object builderPluginDefinitionAuto(Class<?> pluginClass) {
+	public static Object builderPluginDefinitionAuto(Class<?> pluginClass) {
 		Service service = pluginClass.getAnnotation(Service.class);
 		if (service != null || pluginClass.isInterface()) 
 			return builderPluginDefinition(pluginClass);
@@ -60,7 +66,7 @@ public class PluginDefinitionBuilderFactory {
 	 * @param pluginClass
 	 * @return 组件定义
 	 */
-	public Plugin builderPluginDefinition(Class<?> pluginClass) {
+	public static Plugin builderPluginDefinition(Class<?> pluginClass) {
 		Plugin plugin = PlugsFactory.getPlugin(pluginClass);
 		if(plugin == null) {
 			Service service = pluginClass.getAnnotation(Service.class);
@@ -74,7 +80,7 @@ public class PluginDefinitionBuilderFactory {
 	 * @param registerClass 注册类
 	 * @return 注册器定义
 	 */
-	public RegisterDefinition builderRegisterDefinition(Class<?> registerClass) {
+	public static RegisterDefinition builderRegisterDefinition(Class<?> registerClass) {
 		Register register = registerClass.getAnnotation(Register.class);
 		if(register == null)
 			return buildRegisterDefinitionByDefault(registerClass);
@@ -85,7 +91,7 @@ public class PluginDefinitionBuilderFactory {
 	 * @param registerClass 注册定义类
 	 * @return 注册定义
 	 */
-	public RegisterDefinition buildRegisterDefinitionByDefault(Class<?> registerClass) {
+	public static RegisterDefinition buildRegisterDefinitionByDefault(Class<?> registerClass) {
 		RegisterDefinition register = new RegisterDefinition();
 		register.setRegisterClass(registerClass);
 		// 读取属性
@@ -104,7 +110,7 @@ public class PluginDefinitionBuilderFactory {
 	 * @param registerClass 注册类
 	 * @return 注册定义
 	 */
-	public RegisterDefinition buildRegisterDefinitionByAnnotation(Register register, Class<?> registerClass) {
+	public static RegisterDefinition buildRegisterDefinitionByAnnotation(Register register, Class<?> registerClass) {
 		RegisterDefinition registerDefinition = new RegisterDefinition();
 		AppClassLoader loader = new AppClassLoader(register.declare().equals(Object.class) ? 
 				registerClass : register.declare(), false);
@@ -149,12 +155,12 @@ public class PluginDefinitionBuilderFactory {
 	 * @param config 配置
 	 * @return 注册定义
 	 */
-	public RegisterDefinition buildRegisterDefinitionByConfig(Config config){
+	public static RegisterDefinition buildRegisterDefinitionByConfig(Config config){
 		RegisterDefinition registerDefinition = null;
 		try {
 			config.allowKeyNull(true);
-			String className = config.getString("class");
-			String ref = config.getString("ref");
+			String className = config.getString(CONFIG_CLASS);
+			String ref = config.getString(CONFIG_REF);
 			if (className == null && ref == null)
 				throw new RuntimeException("could not fond class property and no reference any at \""
 						+ config.origin().url() + "\" at line : " + config.origin().lineNumber());
@@ -177,23 +183,23 @@ public class PluginDefinitionBuilderFactory {
 			
 			registerDefinition.setConfig(config);
 			// 读取属性
-			String id = config.getString("id");
+			String id = config.getString(CONFIG_ID);
 			if(id != null)
 				registerDefinition.setId(id);
-			registerDefinition.setPriority(config.getInt("priority",registerDefinition.getPriority()));
-			registerDefinition.setSignlton(config.getBoolean("signlton",registerDefinition.isSignlton()));
-			String[] atts = config.hasPath("attribute")?config.getString("attribute").split(","):registerDefinition.getAttribute();
+			registerDefinition.setPriority(config.getInt(CONFIG_PRIORITY,registerDefinition.getPriority()));
+			registerDefinition.setSignlton(config.getBoolean(CONFIG_SIGNITON,registerDefinition.isSignlton()));
+			String[] atts = config.hasPath(CONFIG_ATTRIBUTE)?config.getString(CONFIG_ATTRIBUTE).split(","):registerDefinition.getAttribute();
 			registerDefinition.setAttribute(atts);
-			registerDefinition.setDescription(config.getString("description",registerDefinition.getDescription()));
-			String model = config.getString("model", registerDefinition.getProxyModel().toString());
+			registerDefinition.setDescription(config.getString(CONFIG_DESCIPTION,registerDefinition.getDescription()));
+			String model = config.getString(CONFIG_MODEL, registerDefinition.getProxyModel().toString());
 			registerDefinition.setProxyModel(ProxyModel.getProxyModel(model));
 			//属性的赋值
-			if(config.hasPath("field")) {
+			if(config.hasPath(CONFIG_FIELD)) {
 				registerDefinition.setAfterInstanceInitField(null);
 				deduceInstanitionField(config, registerDefinition);
 			}
 			// 获取实现类所在的接口
-			String services =  config.getString("service");
+			String services =  config.getString(CONFIG_SERVICE);
 			if(services != null) {
 				registerDefinition.setServices(getPlugs(registerDefinition.getRegisterClass(), services));
 			}else {
@@ -205,13 +211,13 @@ public class PluginDefinitionBuilderFactory {
 			}
 			//获取实例后执行的方法
 			Method afterInstaceMethod;
-			if(config.hasPath("init")) {
+			if(config.hasPath(CONFIG_INIT)) {
 				registerDefinition.setAfterInstanceExecuteMethod(null);
 				String[] methods;
-				if(config.isList("init")) {
-					methods = config.getStringList("init").toArray(new String[]{});
+				if(config.isList(CONFIG_INIT)) {
+					methods = config.getStringList(CONFIG_INIT).toArray(new String[]{});
 				}else {
-					methods = new String[] {config.getString("init")};
+					methods = new String[] {config.getString(CONFIG_INIT)};
 				}
 				for (int i = 0; i < methods.length; i++) {
 					try {
@@ -224,7 +230,7 @@ public class PluginDefinitionBuilderFactory {
 				}
 			}
 			//获取方法定义
-			String instanitionMethodStr = config.getString("method");
+			String instanitionMethodStr = config.getString(CONFIG_METHOD);
 			if(!StringUtil.isBlank(instanitionMethodStr)) {
 				MethodDefinition instanitionMethod = deduceInstanitionMethod(config,registerDefinition);
 				registerDefinition.setInstanceMethod(instanitionMethod);
@@ -243,8 +249,8 @@ public class PluginDefinitionBuilderFactory {
 		}
 	}
 
-	private MethodDefinition deduceInstanitionMethod(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
-		String methodName = config.getString("method");
+	private static MethodDefinition deduceInstanitionMethod(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
+		String methodName = config.getString(CONFIG_METHOD);
 		MethodDefinition methodDefinition = deduceParameterType(config,registerDefinition,methodName);
 		Method method = null;
 		method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName, methodDefinition.getArgsType());
@@ -252,7 +258,7 @@ public class PluginDefinitionBuilderFactory {
 		return methodDefinition;
 	}
 	
-	private ConstructorDefinition deduceInstanitionConstructor(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
+	private static ConstructorDefinition deduceInstanitionConstructor(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
 		ConstructorDefinition constructorDefinition = (ConstructorDefinition) deduceParameterType(config,registerDefinition,null);
 		Constructor<?> constructor = null;
 		constructor = ParameterUtils.getEffectiveConstructor(registerDefinition.getRegisterClass(), constructorDefinition.getArgsType());
@@ -265,9 +271,9 @@ public class PluginDefinitionBuilderFactory {
 	 * @param registerDefinition 注册定义
 	 */
 	@SuppressWarnings("unchecked")
-	private void deduceInstanitionField(Config config,RegisterDefinition registerDefinition) {
-		if(config.isList("field")) {
-			ConfigList list = config.getList("field");
+	private static void deduceInstanitionField(Config config,RegisterDefinition registerDefinition) {
+		if(config.isList(CONFIG_FIELD)) {
+			ConfigList list = config.getList(CONFIG_FIELD);
 			list.forEach(configValue->{
 				ParameterResolver<ConfigValue> parameterResolver = null;
 				if(configValue.valueType()==ConfigValueType.OBJECT) {
@@ -305,7 +311,7 @@ public class PluginDefinitionBuilderFactory {
 				}
 			});
 		}else {
-			config = config.getConfig("field");
+			config = config.getConfig(CONFIG_FIELD);
 			Iterator<Entry<String, ConfigValue>> iterator = config.entrySet().iterator();
 			while(iterator.hasNext()) {
 				ParameterResolver<ConfigValue> parameterResolver = null;
@@ -346,9 +352,12 @@ public class PluginDefinitionBuilderFactory {
 		}
 	}
 	@SuppressWarnings("unchecked")
-	public MethodDefinition deduceParameterType(Config config,RegisterDefinition registerDefinition,String methodName) {
-		ConfigList argsConfigList = config.getList("args");
-		ConfigList argsTypesConfigList = config.getList("types");
+	public static MethodDefinition deduceParameterType(Config config,RegisterDefinition registerDefinition,String methodName) {
+		if(!config.isList(CONFIG_ARGS)) {
+			return deduceParameterTypeFromObject(config, registerDefinition, methodName);
+		}
+		ConfigList argsConfigList = config.getList(CONFIG_ARGS);
+		ConfigList argsTypesConfigList = config.getList(CONFIG_TYPES);
 		Object[] argsValue = null;
 		ParameterResolver<ConfigValue>[] parameterResolvers = null;
 		if(argsConfigList == null) {
@@ -392,7 +401,48 @@ public class PluginDefinitionBuilderFactory {
 		return methodName == null?new ConstructorDefinition(null, argsTypes, argsValue,parameterResolvers,types)
 				:new MethodDefinition(null, argsTypes, argsValue,parameterResolvers,types);
 	}
-	private void checkAfterInstanitiationMethod(String methodName, Method method,Class<?> clzz) {
+	@SuppressWarnings("unchecked")
+	private static MethodDefinition deduceParameterTypeFromObject(Config config,RegisterDefinition registerDefinition,String methodName) {
+		ConfigValue configValue = config.getValue(CONFIG_ARGS);
+		Object[] argsValue;
+		ParameterResolver<ConfigValue>[] parameterResolvers = null;
+		String[] types = null;
+		Class<?>[] argsTypes;
+		if(configValue == null) {
+			argsValue = new Object[0];
+			argsTypes = new Class<?>[0];
+		}else {
+			argsValue = new Object[1];
+			argsTypes = new Class<?>[1];
+			if(configValue.valueType() == ConfigValueType.OBJECT) {
+				SimpleConfigObject simpleConfigObject = (SimpleConfigObject) configValue;
+				Entry<String,ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
+				types = new String[] {entry.getKey()};
+				argsValue[0] = entry.getValue();
+				ParameterResolver<ConfigValue> parameterResolver = PlugsFactory
+						.getPluginsInstanceByAttributeStrict(
+								new TypeToken<ParameterResolver<ConfigValue>>() {}.getTypeClass()
+								, types[0]);
+				PlugsHandler handler = PlugsFactory.getPluginsHandler(parameterResolver);
+				if(AppClassLoader.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
+					argsTypes[0] = ((DelayParameterResolver<ConfigValue>)parameterResolver).parameterType(entry.getValue(),methodName,argsTypes, types[0],0, registerDefinition);
+					parameterResolvers =new ParameterResolver[1];
+					parameterResolvers[0] = parameterResolver;
+				}else {
+					argsValue[0] = parameterResolver.resove(entry.getValue(), types[0], 0, registerDefinition);
+					argsTypes[0] = argsValue[0].getClass();
+				}
+				
+			}else {
+				argsValue[0] = configValue.unwrapped();
+				argsTypes[0] = argsValue[0].getClass();
+			}
+		}
+		return methodName == null?new ConstructorDefinition(null, argsTypes, argsValue,parameterResolvers,types)
+				:new MethodDefinition(null, argsTypes, argsValue,parameterResolvers,types);
+	}
+
+	private static void checkAfterInstanitiationMethod(String methodName, Method method,Class<?> clzz) {
 		if(method == null) 
 			throw new PluginInitException("could not found init method ["+methodName+"] at class "+clzz.getName());
 		if(method.getParameterCount() != 0)
