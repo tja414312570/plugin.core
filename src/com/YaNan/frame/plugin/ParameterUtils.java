@@ -144,7 +144,7 @@ public class ParameterUtils {
 					&& isEffectiveTypes(constructor.getParameterTypes(),argsTypes))
 				return constructor;
 		}
-		StringBuilder errorMsg = new StringBuilder("cloud not found an effective method ");
+		StringBuilder errorMsg = new StringBuilder("cloud not found an effective constructor ");
 		errorMsg.append(targetClass.getName()).
 		append(".").
 		append(targetClass.getSimpleName()).

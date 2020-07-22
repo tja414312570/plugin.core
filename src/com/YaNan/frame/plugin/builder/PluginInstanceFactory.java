@@ -3,6 +3,7 @@ package com.yanan.frame.plugin.builder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,34 +30,34 @@ import com.yanan.utils.reflect.cache.ClassInfoCache;
 import com.yanan.utils.string.StringUtil;
 
 public class PluginInstanceFactory {
-	
+
 	/**
 	 * 通过参数类型获取构造器
 	 * 
 	 * @param paramTypes
 	 * @return
 	 */
-	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition,Class<?>[] paramTypes) {
+	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition, Class<?>[] paramTypes) {
 		// 排除掉数量不同的构造器
-		Constructor<?> constructor = ParameterUtils
-				.getEffectiveConstructor(ClassHelper.getClassHelper(registerDefinition.getRegisterClass())
-						.getConstructors(), paramTypes);
+		Constructor<?> constructor = ParameterUtils.getEffectiveConstructor(
+				ClassHelper.getClassHelper(registerDefinition.getRegisterClass()).getConstructors(), paramTypes);
 		if (constructor == null) {
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < paramTypes.length; i++) {
 				sb.append(paramTypes[i] == null ? null : paramTypes[i].getName())
 						.append(i < paramTypes.length - 1 ? "," : "");
 			}
-			throw new PluginRuntimeException("constructor " + registerDefinition.getRegisterClass().getSimpleName() + "(" + sb.toString()
-					+ ") is not exist at " + registerDefinition.getRegisterClass().getName());
+			throw new PluginRuntimeException("constructor " + registerDefinition.getRegisterClass().getSimpleName()
+					+ "(" + sb.toString() + ") is not exist at " + registerDefinition.getRegisterClass().getName());
 		}
 		return constructor;
 	}
-	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition,Object... args) {
+
+	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition, Object... args) {
 		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
 		Constructor<?> constructor = null;
 		try {
-			constructor = getConstructor(registerDefinition,parameterTypes);
+			constructor = getConstructor(registerDefinition, parameterTypes);
 		} catch (Throwable t) {
 			Iterator<Constructor<?>> iterator = ClassInfoCache.getClassHelper(registerDefinition.getRegisterClass())
 					.getConstructorHelperMap().keySet().iterator();
@@ -75,7 +76,7 @@ public class PluginInstanceFactory {
 		}
 		return constructor;
 	}
-	
+
 	/**
 	 * 获取一个服务的新对像
 	 * 
@@ -84,131 +85,208 @@ public class PluginInstanceFactory {
 	 * @return
 	 * @throws Exception
 	 */
-	public static <T> T getRegisterNewInstance(RegisterDefinition registerDefinition,Class<T> service, Object[] args,Object origin){
+	public static <T> T getRegisterNewInstance(RegisterDefinition registerDefinition, Class<T> service, Object[] args,
+			Object origin) {
 		ConstructorDefinition constructorDefinition = registerDefinition.getInstanceConstructor();
 		// 获取构造器
 		Constructor<?> constructor;
-		if(constructorDefinition != null) {
-			checkPreparedParameter(constructorDefinition,registerDefinition);
+		if (constructorDefinition != null) {
+			checkPreparedParameter(constructorDefinition, registerDefinition);
 			constructor = constructorDefinition.getConstructor();
 			args = constructorDefinition.getArgs();
-		}else {
-			constructor = getConstructor(registerDefinition,origin == null?args:new Class<?>[0]);
+		} else {
+			constructor = getConstructor(registerDefinition, origin == null ? args : new Class<?>[0]);
 		}
-		return getNewInstance(registerDefinition,service, constructor, args,origin);
+		return getNewInstance(registerDefinition, service, constructor, args, origin);
 	}
 
-	public static <T> T getRegisterNewInstanceByParamType(RegisterDefinition registerDefinition,Class<T> service, 
-			Class<?>[] paramTypes, Object... args){
+	public static <T> T getRegisterNewInstanceByParamType(RegisterDefinition registerDefinition, Class<T> service,
+			Class<?>[] paramTypes, Object... args) {
 		// 获取构造器
-		Constructor<?> constructor = getConstructor(registerDefinition,paramTypes);
+		Constructor<?> constructor = getConstructor(registerDefinition, paramTypes);
 		// 获取构造器拦截器
-		return getNewInstance(registerDefinition,service, constructor, args,null);
+		return getNewInstance(registerDefinition, service, constructor, args, null);
 	}
-	
+
 	/**
-	 * 获取服务的实例
+	 * 获取注册实例
 	 * 
-	 * @param plug
-	 * @param args
-	 * @return
-	 * @throws Exception
+	 * @param registerDefinition 注册定义
+	 * @param service            服务类
+	 * @param args               参数
+	 * @return 注册实例
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T getRegisterInstance(RegisterDefinition registerDefinition,Class<T> service, Object... args){
+	public static <T> T getRegisterInstance(RegisterDefinition registerDefinition, Class<T> service, Object... args) {
+//		System.out.println(registerDefinition.getId()+"."+registerDefinition.getReferenceId()+"===>"+registerDefinition.getConfig()+":"+registerDefinition.getAfterInstanceExecuteMethod());
 		Object proxy = null;
-		MethodDefinition methodDefinition = null;
-		//如果存在引用  获取引用对象
-		if(!StringUtil.isEmpty(registerDefinition.getReferenceId())) {
-			proxy = PlugsFactory.getPluginsInstance(registerDefinition.getReferenceId());
-		}
-		//如果有方法 表明代理对象从方法中获取
-		if((methodDefinition = registerDefinition.getInstanceMethod()) != null){
-			try {
-				checkPreparedParameter(methodDefinition,registerDefinition);
-				proxy = methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
-				//如果有要执行的方法，强制转换为cglib模式 ，并从新生成代理对象
-				if(registerDefinition.getAfterInstanceExecuteMethod() != null
-						|| registerDefinition.getAfterInstanceInitField() != null) {
-					registerDefinition.setProxyModel(ProxyModel.CGLIB);
-					proxy = getRegisterInstance0(registerDefinition, service, args,proxy);
+		// 判断是否单例
+		if (registerDefinition.isSignlton()) {
+			// 如果有ID属性，则hash为id的hash值
+			int hash = StringUtil.isEmpty(registerDefinition.getId()) ? hash(service, args)
+					: hash(registerDefinition.getId());
+			// 从容器获取属性
+			proxy = registerDefinition.getProxyInstance(hash);
+			// dcl
+			if (proxy == null) {
+				synchronized (registerDefinition) {
+					if (proxy == null) {
+						// 获取新的实例
+						proxy = getRegisterInstance0(registerDefinition, service, args);
+						// 将实例加入到代理列表
+						registerDefinition.setProxyInstance(hash, proxy);
+					}
 				}
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				String name = StringUtil.isEmpty(registerDefinition.getId())?registerDefinition.getRegisterClass().getName():registerDefinition.getId();
-				throw new PluginRuntimeException("failed to instance "+name+" by method "+methodDefinition,e);
 			}
-		}else{
-			proxy = getRegisterInstance0(registerDefinition,service, args,proxy);
+		} else {
+			proxy = getRegisterInstance0(registerDefinition, service, args);
 		}
 		return (T) proxy;
 	}
 
-	private static void checkPreparedParameter(MethodDefinition methodDefinition,RegisterDefinition registerDefinition) {
-		//存在运行时解析参数
-		if(methodDefinition != null && methodDefinition.getResolvers()!=null) {
+	private static Object getRegisterInstance0(RegisterDefinition registerDefinition, Class<?> plug, Object[] args) {
+		Object proxy = null;
+		// 如果存在引用 获取引用对象
+		if (!StringUtil.isEmpty(registerDefinition.getReferenceId())) {
+			proxy = PlugsFactory.getPluginsInstance(registerDefinition.getReferenceId());
+		}
+		// 判断是否使用方法构造器
+		MethodDefinition methodDefinition = registerDefinition.getInstanceMethod();
+		if (methodDefinition != null) {
+			try {
+				// 运行时参数检查
+				checkPreparedParameter(methodDefinition, registerDefinition);
+				// 调用方法获取参数
+				proxy = methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
+				// 如果有要执行的方法，强制转换为cglib模式 ，并从新生成代理对象
+//					registerDefinition.setProxyModel(ProxyModel.CGLIB);
+//					if(registerDefinition.getAfterInstanceExecuteMethod() != null
+//							|| registerDefinition.getAfterInstanceInitField() != null) {
+//						registerDefinition.setProxyModel(ProxyModel.CGLIB);
+//						origin = getRegisterInstance0(registerDefinition, plug, args,proxy);
+//					}
+			} catch (Throwable e) {
+				String name = StringUtil.isEmpty(registerDefinition.getId())
+						? registerDefinition.getRegisterClass().getName()
+						: registerDefinition.getId();
+				throw new PluginRuntimeException("failed to instance " + name + " by method " + methodDefinition, e);
+			}
+		}
+		if ((StringUtil.equals(registerDefinition.getId(), registerDefinition.getReferenceId()) && proxy != null)
+				|| Modifier.isFinal(registerDefinition.getRegisterClass().getModifiers())
+				|| (registerDefinition.getInstanceMethod() != null
+						&& registerDefinition.getProxyModel() == ProxyModel.NONE)) {
+			proxy = getNewInstance(registerDefinition, plug, null, null, proxy);
+		} else {
+			proxy = getRegisterNewInstance(registerDefinition, plug, args, proxy);
+		}
+
+//		//如果引用ID和注册ID相同   则说明直接引用对象
+//		if(StringUtil.equals(registerDefinition.getId(), registerDefinition.getReferenceId()) && origin != null) {
+//			proxy = getNewInstance(registerDefinition,plug, null,null,origin);
+//		}else {
+//			// 判断是否单例
+//			if (registerDefinition.isSignlton()) {
+//				
+//				
+//				if (proxy == null) {
+//					
+//					//如果有方法 表明代理对象从方法中获取
+//					if(methodDefinition != null){
+//						try {
+//							checkPreparedParameter(methodDefinition,registerDefinition);
+//							proxy = methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
+//							//如果有要执行的方法，强制转换为cglib模式 ，并从新生成代理对象
+//							
+//						} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+//							String name = StringUtil.isEmpty(registerDefinition.getId())?registerDefinition.getRegisterClass().getName():registerDefinition.getId();
+//							throw new PluginRuntimeException("failed to instance "+name+" by method "+methodDefinition,e);
+//						}
+//					}
+//					Class<?> temp = null;
+//					try {
+//						if(origin != null) {
+//							temp = registerDefinition.getRegisterClass();
+//							registerDefinition.setRegisterClass(origin.getClass());
+//						}
+//						proxy = getRegisterNewInstance(registerDefinition,plug, args,origin);
+//					}finally {
+//						if(temp != null)
+//						 registerDefinition.setRegisterClass(temp);
+//					}
+//				}
+//				
+//			} else {
+//				proxy = getRegisterNewInstance(registerDefinition,plug, args,origin);
+//			}
+//		}
+	return proxy;
+
+	}
+
+	/**
+	 * 获取注册器实例
+	 * 
+	 * @param registerDefinition 注册定义
+	 * @param plug               组价类
+	 * @param paramType          参数类型
+	 * @param args               参数
+	 * @return 组件实例
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T getRegisterInstanceByParamType(RegisterDefinition registerDefinition, Class<T> plug,
+			Class<?>[] paramType, Object... args) {
+		Object proxy = null;
+		// 判断是否单例
+		if (registerDefinition.isSignlton()) {
+			int hash = hash(plug, StringUtil.isEmpty(registerDefinition.getId()) ? args : registerDefinition.getId());
+			proxy = registerDefinition.getProxyInstance(hash);
+			if (proxy == null)
+				proxy = getRegisterNewInstanceByParamType(registerDefinition, plug, paramType, args);
+			registerDefinition.setProxyInstance(hash, proxy);
+		} else {
+			proxy = getRegisterNewInstanceByParamType(registerDefinition, plug, paramType, args);
+		}
+		return (T) proxy;
+	}
+
+	public static void checkPreparedParameter(MethodDefinition methodDefinition,
+			RegisterDefinition registerDefinition) {
+		// 存在运行时解析参数
+		if (methodDefinition != null && methodDefinition.getResolvers() != null) {
 			ParameterResolver<ConfigValue> parameterResolver;
-			for(int i = 0;i<methodDefinition.getResolvers().length;i++) {
-				if((parameterResolver = methodDefinition.getResolvers()[i])!=null) {
-					//解析参数
-					methodDefinition.getArgs()[i] = parameterResolver.
-							resove((ConfigValue) methodDefinition.getArgs()[i], methodDefinition.getType()[i], i, registerDefinition);
+			for (int i = 0; i < methodDefinition.getResolvers().length; i++) {
+				if ((parameterResolver = methodDefinition.getResolvers()[i]) != null) {
+					// 解析参数
+					methodDefinition.getArgs()[i] = parameterResolver.resove(
+							(ConfigValue) methodDefinition.getArgs()[i], methodDefinition.getType()[i], i,
+							registerDefinition);
 					methodDefinition.getResolvers()[i] = null;
 				}
 			}
 			methodDefinition.setResolvers(null);
 		}
 	}
-	@SuppressWarnings("unchecked")
-	public static <T> T getRegisterInstanceByParamType(RegisterDefinition registerDefinition,Class<T> plug, Class<?>[] paramType, Object... args) {
-		Object proxy = null;
-		// 判断是否单例
-		if (registerDefinition.isSignlton()) {
-			int hash = hash(plug, StringUtil.isEmpty(registerDefinition.getId())?args:registerDefinition.getId());
-			proxy = registerDefinition.getProxyInstance(hash);
-			if (proxy == null)
-				proxy = getRegisterNewInstanceByParamType(registerDefinition,plug, paramType, args);
-			registerDefinition.setProxyInstance(hash, proxy);
-		} else {
-			proxy = getRegisterNewInstanceByParamType(registerDefinition,plug, paramType, args);
-		}
-		return (T) proxy;
-	}
-	private static Object getRegisterInstance0(RegisterDefinition registerDefinition,Class<?> plug, Object[] args,Object origin){
-		Object proxy;
-		//如果引用ID和注册ID相同   则说明直接引用对象
-		if(StringUtil.equals(registerDefinition.getId(), registerDefinition.getReferenceId()) && origin != null) {
-			proxy = getNewInstance(registerDefinition,plug, null,null,origin);
-		}else {
-			// 判断是否单例
-			if (registerDefinition.isSignlton()) {
-				int hash = StringUtil.isEmpty(registerDefinition.getId())?hash(plug, args):hash(registerDefinition.getId());
-				proxy = registerDefinition.getProxyInstance(hash);
-				if (proxy == null)
-					proxy = getRegisterNewInstance(registerDefinition,plug, args,origin);
-				registerDefinition.setProxyInstance(hash, proxy);
-			} else {
-				proxy = getRegisterNewInstance(registerDefinition,plug, args,origin);
-			}
-		}
-		return proxy;
-	}
+
 	public static int hash(Object... objects) {
 		int hash = 0;
 		for (int i = 0; i < objects.length; i++) {
-			if(objects[i] == null) {
+			if (objects[i] == null) {
 				hash += 0;
-			}else if(objects[i].getClass().isArray()){
+			} else if (objects[i].getClass().isArray()) {
 				Object[] arrays = (Object[]) objects[i];
 				hash += hash(arrays);
-			}else {
+			} else {
 				hash += objects[i].hashCode();
 			}
 		}
-			
+
 		return hash;
 	}
+
 	@SuppressWarnings("unchecked")
-	public static <T> T getNewInstance(RegisterDefinition registerDefinition,Class<T> service, Constructor<?> constructor, Object[] args,Object origin) {
+	public static <T> T getNewInstance(RegisterDefinition registerDefinition, Class<T> service,
+			Constructor<?> constructor, Object[] args, Object origin) {
 //		if (registerDefinition.getLinkRegister() != null) {// 如果有链接的注册器
 //			// 获取链接类的相同构造器
 //			try {
@@ -249,13 +327,16 @@ public class PluginInstanceFactory {
 						proxy = PlugsHandler.newMapperProxy(service, registerDefinition, target);
 						break;
 					case CGLIB:
-						target = proxy = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition,
-								constructor.getParameterTypes(), args);
+						target = proxy = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(),
+								registerDefinition, constructor.getParameterTypes(), args);
 						break;
 					case BOTH:
-						target = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition, constructor.getParameterTypes(),
-								args);
+						target = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition,
+								constructor.getParameterTypes(), args);
 						proxy = PlugsHandler.newMapperProxy(service, registerDefinition, target);
+						break;
+					case NONE:
+						target = proxy = constructor.newInstance(args);
 						break;
 					default:
 						target = constructor.newInstance(args);
@@ -265,32 +346,35 @@ public class PluginInstanceFactory {
 							proxy = PlugsHandler.newMapperProxy(service, registerDefinition, target);
 						break;
 					}
+				} else if (registerDefinition.getProxyModel() != ProxyModel.NONE) {
+					target = proxy = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(),
+							registerDefinition, constructor.getParameterTypes(), args);
 				} else {
-					target = proxy = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition,
-							constructor.getParameterTypes(), args);
+					target = proxy = constructor.newInstance(args);
 				}
 			}
-			if(origin != null) {
-				if(constructor != null) {
+			if (origin != null) {
+				if (constructor != null) {
 					AppClassLoader.DisClone(proxy, origin);
-				}else {
+				} else {
 					target = proxy = origin;
 				}
 			}
-			//属性处理
+			// 属性处理
 			if (registerDefinition.getFieldInterceptMapping() != null) {
 				FieldHandler fieldHandler;
 				Map<Field, InvokeHandlerSet> fieldInterceptMapping = registerDefinition.getFieldInterceptMapping();
-				Iterator<Entry<Field, InvokeHandlerSet>> fieldInterceptIterator = fieldInterceptMapping.entrySet().iterator();
-				while(fieldInterceptIterator.hasNext()) {
+				Iterator<Entry<Field, InvokeHandlerSet>> fieldInterceptIterator = fieldInterceptMapping.entrySet()
+						.iterator();
+				while (fieldInterceptIterator.hasNext()) {
 					Entry<Field, InvokeHandlerSet> entry = fieldInterceptIterator.next();
 					Field field = entry.getKey();
 					InvokeHandlerSet filedHandlerSet = entry.getValue();
 					Iterator<InvokeHandlerSet> fieldIterator = filedHandlerSet.iterator();
 					while (fieldIterator.hasNext()) {
-						InvokeHandlerSet  fieldInvokeHandlerSet = fieldIterator.next();
+						InvokeHandlerSet fieldInvokeHandlerSet = fieldIterator.next();
 						fieldHandler = fieldInvokeHandlerSet.getInvokeHandler();
-						fieldHandler.preparedField(registerDefinition, proxy, target,fieldInvokeHandlerSet, field);
+						fieldHandler.preparedField(registerDefinition, proxy, target, fieldInvokeHandlerSet, field);
 					}
 				}
 			}
@@ -302,12 +386,16 @@ public class PluginInstanceFactory {
 					handler.after(registerDefinition, service, constructor, target, args);
 				}
 			}
-			initProxyField(registerDefinition,proxy);
-			initProxyMethod(registerDefinition,proxy);
+			initProxyField(registerDefinition, proxy);
+			initProxyMethod(registerDefinition, proxy);
 		} catch (Throwable t) {
-			PluginRuntimeException exception = t.getClass().equals(PluginRuntimeException.class)
-					? (PluginRuntimeException) t
-					: new PluginRuntimeException(t);
+			String id = StringUtil.isEmpty(registerDefinition.getId()) ? registerDefinition.getRegisterClass().getName()
+					: registerDefinition.getId();
+//			PluginRuntimeException exception = t.getClass().equals(PluginRuntimeException.class)
+//					? (PluginRuntimeException) t
+//					: new PluginRuntimeException("failed to instance register for ["+id+"]",t);
+			PluginRuntimeException exception = new PluginRuntimeException(
+					"failed to instance register for [" + id + "]", t);
 			if (constructorInvokeHanderSet != null) {
 				if (handler != null)
 					handler.exception(registerDefinition, service, constructor, proxy, exception, args);
@@ -321,7 +409,6 @@ public class PluginInstanceFactory {
 						i.exception(registerDefinition, service, constructor, proxy, exception, args);
 					}
 				}
-
 			}
 			if (!exception.isInterrupt())
 				throw exception;
@@ -329,6 +416,7 @@ public class PluginInstanceFactory {
 
 		return (T) proxy;
 	}
+
 	/**
 	 * 代理实例化后调用方法
 	 * 
@@ -337,16 +425,22 @@ public class PluginInstanceFactory {
 	 * @throws IllegalArgumentException
 	 * @throws InvocationTargetException
 	 */
-	public static void initProxyMethod(RegisterDefinition registerDefinition,Object proxy)
-			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public static void initProxyMethod(RegisterDefinition registerDefinition, Object proxy) {
 		if (registerDefinition.getAfterInstanceExecuteMethod() != null) {
 			for (MethodDefinition methodDefinition : registerDefinition.getAfterInstanceExecuteMethod()) {
-				methodDefinition.getMethod().setAccessible(true);
-				methodDefinition.getMethod().invoke(proxy);
-				methodDefinition.getMethod().setAccessible(false);
+				try {
+					checkPreparedParameter(methodDefinition, registerDefinition);
+					methodDefinition.getMethod().setAccessible(true);
+					methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
+					methodDefinition.getMethod().setAccessible(false);
+				} catch (Throwable e) {
+					throw new PluginRuntimeException("failed to invoke method " + methodDefinition.getMethod(), e);
+				}
 			}
 		}
+
 	}
+
 	/**
 	 * 代理实例化后调用方法
 	 * 
@@ -354,26 +448,31 @@ public class PluginInstanceFactory {
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
 	 * @throws InvocationTargetException
-	 * @throws SecurityException 
-	 * @throws NoSuchMethodException 
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
 	 */
 	@SuppressWarnings("unchecked")
-	public static void initProxyField(RegisterDefinition registerDefinition,Object proxy)
-			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+	public static void initProxyField(RegisterDefinition registerDefinition, Object proxy)
+			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException,
+			SecurityException {
 		if (registerDefinition.getAfterInstanceInitField() != null) {
 			for (FieldDefinition fieldDefinition : registerDefinition.getAfterInstanceInitField()) {
-				if(fieldDefinition.getResolver() != null)
-					fieldDefinition.setValue(((DelayParameterResolver<ConfigValue>)fieldDefinition.getResolver())
-							.resove((ConfigValue)fieldDefinition.getValue(), fieldDefinition.getType(), 0, registerDefinition));
+				if (fieldDefinition.getResolver() != null)
+					fieldDefinition.setValue(((DelayParameterResolver<ConfigValue>) fieldDefinition.getResolver())
+							.resove((ConfigValue) fieldDefinition.getValue(), fieldDefinition.getType(), 0,
+									registerDefinition));
 				try {
 					new AppClassLoader(proxy).set(fieldDefinition.getField(), fieldDefinition.getValue());
-				}catch(Throwable t) {
-					String type = fieldDefinition.getValue() == null? "null":fieldDefinition.getValue().getClass().getName();
-					throw new PluginRuntimeException("faied to init field "+registerDefinition.getRegisterClass().getName()
-							+"."+fieldDefinition.getField().getName()+" with ["+fieldDefinition.getValue()+"] type ["
-							+type+"]",t);
+				} catch (Throwable t) {
+					String type = fieldDefinition.getValue() == null ? "null"
+							: fieldDefinition.getValue().getClass().getName();
+					throw new PluginRuntimeException(
+							"faied to init field " + registerDefinition.getRegisterClass().getName() + "."
+									+ fieldDefinition.getField().getName() + " with [" + fieldDefinition.getValue()
+									+ "] type [" + type + "]",
+							t);
 				}
-				
+
 			}
 		}
 	}

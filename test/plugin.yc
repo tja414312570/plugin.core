@@ -1,48 +1,81 @@
 ###################### plugin list
 #组件列表
 plugins:[
-		com.YaNan.frame.plugin.autowired.plugin.PluginWiredHandler, ##服务注入提供
-		com.YaNan.frame.plugin.autowired.resource.ResourceWiredHandler, ##资源类注入
-		com.YaNan.frame.plugin.autowired.property.PropertyWiredHandler, ##属性注入
-		com.YaNan.frame.plugin.autowired.exception.ErrorPlugsHandler, ##错误记录
-		##	 com.YaNan.frame.util.quartz.QuartzManager,##Quartz corn注解服务
-		##com.YaNan.frame.plugin.hot.ClassHotUpdater,##动态更新服务
-		com.YaNan.frame.plugin.builder.resolver.ArrayParameterResolver,#数组解析
-		com.YaNan.frame.plugin.builder.resolver.ReferenceParameterResolver,#引用解析
-		com.YaNan.frame.plugin.builder.resolver.DateParameterResolver,#日期解析
+		com.yanan.frame.plugin.autowired.plugin.PluginWiredHandler, ##服务注入提供
+		com.yanan.frame.plugin.autowired.resource.ResourceWiredHandler, ##资源类注入
+		com.yanan.frame.plugin.autowired.property.PropertyWiredHandler, ##属性注入
+		com.yanan.frame.plugin.autowired.exception.ErrorPlugsHandler, ##错误记录
+		##	 com.yanan.frame.util.quartz.QuartzManager,##Quartz corn注解服务
+		##com.yanan.frame.plugin.hot.ClassHotUpdater,##动态更新服务
+		com.yanan.frame.plugin.builder.resolver.ArrayParameterResolver,#数组解析
+		com.yanan.frame.plugin.builder.resolver.ReferenceParameterResolver,#引用解析
+		com.yanan.frame.plugin.builder.resolver.DateParameterResolver,#日期解析
+		com.yanan.frame.plugin.builder.resolver.ResourceParameterResolver,#日期解析
+		{
+			class:com.test.SimpleRegister,
+			id:testStatic,
+			model:none
+			method:getString
+		},
 		{
 			class:com.test.SimpleRegister,
 			id:test1,
-			init:init2
 			field.name:test1 from plug
 			field.date.date:"2020-07-17 09:51:35"
-		},
-		{
+		},{
 			class:com.test.SimpleRegister,
 			id:test2,
-			method:getInstance
-			args:[hellow world,[as,b,c,d],true]
-			types:[default,-,-]
-			init:[init,init2]
-			field:[
-				{name:test2 hello world sss},
-				{date.date:"2020-07-17 14:18:35"}
+			method:getInstance #表明使用getInstance的方法构造，如果强制cglib代理，则会将getInstance的对象克隆为一个cglib对象
+			args:[hellow world,[as,b,c,d],true] #构造时采用三个参数，此字段只支持数组
+			types:[default,-,-] #参数类型，可选字段，-和default都表示采用默认的类型，这里表示采用string,list,boolean的getInstance方法，getInstance(string,list,boolean)
+			field:[ #使用数组类型的属性声明
+				{date.date:"2020-07-17 14:18:35"}#将date字段用DateParameterResolver转化后赋值到date字段
 			]
 		},
 		{
-			ref:test2,
-			id:testRef,
-			method:getInstance
-			args:[test ref hellow world,[a,b,c,d],test2]
-			types:[default,arrayS,ref]
-			init:[init,init2]
+			ref:test1,
+			field.file.resource:"classpath:plugin.yc"
+		},
+		{
+			ref:test1,
+			id:test3
+			method:getString2 #表明使用getInstance的方法构造，如果强制cglib代理，则会将getInstance的对象克隆为一个cglib对象
+			args:hello plugin
+		},{
+			id:sLoader
+			class:com.yanan.utils.reflect.AppClassLoader
+			model:none
+			args:[java.lang.System,false]
+		},{
+			id:println
+			ref:sLoader
+			method:get
+			model:none
+			args:out
+		},{
+			ref:println
+			init:println
+		},{
+			ref:println
+			init.println:xxxx
+			#init.println.ref:println
+		},{
+			ref:println
+			init:[{println:xxx},{println.ref:sLoader}]
+		},{
+			ref:println
+			init:[println,{println.ref:test3}]
+		},{
+			ref:println
+			init.println.ref:testStatic
 		}
+		
 	]
 ####################### global configure
 conf:{
 	Plugin:{
-		##ScanPackage:[com.YaNan], ##扫描包位置，多个包用逗号分开或使用数组ScanPackage:[com.YaNan.DZCT,com.YaNan.debug]
-													  ##可以写为ScanPackage:"com.YaNan.DZCT,com.YaNan.debug"
+		##ScanPackage:[com.yanan], ##扫描包位置，多个包用逗号分开或使用数组ScanPackage:[com.yanan.DZCT,com.yanan.debug]
+													  ##可以写为ScanPackage:"com.yanan.DZCT,com.yanan.debug"
 		includes:"classpath:*.comps",##扫描注册文件
 	},
 	SecurityFilter:{

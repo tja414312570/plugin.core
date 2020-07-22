@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import com.yanan.frame.plugin.PluginEvent.EventType;
+import com.yanan.frame.plugin.annotations.Service;
 import com.yanan.frame.plugin.builder.PluginDefinitionBuilderFactory;
 import com.yanan.frame.plugin.builder.PluginInstanceFactory;
 import com.yanan.frame.plugin.builder.PluginInterceptBuilder;
@@ -149,8 +150,19 @@ public class PlugsFactory {
 		this.addPlugininDefinition(plugin);
 	}
 	/**
+	 * 添加定义，会自动将类转化为注解定义或则注册定义
+	 * @param pluginClass 定义类
+	 */
+	public void addDefinition(Class<?> pluginClass) {
+		if(pluginClass.isInterface() || pluginClass.getAnnotation(Service.class) != null) {
+			addPlugininDefinition(pluginClass);
+		}else {
+			addRegisterDefinition(pluginClass);
+		}
+	}
+	/**
 	 * 将一个类做为注册定义添加到容器
-	 * @param registerClass 注册定义
+	 * @param registerClass 注册定义类
 	 */
 	public void addRegisterDefinition(Class<?> registerClass) {
 		Assert.isNull(registerClass);
@@ -159,7 +171,7 @@ public class PlugsFactory {
 	}
 	/**
 	 * 将服务定义添加到容器
-	 * @param plugin 服务定义
+	 * @param plugin 服务定义类
 	 */
 	public synchronized void addPlugininDefinition(Plugin plugin) {
 		if(!this.serviceContatiner.containsKey(plugin.getDefinition().getPlugClass())) {
@@ -199,10 +211,13 @@ public class PlugsFactory {
 			}
 		}
 	}
+	public PluginEventSource getEventSource() {
+		return eventSource;
+	}
 	/**
 	 * 获取某个类的注册定义
 	 * @param registerClass 查找的类
-	 * @return 注册定义
+	 * @return 注册定义类
 	 */
 	public RegisterDefinition getRegisterDefinition(Class<?> registerClass) {
 		RegisterDefinition registerDefinition = null ;

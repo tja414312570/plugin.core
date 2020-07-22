@@ -10,7 +10,7 @@ package com.yanan.frame.plugin;
  *
  */
 public enum ProxyModel {
-	CGLIB,JDK,BOTH,DEFAULT;
+	CGLIB,JDK,BOTH,DEFAULT, NONE;
 	public static ProxyModel getProxyModel(String model){
 		if(model==null)
 			return ProxyModel.DEFAULT;
@@ -23,6 +23,8 @@ public enum ProxyModel {
 			return ProxyModel.BOTH;
 		case "DEFAULT":
 			return ProxyModel.DEFAULT;
+		case "NONE":
+			return ProxyModel.NONE;
 		default :
 			return ProxyModel.DEFAULT;
 		}

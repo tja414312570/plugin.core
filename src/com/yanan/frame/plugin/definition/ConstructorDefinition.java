@@ -13,6 +13,14 @@ import com.typesafe.config.ConfigValue;
 public class ConstructorDefinition extends MethodDefinition {
 	//需要执行的构造器
 	private Constructor<?> constructor;
+	/**
+	 * 构造器定义，用于描述构造器的执行策略
+	 * @param constructor 需要执行的构造器
+	 * @param argsType 参数类型
+	 * @param args 参数
+	 * @param resolvers 解析器集合
+	 * @param type 原始类型
+	 */
 	public ConstructorDefinition(Constructor<?> constructor, Class<?>[] argsType, Object[] args,
 			ParameterResolver<ConfigValue>[] resolvers, String[] type) {
 		super(null,argsType,args,resolvers,type);

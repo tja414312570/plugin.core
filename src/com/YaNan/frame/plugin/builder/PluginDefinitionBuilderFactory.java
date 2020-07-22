@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -146,8 +147,8 @@ public class PluginDefinitionBuilderFactory {
 		for(Method method : methods) {
 			AfterInstantiation afterInstanceAnno = method.getAnnotation(AfterInstantiation.class);
 			if(afterInstanceAnno != null) {
-				checkAfterInstanitiationMethod(method.getName(),method,registerDefinition.getRegisterClass());
-				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, null, null,null,null));
+//				checkAfterInstanitiationMethod(method.getName(),method,registerDefinition.getRegisterClass());
+				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, method.getParameterTypes(), new Object[method.getParameterCount()],null,null));
 			}
 		}
 		return registerDefinition;
@@ -169,28 +170,49 @@ public class PluginDefinitionBuilderFactory {
 				throw new RuntimeException("could not fond class property and no reference any at \""
 						+ config.origin().url() + "\" at line : " + config.origin().lineNumber());
 			if(ref != null) {
+				//推断类型
 				RegisterDefinition	refDefinition = PlugsFactory.getInstance().getRegisterDefinition(ref);
-				registerDefinition = AppClassLoader.clone(RegisterDefinition.class, refDefinition);
-				registerDefinition.setReferenceId(ref);
+				//推断类型
+				Class<?> refRegisterClass;
+				if(refDefinition.getInstanceMethod() != null) {
+					refRegisterClass = PlugsFactory.getPluginsInstance(refDefinition.getId()).getClass();
+				}else {
+					refRegisterClass =refDefinition.getRegisterClass();
+				}
+				registerDefinition = builderRegisterDefinition(refRegisterClass);
+				registerDefinition.setRegisterClass(refRegisterClass);
+				registerDefinition.setId(refDefinition.getId());
 			}
 			if(className != null) {
 				AppClassLoader loader = new AppClassLoader(className, false);
-				Register register = loader.getLoadedClass().getAnnotation(Register.class);
-				if(register != null)
-					registerDefinition = buildRegisterDefinitionByAnnotation(register, loader.getLoadedClass());
-				else {
-					registerDefinition = new RegisterDefinition();
-				}
-				registerDefinition.setLoader(loader);
-				registerDefinition.setRegisterClass(loader.getLoadedClass());
+				registerDefinition = builderRegisterDefinition(loader.getLoadedClass());
 			}
-			
-			registerDefinition.setConfig(config);
-			// 读取属性
+			//获取实例化方法
 			String id = config.getString(CONFIG_ID);
+			String instanitionMethodStr = config.getString(CONFIG_METHOD);
+			if(!StringUtil.isBlank(instanitionMethodStr)) {
+				MethodDefinition instanitionMethod = deduceInstanitionMethod(config,registerDefinition);
+				if(!instanitionMethod.getMethod().getReturnType().equals(registerDefinition.getRegisterClass())) {
+					registerDefinition =  builderRegisterDefinition(instanitionMethod.getMethod().getReturnType());
+				}
+				registerDefinition.setInstanceMethod(instanitionMethod);
+			}else if(!StringUtil.isBlank(id)){
+				//如果id不为空
+				ConstructorDefinition constructorDefinition = deduceInstanitionConstructor(config, registerDefinition);
+				registerDefinition.setInstanceConstructor(constructorDefinition);
+			}
 			if(id != null)
 				registerDefinition.setId(id);
+			if(ref != null)
+				registerDefinition.setReferenceId(ref);
+			registerDefinition.setConfig(config);
 			registerDefinition.setPriority(config.getInt(CONFIG_PRIORITY,registerDefinition.getPriority()));
+			if(config.hasPath(CONFIG_SIGNITON)) {
+				registerDefinition.setSignlton(config.getBoolean(CONFIG_SIGNITON));
+			}else {
+				if(!StringUtil.isEmpty(registerDefinition.getId()))
+					registerDefinition.setSignlton(true);
+			}
 			registerDefinition.setSignlton(config.getBoolean(CONFIG_SIGNITON,registerDefinition.isSignlton()));
 			String[] atts = config.hasPath(CONFIG_ATTRIBUTE)?config.getString(CONFIG_ATTRIBUTE).split(","):registerDefinition.getAttribute();
 			registerDefinition.setAttribute(atts);
@@ -214,35 +236,7 @@ public class PluginDefinitionBuilderFactory {
 				registerDefinition.setServices(plugs);
 			}
 			//获取实例后执行的方法
-			Method afterInstaceMethod;
-			if(config.hasPath(CONFIG_INIT)) {
-				registerDefinition.setAfterInstanceExecuteMethod(null);
-				String[] methods;
-				if(config.isList(CONFIG_INIT)) {
-					methods = config.getStringList(CONFIG_INIT).toArray(new String[]{});
-				}else {
-					methods = new String[] {config.getString(CONFIG_INIT)};
-				}
-				for (int i = 0; i < methods.length; i++) {
-					try {
-						afterInstaceMethod = registerDefinition.getLoader().getMethod(methods[i]);
-						checkAfterInstanitiationMethod(methods[i],afterInstaceMethod,registerDefinition.getRegisterClass());
-						registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(afterInstaceMethod, null, null,null,null));
-					} catch (SecurityException e) {
-						throw new PluginInitException("failed to get init method \"" + methods[i] + "\"", e);
-					}
-				}
-			}
-			//获取方法定义
-			String instanitionMethodStr = config.getString(CONFIG_METHOD);
-			if(!StringUtil.isBlank(instanitionMethodStr)) {
-				MethodDefinition instanitionMethod = deduceInstanitionMethod(config,registerDefinition);
-				registerDefinition.setInstanceMethod(instanitionMethod);
-			}else if(!StringUtil.isBlank(id)){
-				//如果id不为空
-				ConstructorDefinition constructorDefinition = deduceInstanitionConstructor(config, registerDefinition);
-				registerDefinition.setInstanceConstructor(constructorDefinition);
-			}
+			deduceAfterInstanceExecuteMethod(config,registerDefinition);
 				
 //				checkPlugs(register.get);
 //			PlugsFactory.getInstance().addRegisterHandlerQueue(this);
@@ -251,6 +245,56 @@ public class PluginDefinitionBuilderFactory {
 				throw new PluginInitException("plugin exception init at \"" + config + "\" at line "
 						+ config.origin().lineNumber(), e);
 		}
+	}
+
+	private static void deduceAfterInstanceExecuteMethod(Config config, RegisterDefinition registerDefinition) {
+		//如果有初始化后执行的方法
+		if(config.hasPath(CONFIG_INIT)) {
+			String methodName = null;
+			try {
+			//重置默认的执行方法
+			registerDefinition.setAfterInstanceExecuteMethod(null);
+			//判断init的类型
+			Method method;
+			ConfigValue configValue = config.getValue(CONFIG_INIT);
+			//字符类型--》init:method 无参数格式
+			if(configValue.valueType() == ConfigValueType.STRING) {
+				methodName = (String) configValue.unwrapped();
+				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
+				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, null, null,null,null));
+			}else if(configValue.valueType() == ConfigValueType.OBJECT) {
+				SimpleConfigObject simpleConfigObject = (SimpleConfigObject) configValue;
+				Entry<String, ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
+				methodName = entry.getKey();
+				MethodDefinition methodDefinition = deduceParameterTypeFromObject(config,CONFIG_INIT+"."+methodName, registerDefinition, methodName);
+				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
+				methodDefinition.setMethod(method);
+				registerDefinition.addAfterInstanceExecuteMethod(methodDefinition);
+			}else if(configValue.valueType() == ConfigValueType.LIST) {
+				List<ConfigValue> configList = config.getList(CONFIG_INIT);
+				Iterator<ConfigValue> iterator = configList.iterator();
+				while(iterator.hasNext()) {
+					ConfigValue childConfigValue = iterator.next();
+					if(childConfigValue.valueType() == ConfigValueType.STRING) {
+						methodName = (String) childConfigValue.unwrapped();
+						method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
+						registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, null, null,null,null));
+					}else {
+						SimpleConfigObject simpleConfigObject = (SimpleConfigObject) childConfigValue;
+						Entry<String, ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
+						methodName = entry.getKey();
+						MethodDefinition methodDefinition = deduceParameterTypeFromConfigValue(registerDefinition, methodName, entry.getValue());
+						method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
+						methodDefinition.setMethod(method);
+						registerDefinition.addAfterInstanceExecuteMethod(methodDefinition);
+					}
+				}
+			}
+			} catch (Throwable e) {
+				throw new PluginInitException("failed to get init method \"" + methodName + "\"", e);
+			}
+		}
+		
 	}
 
 	private static MethodDefinition deduceInstanitionMethod(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
@@ -358,7 +402,7 @@ public class PluginDefinitionBuilderFactory {
 	@SuppressWarnings("unchecked")
 	public static MethodDefinition deduceParameterType(Config config,RegisterDefinition registerDefinition,String methodName) {
 		if(!config.isList(CONFIG_ARGS)) {
-			return deduceParameterTypeFromObject(config, registerDefinition, methodName);
+			return deduceParameterTypeFromObject(config,CONFIG_ARGS, registerDefinition, methodName);
 		}
 		ConfigList argsConfigList = config.getList(CONFIG_ARGS);
 		ConfigList argsTypesConfigList = config.getList(CONFIG_TYPES);
@@ -375,7 +419,8 @@ public class PluginDefinitionBuilderFactory {
 			if(i == 0) {
 				types = new String[argsTypes.length];
 			}
-			types[i] = (String) argsTypesConfigList.get(i).unwrapped();
+			if(argsTypesConfigList != null)
+				types[i] = (String) argsTypesConfigList.get(i).unwrapped();
 			argsTypes[i] = argsValue[i].getClass();
 		}
 		if(argsTypesConfigList != null) {
@@ -405,9 +450,14 @@ public class PluginDefinitionBuilderFactory {
 		return methodName == null?new ConstructorDefinition(null, argsTypes, argsValue,parameterResolvers,types)
 				:new MethodDefinition(null, argsTypes, argsValue,parameterResolvers,types);
 	}
+	private static MethodDefinition deduceParameterTypeFromObject(Config config,String configName,RegisterDefinition registerDefinition,String methodName) {
+		ConfigValue configValue = config.getValue(configName);
+		return deduceParameterTypeFromConfigValue(registerDefinition, methodName, configValue);
+	}
+
 	@SuppressWarnings("unchecked")
-	private static MethodDefinition deduceParameterTypeFromObject(Config config,RegisterDefinition registerDefinition,String methodName) {
-		ConfigValue configValue = config.getValue(CONFIG_ARGS);
+	public static MethodDefinition deduceParameterTypeFromConfigValue(RegisterDefinition registerDefinition,
+			String methodName, ConfigValue configValue) {
 		Object[] argsValue;
 		ParameterResolver<ConfigValue>[] parameterResolvers = null;
 		String[] types = null;
@@ -436,7 +486,6 @@ public class PluginDefinitionBuilderFactory {
 					argsValue[0] = parameterResolver.resove(entry.getValue(), types[0], 0, registerDefinition);
 					argsTypes[0] = argsValue[0].getClass();
 				}
-				
 			}else {
 				argsValue[0] = configValue.unwrapped();
 				argsTypes[0] = argsValue[0].getClass();
