@@ -3,16 +3,21 @@ package com.test;
 import com.yanan.frame.plugin.event.AbstractEvent;
 import com.yanan.frame.plugin.event.EventListener;
 import com.yanan.frame.plugin.event.InterestedEventSource;
+
+import java.lang.reflect.Modifier;
+
 import com.yanan.frame.plugin.Environment;
 
 public class EnvironmentTest {
+	transient String rnm;
 	static class MyEvent implements AbstractEvent{
 		private String name;
 		public MyEvent(String name) {
 			this.name = name;
 		}
 	}
-	public static void main(String[] args) {
+	public static void main(String[] args) throws NoSuchFieldException, SecurityException {
+		System.out.println(Modifier.isFinal(EnvironmentTest.class.getDeclaredField("rnm").getModifiers()));
 		Environment environment = Environment.getEnviroment();
 		InterestedEventSource eventSource = new InterestedEventSource() {
 			@Override
