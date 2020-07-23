@@ -228,6 +228,17 @@ public class Environment {
 		return (T) this.globalVariable.get(key);
 	}
 	/**
+	 * 获取变量，如果变量不存在，返回一个默认值
+	 * @param key key
+	 * @param defaultValue default value
+	 * @return result
+	 */
+	public <T> T getVariable(String key, T defaultValue) {
+		if(!globalVariable.containsKey(key))
+			return defaultValue;
+		return getVariable(key);
+	}
+	/**
 	 * 获取一个变量，不允许返回空
 	 * @param key key
 	 * @return value
