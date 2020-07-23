@@ -11,12 +11,11 @@ import com.yanan.frame.plugin.event.InterestedEventSource;
 import com.yanan.utils.asserts.Assert;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValue;
 
 /**
- * 环境类，提供Plugin环境
- * 环境类提供全局上下文配置，全局属性
- * 采用holder的单例模式
- * 提供一个系统事件
+ * 环境类，提供Plugin环境 环境类提供全局上下文配置，全局属性 采用holder的单例模式 提供一个系统事件
+ * 
  * @author yanan
  *
  */
@@ -24,133 +23,203 @@ public class Environment {
 	public static final String MAIN_CLASS = "-MAIN-CLASS";
 	public static final String MAIN_CLASS_PATH = "-MAIN-CLASS-PATH";
 	private static InheritableThreadLocal<Environment> enInheritableThreadLocal = new InheritableThreadLocal<>();
-	private Map<String,List<EventListener<AbstractEvent>>>
-	eventListenerMap = new ConcurrentHashMap<>();
-	//全局配置
+	private Map<String, List<EventListener<AbstractEvent>>> eventListenerMap = new ConcurrentHashMap<>();
+	// 全局配置
 	private Config globalConfig;
-	//全局变量
-	private Map<String,Object> globalVariable = new ConcurrentHashMap<String,Object>();
+	// 全局变量
+	private Map<String, Object> globalVariable = new ConcurrentHashMap<String, Object>();
+
 	/**
 	 * 分发事件
-	 * @param eventSource 事件源
+	 * 
+	 * @param eventSource   事件源
 	 * @param abstractEvent 事件
 	 */
-	public void distributeEvent(InterestedEventSource eventSource,AbstractEvent abstractEvent) {
+	public void distributeEvent(InterestedEventSource eventSource, AbstractEvent abstractEvent) {
 		List<EventListener<AbstractEvent>> eventListenerList = eventListenerMap.get(eventSource.getName());
-		if(eventListenerList == null)
+		if (eventListenerList == null)
 			return;
 		eventListenerList.forEach(eventListener -> eventListener.onEvent(abstractEvent));
 	}
+
 	/**
 	 * 注册时间监听
-	 * @param eventSource 时间源
+	 * 
+	 * @param eventSource   时间源
 	 * @param eventListener 时间监听
 	 */
 	@SuppressWarnings("unchecked")
-	public final void registEventListener(InterestedEventSource eventSource,EventListener<? extends AbstractEvent> eventListener) {
+	public final void registEventListener(InterestedEventSource eventSource,
+			EventListener<? extends AbstractEvent> eventListener) {
 		synchronized (eventSource) {
 			List<EventListener<AbstractEvent>> eventListenerList = eventListenerMap.get(eventSource.getName());
-			if(eventListenerList == null) {
+			if (eventListenerList == null) {
 				eventListenerList = new ArrayList<EventListener<AbstractEvent>>();
 				eventListenerMap.put(eventSource.getName(), eventListenerList);
 			}
 			eventListenerList.add((EventListener<AbstractEvent>) eventListener);
 		}
 	}
+
 	/**
 	 * 移除事件监听
-	 * @param eventSource 事件源
+	 * 
+	 * @param eventSource    事件源
 	 * @param eventListeners 时间监听
 	 */
 	@SafeVarargs
-	public final void removeEventListener(InterestedEventSource eventSource, EventListener<? extends AbstractEvent>... eventListenerArray) {
+	public final void removeEventListener(InterestedEventSource eventSource,
+			EventListener<? extends AbstractEvent>... eventListenerArray) {
 		synchronized (eventSource) {
-			//如果没有传入事件，则删除所有事件
-			if(eventListenerArray.length == 0)
+			// 如果没有传入事件，则删除所有事件
+			if (eventListenerArray.length == 0)
 				eventListenerMap.remove(eventSource.getName());
 			else {
 				List<EventListener<AbstractEvent>> eventListenerList = eventListenerMap.get(eventSource.getName());
-				if(eventListenerList == null) {
+				if (eventListenerList == null) {
 					eventListenerMap.remove(eventSource.getName());
 					return;
 				}
-				//删除对应的事件
-				for(EventListener<? extends AbstractEvent> eventListener : eventListenerArray)
+				// 删除对应的事件
+				for (EventListener<? extends AbstractEvent> eventListener : eventListenerArray)
 					eventListenerList.remove(eventListener);
-				if(eventListenerList.isEmpty()) {
+				if (eventListenerList.isEmpty()) {
 					eventListenerMap.remove(eventSource.getName());
 				}
 			}
 		}
 	}
+
 	/**
 	 * Eventment的holder实现
+	 * 
 	 * @author yanan
 	 *
 	 */
-	public final static class EnviromentHolder{
+	public final static class EnviromentHolder {
 		private static final Environment ENVIRONMENT = new Environment();
 	}
+
 	private Environment() {
 		enInheritableThreadLocal.set(this);
 		globalConfig = ConfigFactory.parseMap(eventListenerMap);
 	};
+
 	/**
-	 * instance a Environment 
+	 * instance a Environment
+	 * 
 	 * @return Environment the environment
 	 */
 	public static Environment getEnviroment() {
 		return EnviromentHolder.ENVIRONMENT;
 	}
+
 	/**
 	 * get the global environment configure
+	 * 
 	 * @return global configure
 	 */
 	public Config getConfigure() {
 		return this.globalConfig;
 	}
+
+	/**
+	 * 从全局配置中获取配置
+	 * 
+	 * @param path 配置路径
+	 * @return 配置
+	 */
 	public Config getConfig(String path) {
 		Assert.isNull(path);
-		if(this.globalConfig == null)
+		if (this.globalConfig == null)
+			return null;
+		try {
+			this.globalConfig.allowKeyNull(true);
+			Config config = this.globalConfig.getConfig(path);
+			return config;
+		} finally {
+			this.globalConfig.allowKeyNull(false);
+		}
+	}
+
+	/**
+	 * 获取一个配置，当配置不存在抛出异常
+	 * 
+	 * @param path 路径
+	 * @return 配置
+	 */
+	public Config getRequiredConfig(String path) {
+		Assert.isNull(path);
+		if (this.globalConfig == null)
+			throw new NullPointerException("the global config is null");
+		return this.globalConfig.getConfig(path);
+	}
+
+	/**
+	 * 获取配置值
+	 * 
+	 * @param path 路径
+	 * @return 配置值
+	 */
+	public ConfigValue getConfigValue(String path) {
+		Assert.isNull(path);
+		if (this.globalConfig == null)
 			return null;
 		this.globalConfig.allowKeyNull(true);
-		Config config = this.globalConfig.getConfig(path);
-		this.globalConfig.allowKeyNull(false);
-		return config;
+		try {
+			ConfigValue config = this.globalConfig.getValue(path);
+			return config;
+		} finally {
+			this.globalConfig.allowKeyNull(false);
+		}
 	}
+
+	public ConfigValue getRequiredConfigValue(String path) {
+		Assert.isNull(path);
+		if (this.globalConfig == null)
+			throw new NullPointerException("the global config is null");
+		return this.globalConfig.getValue(path);
+	}
+
 	/**
 	 * merge configure to global configure
+	 * 
 	 * @param config the configure
 	 */
-	public synchronized void mergeConfig(Config config){
-		if(globalConfig == null) {
+	public synchronized void mergeConfig(Config config) {
+		if (globalConfig == null) {
 			globalConfig = config;
-		}else {
+		} else {
 			globalConfig.merge(config);
 		}
 	}
+
 	/**
 	 * merge the map to global configure
 	 */
-	public synchronized void mergeVariableToConfig(){
+	public synchronized void mergeVariableToConfig() {
 		Config config = ConfigFactory.parseMap(this.globalVariable);
-		if(globalConfig == null) {
+		if (globalConfig == null) {
 			globalConfig = config;
-		}else {
+		} else {
 			globalConfig.merge(config);
 		}
 	}
+
 	/**
 	 * set the variable to environment
-	 * @param key name
+	 * 
+	 * @param key   name
 	 * @param value value
 	 */
-	public void setVariable(String key,Object value) {
+	public void setVariable(String key, Object value) {
 		this.globalVariable.put(key, value);
 	}
+
 	/**
 	 * get a variable
-	 * @param <T> variable type
+	 * 
+	 * @param     <T> variable type
 	 * @param key variable name
 	 * @return variable
 	 */
@@ -159,19 +228,32 @@ public class Environment {
 		return (T) this.globalVariable.get(key);
 	}
 	/**
+	 * 获取一个变量，不允许返回空
+	 * @param key key
+	 * @return value
+	 */
+	public <T> T getRequiredVariable(String key) {
+		T t = getVariable(key);
+		Assert.isNull(t,"cloud not found required variable for key ["+key+"]");
+		return t;
+	}
+	/**
 	 * judge the environment whether contains a variable
+	 * 
 	 * @param key variable name
 	 * @return boolean true or false
 	 */
 	public boolean hasVariable(String key) {
 		return this.globalVariable.containsKey(key);
 	}
+
 	/**
 	 * remove variable
+	 * 
 	 * @param keys names
 	 */
 	public void removeVariable(String... keys) {
-		for(String key : keys)
+		for (String key : keys)
 			this.globalVariable.remove(key);
 	}
 }

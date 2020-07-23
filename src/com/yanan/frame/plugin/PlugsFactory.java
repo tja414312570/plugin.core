@@ -7,11 +7,11 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -185,19 +185,10 @@ public class PlugsFactory {
 	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
 		newRegisterDefinitionList.add(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
-		String id = registerDefinition.getId();
-		if(StringUtil.isEmpty(id)) {
-			id = registerDefinition.getRegisterClass().getName();
-		}
+		String id = getID(registerDefinition);
 		synchronized (id) {
 			if(this.registerDefinitionContainer.containsKey(id)) {
-				if(StringUtil.isEmpty(registerDefinition.getReferenceId())) 
-					throw new PluginInitException("the register is exists for ["+id+"]");
-				else {
-					while(this.registerDefinitionContainer
-							.containsKey(id = id + UUID.randomUUID().toString()));
-				}
-					
+				throw new PluginInitException("the register is exists for ["+id+"]");
 			}
 			this.registerDefinitionContainer.put(id, registerDefinition);
 			Class<?>[] serviceClassArray = registerDefinition.getServices();
@@ -210,6 +201,20 @@ public class PlugsFactory {
 				plugin.addRegister(registerDefinition);
 			}
 		}
+	}
+	public String getID(RegisterDefinition registerDefinition) {
+		StringBuilder idBuilder = new StringBuilder();
+		if(StringUtil.isEmpty(registerDefinition.getId())) {
+			idBuilder.append(registerDefinition.getRegisterClass().getName());
+		}else {
+			idBuilder.append(registerDefinition.getId());
+		}
+		if(!StringUtil.isEmpty(registerDefinition.getReferenceId())) {
+			idBuilder.append("-")
+			.append(registerDefinition.getReferenceId())
+			.append(registerDefinition.hashCode());
+		}
+		return idBuilder.toString();
 	}
 	public PluginEventSource getEventSource() {
 		return eventSource;
@@ -313,12 +318,43 @@ public class PlugsFactory {
 	 */
 	public void removeRegister(Class<?> registerClass) {
 		synchronized (this) {
-			RegisterDefinition registerDescription = getRegisterDefinition(registerClass);
-			Class<?>[] plugClassArray = registerDescription.getServices();
-			for(Class<?> plugClass : plugClassArray) {
-				Plugin plugin = this.serviceContatiner.get(plugClass);
-				plugin.getRegisterList().remove(registerDescription);
-			}
+			RegisterDefinition registerDefinition = getRegisterDefinition(registerClass);
+			this.removeRegisterService(registerDefinition);
+		}
+	}
+	/**
+	 * 移除注册器
+	 * @param registerDefinition 注册定义
+	 */
+	public void removeRegister(RegisterDefinition registerDefinition) {
+		synchronized (this) {
+			String id = getID(registerDefinition);
+			this.registerDefinitionContainer.remove(id);
+			this.removeRegisterService(registerDefinition);
+		}
+	}
+	/**
+	 * 移除注册器
+	 * @param id 注册id
+	 */
+	public void removeRegister(String id) {
+		synchronized (this) {
+			RegisterDefinition registerDefinition = this.registerDefinitionContainer.get(id);
+			if(registerDefinition == null)
+				return;
+			this.registerDefinitionContainer.remove(id);
+			this.removeRegisterService(registerDefinition);
+		}
+	}
+	/**
+	 * 移除注册描述的服务中当前注册描述
+	 * @param registerDefinition 注册定义
+	 */
+	public synchronized void removeRegisterService(RegisterDefinition registerDefinition) {
+		Class<?>[] plugClassArray = registerDefinition.getServices();
+		for(Class<?> plugClass : plugClassArray) {
+			Plugin plugin = this.serviceContatiner.get(plugClass);
+			plugin.getRegisterList().remove(registerDefinition);
 		}
 	}
 	/**
@@ -369,10 +405,12 @@ public class PlugsFactory {
 			resourceDecoder.decodeResource(this, resource);
 			resourceLoadedList.add(resource);
 		}
-		this.newRegisterDefinitionList.removeIf(registerDefinition->{
-			registerDefinitionInit(registerDefinition);
-			return true;
-		});
+		Iterator<RegisterDefinition> iterator = this.newRegisterDefinitionList.iterator();
+		while(iterator.hasNext()) {
+			RegisterDefinition currentRegisterDefinition = iterator.next();
+			newRegisterDefinitionList.remove(currentRegisterDefinition);
+			registerDefinitionInit(currentRegisterDefinition);
+		}
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
 	/**
