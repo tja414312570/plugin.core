@@ -3,6 +3,7 @@ package com.yanan.frame.plugin.builder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +31,8 @@ import com.yanan.frame.plugin.definition.PluginDefinition;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.handler.PlugsHandler;
+import com.yanan.frame.plugin.handler.PlugsHandler.ProxyType;
+import com.yanan.utils.CollectionUtils;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.string.StringUtil;
@@ -107,6 +110,7 @@ public class PluginDefinitionBuilderFactory {
 		register.setLoader(new AppClassLoader(registerClass, false));
 		// 获取实现类所在的接口
 		register.setServices(registerClass.getInterfaces());
+		checkAfterBuilder(register);	
 		return register;
 	}
 	/**
@@ -151,6 +155,7 @@ public class PluginDefinitionBuilderFactory {
 				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, method.getParameterTypes(), new Object[method.getParameterCount()],null,null));
 			}
 		}
+		checkAfterBuilder(registerDefinition);	
 		return registerDefinition;
 		//查找实例化后的方法
 //		checkPlugs(registerDefinition.getPlugs());
@@ -237,13 +242,24 @@ public class PluginDefinitionBuilderFactory {
 			}
 			//获取实例后执行的方法
 			deduceAfterInstanceExecuteMethod(config,registerDefinition);
-				
+			checkAfterBuilder(registerDefinition);	
 //				checkPlugs(register.get);
 //			PlugsFactory.getInstance().addRegisterHandlerQueue(this);
 			return registerDefinition;
 		} catch (Exception e) {
 				throw new PluginInitException("plugin exception init at \"" + config + "\" at line "
 						+ config.origin().lineNumber(), e);
+		}
+	}
+	/**
+	 * 构造完成之后的一些检查
+	 * @param registerDefinition
+	 */
+	private static void checkAfterBuilder(RegisterDefinition registerDefinition) {
+		if(CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceExecuteMethod())
+				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())) {
+			if(registerDefinition.getProxyModel() != ProxyModel.NONE)
+			registerDefinition.setProxyModel(ProxyModel.CGLIB);
 		}
 	}
 
