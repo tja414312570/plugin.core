@@ -35,7 +35,7 @@ public class PluginInstanceFactory {
 	 * 通过参数类型获取构造器
 	 * 
 	 * @param paramTypes
-	 * @return
+	 * @return 构造器
 	 */
 	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition, Class<?>[] paramTypes) {
 		// 排除掉数量不同的构造器
@@ -80,10 +80,11 @@ public class PluginInstanceFactory {
 	/**
 	 * 获取一个服务的新对像
 	 * 
-	 * @param plug
-	 * @param args
-	 * @return
-	 * @throws Exception
+	 * @param registerDefinition 注册定义
+	 * @param service 服务类
+	 * @param args 参数
+	 * @param origin 原始对象
+	 * @return 实例
 	 */
 	public static <T> T getRegisterNewInstance(RegisterDefinition registerDefinition, Class<T> service, Object[] args,
 			Object origin) {
@@ -420,10 +421,8 @@ public class PluginInstanceFactory {
 	/**
 	 * 代理实例化后调用方法
 	 * 
-	 * @param proxy
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 * @throws InvocationTargetException
+	 * @param registerDefinition 注册定义
+	 * @param proxy 代理对象
 	 */
 	public static void initProxyMethod(RegisterDefinition registerDefinition, Object proxy) {
 		if (registerDefinition.getAfterInstanceExecuteMethod() != null) {
@@ -444,12 +443,13 @@ public class PluginInstanceFactory {
 	/**
 	 * 代理实例化后调用方法
 	 * 
-	 * @param proxy
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 * @throws InvocationTargetException
-	 * @throws SecurityException
-	 * @throws NoSuchMethodException
+	 * @param registerDefinition 注册定义
+	 * @param proxy 代理类
+	 * @throws IllegalAccessException ex
+	 * @throws IllegalArgumentException ex
+	 * @throws InvocationTargetException ex
+	 * @throws NoSuchMethodException ex
+	 * @throws SecurityException ex
 	 */
 	@SuppressWarnings("unchecked")
 	public static void initProxyField(RegisterDefinition registerDefinition, Object proxy)

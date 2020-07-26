@@ -12,7 +12,6 @@ import java.util.Map;
  * v1.1 添加属性annotation，用于对特殊注解的InvokeHandler的
  * 		快速与便捷处理方式
  * @author yanan
- * @date 2018-07-12
  */
 public class InvokeHandlerSet {
 	private Object invokeHandler;

@@ -17,17 +17,17 @@ import java.lang.annotation.Target;
 public @interface Variable {
 	/**
 	 * 参数名称
-	 * @return
+	 * @return 属性名
 	 */
 	String value() default "";
 	/**
 	 * 默认值
-	 * @return
+	 * @return 默认值
 	 */
 	String defaultValue() default "";
 	/**
-	 * 是否必填
-	 * @return
+	 * 是否必须
+	 * @return 是否必须
 	 */
 	boolean required() default true;
 	

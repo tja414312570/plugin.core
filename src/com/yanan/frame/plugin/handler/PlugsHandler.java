@@ -41,7 +41,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	/**
 	 * return the proxy object
 	 * 
-	 * @return
+	 * @return 代理对象
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getProxyObject() {
@@ -59,7 +59,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	/**
 	 * return the proxy class
 	 * 
-	 * @return
+	 * @return 代理类
 	 */
 	public Class<?> getProxyClass() {
 		return proxyClass;
@@ -68,7 +68,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	/**
 	 * return the proxy interface
 	 * 
-	 * @return
+	 * @return 正在调用的接口
 	 */
 	public Class<?> getInterfaceClass() {
 		return interfaceClass;
@@ -76,8 +76,9 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	/**
 	 * jdk proxy PlugsHandler constructor
 	 * 
-	 * @param target
-	 * @param mapperInterface
+	 * @param target 目标
+	 * @param mapperInterface 包裹接口
+	 * @param registerDefinition 注册定义
 	 */
 	public PlugsHandler(Object target, Class<?> mapperInterface, RegisterDefinition registerDefinition) {
 		super();
@@ -89,9 +90,10 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 
 	/**
 	 * cglib proxy PlugsHandler constructor
-	 * 
-	 * @param proxyClass
-	 * @param parameters
+	 * @param proxyClass 代理类
+	 * @param parameterType 参数类型
+	 * @param parameters 参数
+	 * @param registerDefinition 注册定义
 	 */
 	public PlugsHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDefinition registerDefinition) {
 		this.proxyClass = proxyClass;

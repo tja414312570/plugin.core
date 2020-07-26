@@ -47,7 +47,7 @@ public class MethodHandler {
 	}
 	/**
 	 * 获取方法的组件处理器
-	 * @return
+	 * @return 组件Handler
 	 */
 	public PlugsHandler getPlugsProxy() {
 		return plugsProxy;
@@ -58,7 +58,7 @@ public class MethodHandler {
 	}
 	/**
 	 * 获取拦截的方法
-	 * @return
+	 * @return 执行的方法
 	 */
 	public Method getMethod() {
 		return method;
@@ -69,7 +69,7 @@ public class MethodHandler {
 	}
 	/**
 	 * 获取拦截的方法的参数
-	 * @return
+	 * @return 参数
 	 */
 	public Object[] getParameters() {
 		return parameters;
@@ -92,7 +92,7 @@ public class MethodHandler {
 	}
 	/**
 	 * 将结果代替原来的结果，不中断执行
-	 * @param result
+	 * @param result 执行结果
 	 */
 	public void setOriginResult(Object result) {
 		this.originResult = result;
@@ -100,14 +100,14 @@ public class MethodHandler {
 	}
 	/**
 	 * 获取原始方法返回的结果，执行之后有效
-	 * @return
+	 * @return 原始结果
 	 */
 	public Object getOriginResult() {
 		return this.originResult;
 	}
 	/**
 	 * 获取拦截器设置的返回结果
-	 * @return
+	 * @return 获取头部的结果的集合
 	 */
 	public Object getHeaderResult() {
 		return headerResult;
@@ -127,8 +127,8 @@ public class MethodHandler {
 	}
 	/**
 	 * 重新执行目标方法，可以传入之前的参数或新的参数
-	 * @param parmeters
-	 * @throws Throwable 
+	 * @param parmeters 参数
+	 * @throws Throwable 异常
 	 */
 	public void chain(Object... parmeters) throws Throwable {
 		this.headerResult = this.plugsProxy.getProxyType().equals(ProxyType.JDK)
@@ -142,15 +142,15 @@ public class MethodHandler {
 	}
 	/**
 	 * 设置此次方法执行的属性，之后的相关拦截器都能获取到此方法此次执行的该参数
-	 * @param key
-	 * @param value
+	 * @param key 属性名
+	 * @param value 属性值
 	 */
 	public void addAttribute(String key,Object value) {
 		this.attribute.put(key, value);
 	}
 	/**
 	 * 获取方法的拦截链
-	 * @return
+	 * @return 调用handler的集合
 	 */
 	public InvokeHandlerSet getInvokeHandlerSet() {
 		return invokeHandlerSet;
@@ -160,7 +160,7 @@ public class MethodHandler {
 	}
 	/**
 	 * 获取中断结果
-	 * @return
+	 * @return 中断结果
 	 */
 	public Object getInterruptResult() {
 		return interruptResult;

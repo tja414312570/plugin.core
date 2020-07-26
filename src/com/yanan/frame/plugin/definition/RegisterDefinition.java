@@ -30,101 +30,53 @@ import com.yanan.utils.reflect.AppClassLoader;
  *
  */
 public class RegisterDefinition {
-	/**
-	 * 代理容器，当组件拥有单例属性，此容器用于存放实例
-	 */
+	//代理容器，当组件拥有单例属性，此容器用于存放实例
 	private volatile Map<Integer, Object> proxyContainer;
-	/**
-	 * 组件类，用于描述此定义所属的具体类
-	 */
+	//组件类，用于描述此定义所属的具体类
 	private Class<?> registerClass;
-	/**
-	 * 引用ID，当此定义引用其他定义时拥有此属性
-	 */
+	//引用ID，当此定义引用其他定义时拥有此属性
 	private String referenceId;
-	/**
-	 * 类加载器
-	 */
+	//类加载器
 	private AppClassLoader loader;
-	/**
-	 * 注册注解 通过注解注册时有效
-	 */
+	//注册注解 通过注解注册时有效
 	private Register register;
-	/**
-	 * 组件接口类，普通类（为实现服务接口的类）无效
-	 */
+	//组件接口类，普通类（为实现服务接口的类）无效
 	private Class<?>[] services;
-	/**
-	 * 优先级，值越大，优先级越低
-	 */
+	//优先级，值越大，优先级越低
 	private int priority = 0;
-	/**
-	 * 属性，此属性为匹配属性
-	 */
+	//属性，此属性为匹配属性
 	private String[] attribute = { "*" };
-	/**
-	 * 是否为单例模式
-	 */
+	//是否为单例模式
 	private boolean signlton;
-	/**
-	 * 组件文件，当组件用文件注册时有效
-	 */
+	//组件文件，当组件用文件注册时有效
 	private File file;
-	/**
-	 * 描述，用于组件说明等
-	 */
+	//描述，用于组件说明等
 	private String description = "";
-	/**
-	 * 代理方式
-	 */
+	//代理方式
 	private ProxyModel proxyModel = ProxyModel.DEFAULT;
-	/**
-	 * 方法拦截器 映射
-	 */
+	//方法拦截器 映射
 	private Map<Method, InvokeHandlerSet> methodInterceptMapping;
-	/**
-	 * Config
-	 */
+	//Config
 	private Config config;
-	/**
-	 * 实例化的方法，当此属性存在，组件使用此方法获取对象
-	 */
+	//实例化的方法，当此属性存在，组件使用此方法获取对象
 	private MethodDefinition instanceMethod;
-	/**
-	 * 实例化的构造器，当此属性存在，组件使用此构造器实例化对象
-	 */
+	//实例化的构造器，当此属性存在，组件使用此构造器实例化对象
 	private ConstructorDefinition instanceConstructor;
-	/**
-	 * 构造器拦截器链路和构造器的拦截器链
-	 */
+	//构造器拦截器链路和构造器的拦截器链
 	private Map<Constructor<?>, InvokeHandlerSet> constructorInterceptMapping;
-	/**
-	 * 一个容器，可用于记录，查询该注册器的相关数据
-	 */
+	//一个容器，可用于记录，查询该注册器的相关数据
 	private Map<String, Object> attributes;
-	/**
-	 * 属性拦截器链
-	 */
+	//属性拦截器链
 	private Map<Field, InvokeHandlerSet> fieldInterceptMapping;
-	/**
-	 * 初始化后执行的方法集合
-	 */
+	//初始化后执行的方法集合
 	private List<MethodDefinition> afterInstanceExecuteMethod;
-	/**
-	 * 初始化后需要处理属性结合
-	 */
+	//初始化后需要处理属性结合
 	private List<FieldDefinition> afterInstanceInitField;
-	/**
-	 * 组件ID
-	 */
+	//组件ID
 	private String id;
-	/**
-	 * 链接对象
-	 */
+	//链接对象
 	private RegisterDefinition linkRegister;
-	/**
-	 * 链接之后的原代理的代理对象
-	 */
+	//链接之后的原代理的代理对象
 	private Object linkProxy;
 
 	public AppClassLoader getLoader() {
@@ -305,10 +257,10 @@ public class RegisterDefinition {
 		addFieldHandler(field, new InvokeHandlerSet(handler));
 	}
 	/**
-	 * 给方法添加Handler
-	 * 
-	 * @param method
-	 * @param handler
+	 * 给属性添加Handler
+	 *  
+	 * @param field 属性
+	 * @param invokeHandlerSet 属性
 	 */
 	public synchronized void addFieldHandler(Field field, InvokeHandlerSet invokeHandlerSet) {
 		if (fieldInterceptMapping == null) {
@@ -330,8 +282,8 @@ public class RegisterDefinition {
 	/**
 	 * 给方法添加Handler
 	 * 
-	 * @param method
-	 * @param handler
+	 * @param method 方法
+	 * @param handler handler
 	 */
 	public synchronized void addMethodHandler(Method method, InvokeHandler handler) {
 		addMethodHandler(method, new InvokeHandlerSet(handler));
@@ -344,8 +296,8 @@ public class RegisterDefinition {
 	/**
 	 * 给方法添加Handler
 	 * 
-	 * @param method
-	 * @param handler
+	 * @param method 方法
+	 * @param invokeHandlerSet handler
 	 */
 	public synchronized void addMethodHandler(Method method, InvokeHandlerSet invokeHandlerSet) {
 		if (methodInterceptMapping == null) {
@@ -361,10 +313,10 @@ public class RegisterDefinition {
 	}
 
 	/**
-	 * 给方法添加Handler
-	 * 
-	 * @param method
-	 * @param handler
+	 * 给构造器添加Handler
+	 *  
+	 * @param constructor 构造器
+	 * @param handler handler
 	 */
 	public synchronized void addConstructorHandler(Constructor<?> constructor, InvokeHandler handler) {
 		addConstructorHandler(constructor, new InvokeHandlerSet(handler));
@@ -377,8 +329,8 @@ public class RegisterDefinition {
 	/**
 	 * 给方法添加Handler
 	 * 
-	 * @param method
-	 * @param handler
+	 * @param constructor 构造器
+	 * @param invokeHandlerSet invokeHandlerSet
 	 */
 	public synchronized void addConstructorHandler(Constructor<?> constructor, InvokeHandlerSet invokeHandlerSet) {
 		if (constructorInterceptMapping == null) {
@@ -521,7 +473,7 @@ public class RegisterDefinition {
 	/**
 	 * 添加对象实例化后执行的方法
 	 * 
-	 * @param method 要执行的方法
+	 * @param methodDefinition 要执行的方法的定义
 	 */
 	public void addAfterInstanceExecuteMethod(MethodDefinition methodDefinition) {
 		if (this.afterInstanceExecuteMethod == null) {

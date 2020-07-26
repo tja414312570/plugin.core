@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface Support {
 	/**
 	 * 默认支持的注解
-	 * @return
+	 * @return 注解集合
 	 */
 	Class<? extends Annotation>[] value();
 }

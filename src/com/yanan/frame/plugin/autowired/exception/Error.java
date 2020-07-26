@@ -14,15 +14,18 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Error {
 	/**
-	 * 参数名称
-	 * @return
+	 * 上限异常
+	 * @return 异常
 	 */
 	Class<?> exception() default Throwable.class;
 	/**
 	 * 默认值
-	 * @return
+	 * @return 表达式
 	 */
 	String value() default "";
-	
+	/**
+	 * 是否记录错误
+	 * @return 是否记录错误
+	 */
 	boolean recorder() default true;
 }

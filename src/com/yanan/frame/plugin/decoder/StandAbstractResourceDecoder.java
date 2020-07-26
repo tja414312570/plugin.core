@@ -20,16 +20,15 @@ import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.exception.PluginRuntimeException;
 import com.yanan.utils.reflect.AppClassLoader;
-import com.yanan.utils.resource.Resource;
+import com.yanan.utils.resource.AbstractResourceEntry;
 
 /**
  * 标准抽象资源解析
  * 
  * @author yanan
- * @param <T> 抽象资源实现
  */
 @Register(attribute = { "com.yanan.utils.resource.AbstractResourceEntry", "AbstractResourceEntry" })
-public class StandAbstractResourceDecoder<K extends Resource> implements ResourceDecoder<K> {
+public class StandAbstractResourceDecoder implements ResourceDecoder<AbstractResourceEntry> {
 	//当前资源名称
 	private String resourceName;
 	
@@ -73,7 +72,7 @@ public class StandAbstractResourceDecoder<K extends Resource> implements Resourc
 	}
 
 	@Override
-	public void decodeResource(PlugsFactory factory, Resource resource) {
+	public void decodeResource(PlugsFactory factory, AbstractResourceEntry resource) {
 		this.resourceName = resource.getPath();
 		InputStream is = null;
 		InputStreamReader reader = null;

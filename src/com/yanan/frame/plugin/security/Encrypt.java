@@ -10,12 +10,12 @@ import java.lang.annotation.Target;
 public @interface Encrypt {
 	/**
 	 * 秘钥服务接口
-	 * @return
+	 * @return 加密服务类
 	 */
 	Class<? extends EncryptService> interfacer();
 	/**
 	 * 参数
-	 * @return
+	 * @return 参数
 	 */
 	String[] parameters() default {};
 }

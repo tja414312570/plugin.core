@@ -39,7 +39,7 @@ public class PropertyManager {
 	}
 	/**
 	 * get instance
-	 * @return
+	 * @return 实例
 	 */
 	public static PropertyManager getInstance(){
 		if(manager==null)
@@ -52,17 +52,17 @@ public class PropertyManager {
 	}
 	/**
 	 * put property to pools
-	 * @param name
-	 * @param value
-	 * @return
+	 * @param name 属性宁
+	 * @param value 属性值
+	 * @return 旧的值
 	 */
 	public String setProperty(String name,Object value){
 		return this.propertyPools.put(name, Objects.toString(value));
 	}
 	/**
 	 * get property from pools
-	 * @param name
-	 * @return
+	 * @param name 属性名
+	 * @return 属性值
 	 */
 	public String getProperty(String name){
 		return this.propertyPools.get(name);

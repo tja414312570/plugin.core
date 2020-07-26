@@ -39,7 +39,7 @@ import com.yanan.utils.resource.ResourceManager;
 import com.yanan.utils.string.StringUtil;
 
 /**
- * Pluginin factory,initial Pluginin Context and manager & register & get Pluginin Instance 2018 7-27
+ * Pluginin factory,initial Pluginin Context and manager ， register ， get Pluginin Instance 2018 7-27
  * modify MethodHandler initial when RegisterDefinition was initial,cut down proxy execution time 2018 7-12
  * add more than method intercept , update intercept rules ,add intercept handler set
  * 重构组件初始化逻辑 2020 7-14
@@ -285,6 +285,7 @@ public class PlugsFactory {
 	 * 获取一个确定的注册定义
 	 * @param serviceClass 服务类
 	 * @param insClass 实现类
+	 * @param <T> 目标类型
 	 * @return 注册定义
 	 */
 	public static <T> RegisterDefinition getRegisterDefinition(Class<T> serviceClass, Class<?> insClass){
@@ -303,6 +304,7 @@ public class PlugsFactory {
 	/**
 	 * 获取注册定义和不允许空值
 	 * @param serviceClass 服务类
+	 * @param <T> 目标类型
 	 * @return 注册定义
 	 */
 	public static<T> RegisterDefinition getRegisterDefinitionNoneNull(Class<T> serviceClass){
@@ -351,9 +353,9 @@ public class PlugsFactory {
 	 * @param registerDefinition 注册定义
 	 */
 	public synchronized void removeRegisterService(RegisterDefinition registerDefinition) {
-		Class<?>[] plugClassArray = registerDefinition.getServices();
-		for(Class<?> plugClass : plugClassArray) {
-			Plugin plugin = this.serviceContatiner.get(plugClass);
+		Class<?>[] serviceClassArray = registerDefinition.getServices();
+		for(Class<?> serviceClass : serviceClassArray) {
+			Plugin plugin = this.serviceContatiner.get(serviceClass);
 			plugin.getRegisterList().remove(registerDefinition);
 		}
 	}
@@ -385,7 +387,7 @@ public class PlugsFactory {
 		static private PlugsFactory instance = new PlugsFactory();
 	}
 	/**
-	 * initial plugin context ,need use {@link #associate()} to associate all service
+	 * initial plugin context ,need use {@link #refresh()} to associate all service
 	 * with register when plugin context scan all class
 	 * 
 	 */
@@ -446,8 +448,7 @@ public class PlugsFactory {
 		}
 	}
 	/**
-	 * 
-	 * @param plugClass 组件类 即接口
+	 * @param serviceClass 组件类 即接口
 	 * @return Plugin实例
 	 */
 	public static Plugin getPlugin(Class<?> serviceClass) {
@@ -470,6 +471,7 @@ public class PlugsFactory {
 	/**
 	 * 通过ID的方式获取实例
 	 * @param id ID
+	 * @param <T> 目标类型
 	 * @return 实例
 	 */
 	@SuppressWarnings("unchecked")
@@ -488,6 +490,7 @@ public class PlugsFactory {
 	 * 
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param <T> 目标类型
 	 * @return 实例
 	 */
 	public static <T> T getPluginsInstance(Class<T> serviceClass, Object... args) {
@@ -506,6 +509,7 @@ public class PlugsFactory {
 	 * @param serviceClass  组件接口类
 	 * @param defaultClass  默认实现类
 	 * @param args 组件参数
+	 * @param <T> 目标类型
 	 * @return 代理对象
 	 */
 	public static <T> T getPluginsInstanceWithDefault(Class<T> serviceClass, Class<? extends T> defaultClass, Object... args) {
@@ -527,6 +531,7 @@ public class PlugsFactory {
 	 *  
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param <T> 目标类型
 	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceAllowNull(Class<T> serviceClass, Object... args) {
@@ -542,6 +547,7 @@ public class PlugsFactory {
 	 * 强制生成一个新的实例并返回
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param <T> 目标类型
 	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceNew(Class<T> serviceClass, Object... args) {
@@ -561,9 +567,11 @@ public class PlugsFactory {
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务接口
+	 * @param args 参数
+	 * @param insClass 内部实现
+	 * @param <T> 目标类型
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass, Object... args) {
 		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
@@ -576,9 +584,12 @@ public class PlugsFactory {
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param insClass 内部类
+	 * @param types 参数类型
+	 * @param args 参数
+	 * @param <T> 目标类型
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass,Class<?>[] types, Object... args) {
 		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
@@ -590,11 +601,12 @@ public class PlugsFactory {
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，返回一个默认组件，因此这是一种不严谨的组件获取方式，如果需要使用严谨模式（当 匹配值不通过时，返回null），需要使用方法
-	 * {@link #getPluginsInstanceByAttributeStrict()}
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param attribute 属性
+	 * @param <T> 目标类型
 	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceByAttribute(Class<T> serviceClass, String attribute, Object... args) {
@@ -609,12 +621,13 @@ public class PlugsFactory {
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，会抛出异常，因此这是一种严谨的组件获取方式
-	 * {@link #getPluginsInstanceByAttribute())
 	 * 具体选择某个组件实例作为返回组件实例依赖其优先级，当所有优先级相同时选第一个 优先级数值越低，优先级越高
 	 * 
-	 * @param serviceClass
-	 * @param args
-	 * @return
+	 * @param serviceClass 服务类
+	 * @param attribute 属性
+	 * @param args  参数
+	 * @param <T> 目标类型
+	 * @return 实例
 	 */
 	public static <T> T getPluginsInstanceByAttributeStrict(Class<T> serviceClass, String attribute, Object... args) {
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, true);
@@ -637,6 +650,8 @@ public class PlugsFactory {
 	 * 
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param attribute 属性
+	 * @param <T> 目标类型
 	 * @return 服务列表
 	 */
 	public static <T> List<T> getPluginsInstanceListByAttribute(Class<T> serviceClass, String attribute, Object... args) {
@@ -653,6 +668,7 @@ public class PlugsFactory {
 	 * @param serviceClass 服务类
 	 * @param registerDescriptionList 组件秒速列表
 	 * @param args 参数
+	 * @param <T> 目标类型
 	 * @return 实例的集合
 	 */
 	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass,List<RegisterDefinition> registerDescriptionList,Object... args){
@@ -668,6 +684,7 @@ public class PlugsFactory {
 	 * 
 	 * @param serviceClass 服务类
 	 * @param args 参数
+	 * @param <T> 目标类型
 	 * @return 实例列表
 	 */
 	public static <T> List<T> getPluginsInstanceList(Class<T> serviceClass, Object... args) {
@@ -675,9 +692,32 @@ public class PlugsFactory {
 					.getRegisterDefinitionList();
 			return getPluginsInstanceList(serviceClass,registerDescriptionList, args);
 	}
-
-	
-
+	/**
+	 * 获取一个新的实例
+	 * @param serviceClass 服务类型
+	 * @param parameterType 参数类型
+	 * @param arguments 参数
+	 * @param <T> 目标类型
+	 * @return 实例
+	 */
+	public static <T> T getPluginsInstanceNewByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
+		RegisterDefinition registerDescription =  getRegisterDefinitionNoneNull(serviceClass);
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterNewInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
+	}
+	/**
+	 * 获取实例通过参数类型
+	 * @param serviceClass 服务类
+	 * @param parameterType 参数类型
+	 * @param arguments 参数
+	 * @param <T> 目标类型
+	 * @return 实例
+	 */
+	public static <T> T getPluginsInstanceByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
+		RegisterDefinition registerDescription = getRegisterDefinitionNoneNull(serviceClass);
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
+	}
 	public static Map<Class<Annotation>, List<Annotation>> getAnnotationGroup(Annotation[] annotations,List<Class<Annotation>> annoTypes){
 		if (annotations.length == 0) {
 			return null;
@@ -771,8 +811,8 @@ public class PlugsFactory {
 	/**
 	 * 获取代理对象的PluginsHandler对象
 	 * 
-	 * @param proxyInstance
-	 * @return
+	 * @param proxyInstance 代理实例
+	 * @return PlugsHandler
 	 */
 	public static PlugsHandler getPluginsHandler(Object proxyInstance) {
 		Field field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getAnyField("h");
@@ -789,17 +829,6 @@ public class PlugsFactory {
 			throw new PluginInitException("failed to get instance's PluginsHandler", e);
 		}
 		return plugsHandler;
-	}
-//
-	public static <T> T getPluginsInstanceNewByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
-		RegisterDefinition registerDescription =  getRegisterDefinitionNoneNull(serviceClass);
-		getInstance().checkRegisterDefinition(registerDescription);
-		return PluginInstanceFactory.getRegisterNewInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
-	}
-	public static <T> T getPluginsInstanceByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
-		RegisterDefinition registerDescription = getRegisterDefinitionNoneNull(serviceClass);
-		getInstance().checkRegisterDefinition(registerDescription);
-		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
 	public Environment getEnvironment() {
 		return environment;

@@ -39,7 +39,7 @@ import org.objectweb.asm.TypePath;
 import org.objectweb.asm.commons.Remapper;
 
 /**
- * A {@link LocalVariablesSorter} for type mapping.
+ * A LocalVariablesSorter for type mapping.
  * 
  * @author Eugene Kuleshov
  */

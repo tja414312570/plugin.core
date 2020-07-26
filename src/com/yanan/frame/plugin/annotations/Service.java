@@ -20,22 +20,22 @@ public @interface Service {
 	String attribute() default "*";
 	/**
 	 * 是否采用单例模式
-	 * @return
+	 * @return 是否单例
 	 */
 	boolean signlTon() default true;
 	/**
 	 * 代理模式
-	 * @return
+	 * @return 代理模式
 	 */
 	ProxyModel model() default ProxyModel.DEFAULT;
 	/**
 	 * bean的ID注入
-	 * @return
+	 * @return bean id
 	 */
 	String id() default "";
 	/**
 	 * bean的ID注入
-	 * @return
+	 * @return bean id
 	 */
 	String value() default "";
 }

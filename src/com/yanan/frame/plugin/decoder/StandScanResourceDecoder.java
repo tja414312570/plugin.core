@@ -1,7 +1,5 @@
 package com.yanan.frame.plugin.decoder;
 
-import java.util.Arrays;
-
 import com.yanan.frame.plugin.Plugin;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.annotations.AfterInstantiation;
@@ -18,7 +16,7 @@ import com.yanan.utils.resource.scanner.PackageScanner;
  *
  */
 @Register(attribute="StandScanResource",id="standScanResourceDecoder")
-public class StandScanResourceDecoder extends StandAbstractResourceDecoder<StandScanResource> implements ResourceDecoder<StandScanResource>{
+public class StandScanResourceDecoder implements ResourceDecoder<StandScanResource>{
 	@AfterInstantiation
 	public void init() {
 	}

@@ -5,30 +5,38 @@ import java.lang.reflect.Constructor;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginRuntimeException;
 
+/**
+ * 实例Handler
+ * @author yanan
+ *
+ */
 public interface InstanceHandler {
 	/**
 	 * 将代理对象实例化之前
-	 * @param registerDescription
-	 * @param plugClass
-	 * @param args
+	 * @param registerDefinition 组件定义
+	 * @param plugClass 组件类
+	 * @param constructor 构造器
+	 * @param args 参数
 	 */
 	void before(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object... args);
 	/**
 	 * 将代理对象实例化之后
-	 * @param registerDescription
-	 * @param plugClass
-	 * @param proxy
-	 * @param args
+	 * @param registerDefinition 组件定义
+	 * @param constructor 构造器
+	 * @param plugClass 组件类
+	 * @param proxyObject 代理对象
+	 * @param args 参数
 	 */
 	void after(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject,Object... args);
 	/**
 	 * 对象实例化时异常
-	 * @param registerDescription
-	 * @param plug
-	 * @param proxy
-	 * @param t
-	 * @param args
+	 * @param registerDefinition 组件定义
+	 * @param constructor 构造器
+	 * @param plugClass 组件类
+	 * @param proxyObject 代理对象
+	 * @param throwable 异常
+	 * @param args 参数
 	 */
-	void exception(RegisterDefinition registerDefinition, Class<?> plug,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args);
+	void exception(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args);
 
 }

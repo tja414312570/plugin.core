@@ -29,7 +29,7 @@ public class ProxyHandler implements MethodInterceptor {
 	/**
 	 * return the proxy object
 	 * 
-	 * @return
+	 * @return 代理对象
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getProxyObject() {
@@ -46,8 +46,7 @@ public class ProxyHandler implements MethodInterceptor {
 
 	/**
 	 * return the proxy class
-	 * 
-	 * @return
+	 * @return 代理类
 	 */
 	public Class<?> getProxyClass() {
 		return proxyClass;
@@ -55,8 +54,7 @@ public class ProxyHandler implements MethodInterceptor {
 
 	/**
 	 * return the proxy interface
-	 * 
-	 * @return
+	 * @return 调用接口
 	 */
 	public Class<?> getInterfaceClass() {
 		return interfaceClass;
@@ -64,8 +62,7 @@ public class ProxyHandler implements MethodInterceptor {
 
 	/**
 	 * return the proxy method handler mapping
-	 * 
-	 * @return
+	 * @return the proxy method handler mapping
 	 */
 	public Map<Method, InvokeHandlerSet> getHandlerMapping() {
 		return registerDefinition == null ? null : registerDefinition.getMethodInterceptMapping();
@@ -73,9 +70,12 @@ public class ProxyHandler implements MethodInterceptor {
 
 	/**
 	 * cglib proxy PlugsHandler constructor
-	 * 
-	 * @param proxyClass
-	 * @param parameters
+	
+	 * @param proxyClass 代理类
+	 * @param parameterType 参数类型
+	 * @param parameters 参数
+	 * @param registerDefinition 注册定义
+	 * @param linkProxy 连接代理
 	 */
 	public ProxyHandler(Class<?> proxyClass,Class<?>[] parameterType, Object[] parameters, RegisterDefinition registerDefinition,Object linkProxy) {
 		this.proxyClass = proxyClass;

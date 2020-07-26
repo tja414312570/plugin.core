@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.typesafe.config.Config;
+import com.yanan.frame.plugin.Environment;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.annotations.Register;
 import com.yanan.frame.plugin.annotations.Service;
@@ -50,8 +51,8 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	/**
 	 * 用于获取代理类
 	 * 
-	 * @param origin
-	 * @return
+	 * @param origin 原始类
+	 * @return 代理类
 	 */
 	public static Class<?> getProxyClass(Class<?> origin) {
 		return (Class<?>) proxy.get(origin);
@@ -60,8 +61,9 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	/**
 	 * 文件hash
 	 * 
-	 * @param file
-	 * @return
+	 * @param file 类文件
+	 * @param bytes 字节流
+	 * @return hash值
 	 */
 	public static long hash(File file, byte[] bytes) {
 		MessageDigest md;
@@ -109,11 +111,11 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 								Class<?> nc = loadClass(loader, className, clzzName, content);
 								if (!checkClass(nc))
 									return;
-								RegisterDefinition registerDescription = PlugsFactory.getRegisterDescrption(clzz);
+								RegisterDefinition registerDescription = PlugsFactory.getInstance().getRegisterDefinition(clzz);
 								if (registerDescription != null) {
 									if (registerDescription.getLinkRegister() != null)
 										clzz = registerDescription.getLinkRegister().getRegisterClass();
-									registerDescription.updateRegister(nc);
+//									registerDescription.updateRegister(nc);
 								} else
 									tryAddPlugs(nc);
 								proxy.put(clzz, nc);
@@ -228,24 +230,24 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	/**
 	 * 尝试添加组件
 	 * 
-	 * @param nc
+	 * @param nc 新类
 	 */
 	protected void tryAddPlugs(Class<?> nc) {
 		if (nc.getAnnotationsByType(Service.class) != null || nc.getAnnotation(Register.class) != null)
-			PlugsFactory.getInstance().addPlugs(nc);
+			PlugsFactory.getInstance().addPlugininDefinition(nc);
 	}
 
 	/**
 	 * 通知类状态修改监听类
 	 * 
-	 * @param clzz
-	 * @param nc
-	 * @param oc
-	 * @param file
+	 * @param clzz class
+	 * @param nc new class
+	 * @param oc origin class
+	 * @param file class file
 	 */
 	protected void notifyListener(Class<?> clzz, Class<?> nc, Class<?> oc, File file) {
 		try {
-			List<ClassUpdateListener> updaterList = PlugsFactory.getPlugsInstanceListByAttribute(ClassUpdateListener.class,nc.getName());
+			List<ClassUpdateListener> updaterList = PlugsFactory.getPluginsInstanceListByAttribute(ClassUpdateListener.class,nc.getName());
 			for (ClassUpdateListener listener : updaterList){
 				if((clzz!=null&&AppClassLoader.implementOf(clzz, ClassUpdateListener.class))
 						||(nc!=null&&AppClassLoader.implementOf(nc, ClassUpdateListener.class))
@@ -263,16 +265,16 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	/**
 	 * 加载类
 	 * 
-	 * @param loader
-	 * @param className
-	 * @param bytes
-	 * @return
-	 * @throws NoSuchMethodException
-	 * @throws SecurityException
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 * @throws InvocationTargetException
-	 */
+	 * @param loader class loader
+	 * @param className class name
+	 * @param bytes class bytes
+	 * @return class
+	 * @throws NoSuchMethodException ex
+	 * @throws SecurityException ex
+	 * @throws IllegalAccessException ex
+	 * @throws IllegalArgumentException ex
+	 * @throws InvocationTargetException ex
+	 */ 
 	protected Class<?> loadClass(java.lang.ClassLoader loader, String className, byte[] bytes)
 			throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException {
@@ -326,13 +328,10 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	@Override
 	public void execute(PlugsFactory plugsFactory) {
 		log.debug("enable class hot update deployment service!");
-		ClassHotUpdater test = PlugsFactory.getPlugsInstance(ClassHotUpdater.class);
-		if(PlugsFactory.getPlug(ClassUpdateListener.class) == null)
-			PlugsFactory.getInstance().addPlugs(ClassUpdateListener.class);
+		ClassHotUpdater test = PlugsFactory.getPluginsInstance(ClassHotUpdater.class);
+		PlugsFactory.getInstance().addPlugininDefinition(ClassUpdateListener.class);
 		if(test.contextPathList.isEmpty()) {
-			Config config = ConfigContext.getInstance().getGlobalConfig();
-			config.allowKeyNull();
-			config  = config.getConfig("ClassHotUpdater");
+			Config config = Environment.getEnviroment().getConfig("ClassHotUpdater");
 			if(config != null) {
 				if(config.hasPath("contextPath")) {
 					if(config.isList("contextPath")) {

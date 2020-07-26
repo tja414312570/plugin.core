@@ -3,7 +3,6 @@ package com.yanan.frame.plugin.builder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +30,6 @@ import com.yanan.frame.plugin.definition.PluginDefinition;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.handler.PlugsHandler;
-import com.yanan.frame.plugin.handler.PlugsHandler.ProxyType;
 import com.yanan.utils.CollectionUtils;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.TypeToken;
@@ -59,7 +57,7 @@ public class PluginDefinitionBuilderFactory {
 
 	/**
 	 * 构建一个组件或则注册器
-	 * @param pluginClass
+	 * @param pluginClass 组件类
 	 * @return 组件定义或则注册定义
 	 */
 	public static Object builderPluginDefinitionAuto(Class<?> pluginClass) {
@@ -252,8 +250,8 @@ public class PluginDefinitionBuilderFactory {
 		}
 	}
 	/**
-	 * 构造完成之后的一些检查
-	 * @param registerDefinition
+	 * 构造完成之后的一些检查 
+	 * @param registerDefinition 组件定义
 	 */
 	private static void checkAfterBuilder(RegisterDefinition registerDefinition) {
 		if(CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceExecuteMethod())

@@ -12,11 +12,11 @@ import com.yanan.frame.plugin.definition.RegisterDefinition;
 public interface FieldHandler {
 	/**
 	 * 当要准备字段时掉此方法
-	 * @param registerDescription
-	 * @param proxy
-	 * @param target
-	 * @param desc
-	 * @param args
+	 * @param registerDefinition 注册定义
+	 * @param proxy 代理对象
+	 * @param target 目标对象
+	 * @param handlerSet handler集合
+	 * @param field 属性
 	 */
 	void preparedField(RegisterDefinition registerDefinition, Object proxy, Object target, InvokeHandlerSet handlerSet,
 			Field field);

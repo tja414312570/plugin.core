@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 import com.yanan.frame.plugin.event.AbstractEvent;
 import com.yanan.frame.plugin.event.EventListener;
 import com.yanan.frame.plugin.event.InterestedEventSource;
 import com.yanan.utils.asserts.Assert;
+import com.yanan.utils.asserts.Function;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
@@ -19,9 +21,14 @@ import com.typesafe.config.ConfigValue;
  * @author yanan
  *
  */
-public class Environment {
+public class Environment extends AbstractQueuedSynchronizer{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6463910343135833934L;
 	public static final String MAIN_CLASS = "-MAIN-CLASS";
 	public static final String MAIN_CLASS_PATH = "-MAIN-CLASS-PATH";
+	private static final String ENVIROMENT_EXECUTOR_TOKEN = "ENVIROMENT_EXECUTOR_TOKEN_";
 	private static InheritableThreadLocal<Environment> enInheritableThreadLocal = new InheritableThreadLocal<>();
 	private Map<String, List<EventListener<AbstractEvent>>> eventListenerMap = new ConcurrentHashMap<>();
 	// 全局配置
@@ -65,7 +72,7 @@ public class Environment {
 	 * 移除事件监听
 	 * 
 	 * @param eventSource    事件源
-	 * @param eventListeners 时间监听
+	 * @param eventListenerArray 事件监听
 	 */
 	@SafeVarargs
 	public final void removeEventListener(InterestedEventSource eventSource,
@@ -215,7 +222,34 @@ public class Environment {
 	public void setVariable(String key, Object value) {
 		this.globalVariable.put(key, value);
 	}
-
+	/**
+	 * 对比并设置值,注意，对比和设置值的时候key和value均不能为空
+	 * @param key key
+	 * @param oldValue 希望的值
+	 * @param newValue 新值
+	 * @return 是否成功
+	 */
+	public boolean compareAndSet(String key,Object oldValue,Object newValue) {
+		return this.globalVariable.replace(key, oldValue, newValue);
+	}
+	/**
+	 * 在整个环境期间保证只执行一次,注意，抛出异常后可以重复执行
+	 * @param mark 任务标志；
+	 * @param function 任务
+	 */
+	public void executorOnce(final Object mark,final Function function) {
+		Assert.isNull(mark, "the function mark is null");
+		String key = ENVIROMENT_EXECUTOR_TOKEN+mark;
+		if(!hasVariable(key)) {
+			synchronized (key.intern()) {
+				if(!hasVariable(key)) {
+					function.execute();
+					setVariable(key, true);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * get a variable
 	 * 
@@ -231,6 +265,7 @@ public class Environment {
 	 * 获取变量，如果变量不存在，返回一个默认值
 	 * @param key key
 	 * @param defaultValue default value
+	 * @param <T> the parameterType
 	 * @return result
 	 */
 	public <T> T getVariable(String key, T defaultValue) {
@@ -241,6 +276,7 @@ public class Environment {
 	/**
 	 * 获取一个变量，不允许返回空
 	 * @param key key
+	 * @param <T> the parameterType
 	 * @return value
 	 */
 	public <T> T getRequiredVariable(String key) {

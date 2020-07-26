@@ -10,6 +10,14 @@ import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.cache.ClassHelper;
 
+/**
+ * 参数工具，主要用于查找方法和构造器
+ * 因为我们从配置文件拿到的数据类型往往不是我们希望的类型
+ * 我们通过对参数的类型进行匹配来获取一个有效调用的方法或构造器
+ * 比如 {int.class,Integer.class,short.class,Short.class}是可以匹配的（null除外）
+ * @author yanan
+ *
+ */
 public class ParameterUtils {
 	public static class MethodDesc {
 		private Method method;
@@ -41,8 +49,8 @@ public class ParameterUtils {
 	/**
 	 * 获取参数的类型
 	 * 
-	 * @param parmType
-	 * @return
+	 * @param parmType 参数类型字符串
+	 * @return 参数类型
 	 */
 	public static Class<?> getParameterType(String parmType) {
 		parmType = parmType.trim();
@@ -74,9 +82,9 @@ public class ParameterUtils {
 	/**
 	 * 获取一个有效的构造器
 	 * 
-	 * @param constructorList
-	 * @param values
-	 * @return
+	 * @param constructorList 构造器列表
+	 * @param values 参数列表
+	 * @return 构造器
 	 */
 	public static Constructor<?> getEffectiveConstructor(List<Constructor<?>> constructorList,
 			List<? extends Object> values) {
@@ -103,9 +111,9 @@ public class ParameterUtils {
 	/**
 	 * 获取一个有效的构造器
 	 * 
-	 * @param constructorList
-	 * @param values
-	 * @return
+	 * @param constructorList 构造器列表 
+	 * @param parameterTypes 参数类型列表
+	 * @return 找到的构造器
 	 */
 	public static Constructor<?> getEffectiveConstructor(Constructor<?>[] constructorList,
 			Class<?>[] parameterTypes) {
@@ -119,7 +127,7 @@ public class ParameterUtils {
 			Class<?>[] argsTypes = cons.getParameterTypes();
 			// 遍历构造器
 			for (int i = 0; i < argsTypes.length; i++) {
-				if(parameterTypes[i] == null)
+				if(parameterTypes[i] == null && !AppClassLoader.isBaseUnwrapperType(argsTypes[i]))
 					continue;
 				Class<?> argType = argsTypes[i];
 				Class<?> parameterType = parameterTypes[i];
@@ -133,9 +141,9 @@ public class ParameterUtils {
 	}
 	/**
 	 * 获取一个有效的构造器
-	 * @param targetClass
-	 * @param argsTypes
-	 * @return
+	 * @param targetClass 要查找的类
+	 * @param argsTypes 参数类型
+	 * @return 找到的构造器
 	 */
 	public static Constructor<?> getEffectiveConstructor(Class<?> targetClass, Class<?>[] argsTypes) {
 		Constructor<?>[] constructors = targetClass.getConstructors();
@@ -159,9 +167,9 @@ public class ParameterUtils {
 	}
 	/**
 	 * 获取一个合适的方法。匹配规则是参数可以转换为对应的参数
-	 * @param methods
-	 * @param parameters
-	 * @return
+	 * @param methods 方法集合
+	 * @param parameters 参数集合
+	 * @return 找到的方法
 	 */
 	public static Method getEffectiveMethod(Method[] methods,
 			Object[] parameters) {
@@ -186,9 +194,9 @@ public class ParameterUtils {
 	}
 	/**
 	 * 获取一个合适的方法。匹配规则是参数可以转换为对应的参数
-	 * @param methods
-	 * @param parameters
-	 * @return
+	 * @param methods 方法集合
+	 * @param parameterTypes 参数类型集合
+	 * @return 匹配的合适的方法
 	 */
 	public static Method getEffectiveMethod(Method[] methods,
 			Class<?>[] parameterTypes) {
@@ -211,6 +219,14 @@ public class ParameterUtils {
 		}
 		return method;
 	}
+	/**
+	 * 查找一个有效的方法
+	 * @param targetClass 目标类
+	 * @param methodName 方法名称
+	 * @param argsTypes 参数类型
+	 * @return 方法
+	 * @throws NoSuchMethodException 没有找到方法异常
+	 */
 	public static Method getEffectiveMethod(Class<?> targetClass, String methodName, Class<?>[] argsTypes) throws NoSuchMethodException {
 		Method[] methods = ClassHelper.getClassHelper(targetClass).getMethods();
 		for(Method method : methods) {
@@ -243,9 +259,9 @@ public class ParameterUtils {
 
 	/**
 	 * 判断两个类型是否匹配
-	 * @param type
-	 * @param valueType
-	 * @return
+	 * @param type 待匹配的类型
+	 * @param valueType 匹配的类型
+	 * @return 是否匹配
 	 */
 	public static boolean isEffectiveType(Class<?> type, Class<?> valueType) {
 		if(valueType.isArray() && type.isArray()) {
@@ -283,9 +299,9 @@ public class ParameterUtils {
 	}
 	/**
 	 * 判断参数和类型是否匹配
-	 * @param type
-	 * @param value
-	 * @return
+	 * @param type 目标类型
+	 * @param value 值类型
+	 * @return 是否有效
 	 */
 	public static boolean isEffectiveParameter(Class<?> type, Object value) {
 		if (value == null && Assert.equalsAny(type,

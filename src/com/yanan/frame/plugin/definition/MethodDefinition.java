@@ -43,7 +43,7 @@ public class MethodDefinition {
 	}
 	/**
 	 * 方法定义，用于描述方法的执行策略
-	 * @param constructor 需要执行的方法
+	 * @param method 需要执行的方法
 	 * @param argsType 参数类型
 	 * @param args 参数
 	 * @param resolvers 解析器集合
