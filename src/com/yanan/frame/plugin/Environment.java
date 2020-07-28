@@ -58,7 +58,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	@SuppressWarnings("unchecked")
 	public final void registEventListener(InterestedEventSource eventSource,
 			EventListener<? extends AbstractEvent> eventListener) {
-		synchronized (eventSource) {
+		synchronized (eventSource.getName().intern()) {
 			List<EventListener<AbstractEvent>> eventListenerList = eventListenerMap.get(eventSource.getName());
 			if (eventListenerList == null) {
 				eventListenerList = new ArrayList<EventListener<AbstractEvent>>();
@@ -77,7 +77,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	@SafeVarargs
 	public final void removeEventListener(InterestedEventSource eventSource,
 			EventListener<? extends AbstractEvent>... eventListenerArray) {
-		synchronized (eventSource) {
+		synchronized (eventSource.getName().intern()) {
 			// 如果没有传入事件，则删除所有事件
 			if (eventListenerArray.length == 0)
 				eventListenerMap.remove(eventSource.getName());
