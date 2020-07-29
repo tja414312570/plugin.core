@@ -59,5 +59,10 @@ public @interface Register {
 	 * @return 注册器ID
 	 */
 	String id() default "";
+	/**
+	 * 实例销毁时执行的方法
+	 * @return 方法名称
+	 */
+	String destory() default "";
 	
 }

@@ -476,4 +476,44 @@ public class PluginInstanceFactory {
 			}
 		}
 	}
+	/**
+	 * 销毁实例
+	 * @param instance 要销毁的实例
+	 */
+	public static void destoryInstance(Object instance) {
+		try {
+			PlugsHandler handler = PlugsFactory.getPluginsHandler(instance);
+			RegisterDefinition registerDefinition = handler.getRegisterDefinition();
+			MethodDefinition destoryMethod;
+			if((destoryMethod = registerDefinition.getDestoryMethod()) != null) {
+				destoryMethod.getMethod().invoke(instance,destoryMethod.getArgs());
+			}
+			registerDefinition.getProxyContainer().entrySet().removeIf(entry->{
+				return entry.getValue().equals(instance);
+			});
+		} catch (Throwable e) {
+			throw new PluginRuntimeException("failed to invoke desotry method for "+instance, e);
+		}
+	}
+	/**
+	 * 销毁注册描述
+	 * @param registerDefinition 组件定义
+	 */
+	public static void destory(RegisterDefinition registerDefinition) {
+		if(registerDefinition.getProxyContainer() != null && registerDefinition.getDestoryMethod() != null) {
+			registerDefinition.getProxyContainer().values().forEach(instance->{
+				try {
+					MethodDefinition destoryMethod;
+					if((destoryMethod = registerDefinition.getDestoryMethod()) != null) {
+						destoryMethod.getMethod().invoke(instance,destoryMethod.getArgs());
+					}
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					String name = StringUtil.isEmpty(registerDefinition.getId())
+							? registerDefinition.getRegisterClass().getName()
+							: registerDefinition.getId();
+					throw new PluginRuntimeException("failed to destory instance " + name + " by method " + registerDefinition.getDestoryMethod(), e);
+				}
+			});
+		}
+	}
 }

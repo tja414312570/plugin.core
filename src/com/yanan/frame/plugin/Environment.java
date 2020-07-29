@@ -303,4 +303,13 @@ public class Environment extends AbstractQueuedSynchronizer{
 		for (String key : keys)
 			this.globalVariable.remove(key);
 	}
+	/**
+	 * 环境初始化
+	 */
+	public void desotry() {
+		this.eventListenerMap.clear();
+		this.globalVariable.clear();
+		this.globalConfig = ConfigFactory.parseMap(this.globalVariable);
+		this.eventListenerMap.clear();
+	}
 }

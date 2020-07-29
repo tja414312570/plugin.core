@@ -3,6 +3,7 @@ package com.yanan.frame.plugin.definition;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,9 +15,11 @@ import java.util.Objects;
 import com.typesafe.config.Config;
 import com.yanan.frame.plugin.ProxyModel;
 import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.string.StringUtil;
 
 /**
  * 组件描述类 用于创建组件时的组件信息 v1.0 支持通过Class的Builder方式 v1.1 支持通过Comp文件的Builder方式 v1.2
@@ -60,6 +63,8 @@ public class RegisterDefinition {
 	private Config config;
 	//实例化的方法，当此属性存在，组件使用此方法获取对象
 	private MethodDefinition instanceMethod;
+	//实例化的方法，当此属性存在，组件使用此方法获取对象
+	private MethodDefinition destoryMethod;
 	//实例化的构造器，当此属性存在，组件使用此构造器实例化对象
 	private ConstructorDefinition instanceConstructor;
 	//构造器拦截器链路和构造器的拦截器链
@@ -98,6 +103,15 @@ public class RegisterDefinition {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+	
+	public MethodDefinition getDestoryMethod() {
+		return destoryMethod;
+	}
+
+
+	public void setDestoryMethod(MethodDefinition destoryMethod) {
+		this.destoryMethod = destoryMethod;
 	}
 
 	public Class<?> getClzz() {

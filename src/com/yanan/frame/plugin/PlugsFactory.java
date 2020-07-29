@@ -353,6 +353,7 @@ public class PlugsFactory {
 	 * @param registerDefinition 注册定义
 	 */
 	public synchronized void removeRegisterService(RegisterDefinition registerDefinition) {
+		PluginInstanceFactory.destory(registerDefinition);
 		Class<?>[] serviceClassArray = registerDefinition.getServices();
 		for(Class<?> serviceClass : serviceClassArray) {
 			Plugin plugin = this.serviceContatiner.get(serviceClass);
@@ -847,5 +848,20 @@ public class PlugsFactory {
 	}
 	public boolean isBefore_refresh_ready() {
 		return before_refresh_ready;
+	}
+	/**
+	 * 销毁上下文环境
+	 */
+	public void destory() {
+		this.before_refresh_ready = false;
+		this.environment.desotry();
+		this.newRegisterDefinitionList.clear();
+		this.resourceList.clear();
+		this.registerDefinitionContainer.values().forEach(registerDefinition->{
+			PluginInstanceFactory.destory(registerDefinition);
+		});
+		this.registerDefinitionContainer.clear();
+		this.resourceLoadedList.clear();
+		this.serviceContatiner.clear();
 	}
 }
