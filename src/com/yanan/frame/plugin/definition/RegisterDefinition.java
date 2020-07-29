@@ -283,7 +283,7 @@ public class RegisterDefinition {
 		InvokeHandlerSet ihs = fieldInterceptMapping.get(field);
 		if (ihs == null) {
 			fieldInterceptMapping.put(field, invokeHandlerSet);
-		} else if(ihs.hasInvokeHandlerSet(invokeHandlerSet)) {
+		} else if(!ihs.hasInvokeHandlerSet(invokeHandlerSet)) {
 			ihs.getLast().addInvokeHandlerSet(invokeHandlerSet);
 		}
 
@@ -320,7 +320,7 @@ public class RegisterDefinition {
 		InvokeHandlerSet ihs = methodInterceptMapping.get(method);
 		if (ihs == null) {
 			methodInterceptMapping.put(method, invokeHandlerSet);
-		} else if(ihs.hasInvokeHandlerSet(invokeHandlerSet)){
+		} else if(!ihs.hasInvokeHandlerSet(invokeHandlerSet)){
 			ihs.getLast().addInvokeHandlerSet(invokeHandlerSet);
 		}
 
@@ -353,7 +353,7 @@ public class RegisterDefinition {
 		InvokeHandlerSet ihs = constructorInterceptMapping.get(constructor);
 		if (ihs == null) {
 			constructorInterceptMapping.put(constructor, invokeHandlerSet);
-		} else if(ihs.hasInvokeHandlerSet(invokeHandlerSet)) {
+		} else if(!ihs.hasInvokeHandlerSet(invokeHandlerSet)) {
 			ihs.getLast().addInvokeHandlerSet(invokeHandlerSet);
 		}
 

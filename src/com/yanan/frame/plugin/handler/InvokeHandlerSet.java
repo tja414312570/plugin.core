@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
+import com.yanan.frame.plugin.PlugsFactory;
+
 /**
  * 方法拦截器链表
  * v1.0 实现InvokeHandler的链表结构
@@ -117,8 +119,9 @@ public class InvokeHandlerSet {
 		Iterator<InvokeHandlerSet> iterator = this.iterator();
 		while(iterator.hasNext()) {
 			InvokeHandlerSet current = iterator.next();
-			if(Objects.equals(current.getInvokeHandler().getClass(),
-					invokeHandlerSet.getInvokeHandler().getClass()))
+			Class<?> currentInvokeClass = PlugsFactory.getPluginsHandler(current.getInvokeHandler()).getProxyClass();
+			Class<?> invokeClass = PlugsFactory.getPluginsHandler(invokeHandlerSet.getInvokeHandler()).getProxyClass();
+			if(Objects.equals(currentInvokeClass,invokeClass))
 				return true;
 		}
 		return false;
