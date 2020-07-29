@@ -5,12 +5,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 方法拦截器链表
  * v1.0 实现InvokeHandler的链表结构
  * v1.1 添加属性annotation，用于对特殊注解的InvokeHandler的
  * 		快速与便捷处理方式
+ * 
  * @author yanan
  */
 public class InvokeHandlerSet {
@@ -108,6 +110,18 @@ public class InvokeHandlerSet {
 			next = next.getNext();
 			return current;
 		}
+		
+	}
+
+	public boolean hasInvokeHandlerSet(InvokeHandlerSet invokeHandlerSet) {
+		Iterator<InvokeHandlerSet> iterator = this.iterator();
+		while(iterator.hasNext()) {
+			InvokeHandlerSet current = iterator.next();
+			if(Objects.equals(current.getInvokeHandler().getClass(),
+					invokeHandlerSet.getInvokeHandler().getClass()))
+				return true;
+		}
+		return false;
 		
 	}
 }
