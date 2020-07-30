@@ -25,57 +25,57 @@ import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.reflect.AppClassLoader;
-import com.yanan.utils.reflect.cache.ClassHelper;
-import com.yanan.utils.reflect.cache.ClassInfoCache;
 import com.yanan.utils.string.StringUtil;
 
 public class PluginInstanceFactory {
 
-	/**
-	 * 通过参数类型获取构造器
-	 * 
-	 * @param paramTypes
-	 * @return 构造器
-	 */
-	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition, Class<?>[] paramTypes) {
-		// 排除掉数量不同的构造器
-		Constructor<?> constructor = ParameterUtils.getEffectiveConstructor(
-				ClassHelper.getClassHelper(registerDefinition.getRegisterClass()).getConstructors(), paramTypes);
-		if (constructor == null) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < paramTypes.length; i++) {
-				sb.append(paramTypes[i] == null ? null : paramTypes[i].getName())
-						.append(i < paramTypes.length - 1 ? "," : "");
-			}
-			throw new PluginRuntimeException("constructor " + registerDefinition.getRegisterClass().getSimpleName()
-					+ "(" + sb.toString() + ") is not exist at " + registerDefinition.getRegisterClass().getName());
-		}
-		return constructor;
-	}
-
-	public static Constructor<?> getConstructor(RegisterDefinition registerDefinition, Object... args) {
-		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
-		Constructor<?> constructor = null;
-		try {
-			constructor = getConstructor(registerDefinition, parameterTypes);
-		} catch (Throwable t) {
-			Iterator<Constructor<?>> iterator = ClassInfoCache.getClassHelper(registerDefinition.getRegisterClass())
-					.getConstructorHelperMap().keySet().iterator();
-			while (iterator.hasNext()) {
-				Constructor<?> con = iterator.next();
-				Class<?>[] matchType = con.getParameterTypes();
-				if (matchType.length != args.length)
-					continue;
-				if (AppClassLoader.matchType(matchType, parameterTypes)) {
-					constructor = con;
-					break;
-				}
-			}
-			if (constructor == null)
-				throw t;
-		}
-		return constructor;
-	}
+//	/**
+//	 * 通过参数类型获取构造器
+//	 * 
+//	 * @param paramTypes
+//	 * @return 构造器
+//	 */
+//	public static Constructor<?> getConstructorsss(RegisterDefinition registerDefinition, Class<?>[] paramTypes) {
+//		// 排除掉数量不同的构造器
+//		System.out.println(Modifier.toString(registerDefinition.getRegisterClass().getModifiers()));
+//		System.out.println(registerDefinition.getRegisterClass()+"===>"+Arrays.toString(ClassHelper.getClassHelper(registerDefinition.getRegisterClass()).getDeclaredConstructors()));
+//		Constructor<?> constructor = ParameterUtils.getEffectiveConstructor(registerDefinition.getRegisterClass(),
+//				ClassHelper.getClassHelper(registerDefinition.getRegisterClass()).getDeclaredConstructors(), paramTypes);
+//		if (constructor == null) {
+//			StringBuilder sb = new StringBuilder();
+//			for (int i = 0; i < paramTypes.length; i++) {
+//				sb.append(paramTypes[i] == null ? null : paramTypes[i].getName())
+//						.append(i < paramTypes.length - 1 ? "," : "");
+//			}
+//			throw new PluginRuntimeException("constructor " + registerDefinition.getRegisterClass().getSimpleName()
+//					+ "(" + sb.toString() + ") is not exist at " + registerDefinition.getRegisterClass().getName());
+//		}
+//		return constructor;
+//	}
+//
+//	public static Constructor<?> getConstructorss(RegisterDefinition registerDefinition, Object... args) {
+//		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
+//		Constructor<?> constructor = null;
+//		try {
+//			constructor = getConstructor(registerDefinition, parameterTypes);
+//		} catch (Throwable t) {
+//			Iterator<Constructor<?>> iterator = ClassInfoCache.getClassHelper(registerDefinition.getRegisterClass())
+//					.getConstructorHelperMap().keySet().iterator();
+//			while (iterator.hasNext()) {
+//				Constructor<?> con = iterator.next();
+//				Class<?>[] matchType = con.getParameterTypes();
+//				if (matchType.length != args.length)
+//					continue;
+//				if (AppClassLoader.matchType(matchType, parameterTypes)) {
+//					constructor = con;
+//					break;
+//				}
+//			}
+//			if (constructor == null)
+//				throw t;
+//		}
+//		return constructor;
+//	}
 
 	/**
 	 * 获取一个服务的新对像
@@ -90,23 +90,37 @@ public class PluginInstanceFactory {
 			Object origin) {
 		ConstructorDefinition constructorDefinition = registerDefinition.getInstanceConstructor();
 		// 获取构造器
-		Constructor<?> constructor;
-		if (constructorDefinition != null) {
-			checkPreparedParameter(constructorDefinition, registerDefinition);
-			constructor = constructorDefinition.getConstructor();
-			args = constructorDefinition.getArgs();
-		} else {
-			constructor = getConstructor(registerDefinition, origin == null ? args : new Class<?>[0]);
+		if (constructorDefinition == null) {
+			constructorDefinition = builderConstructorDefinition(registerDefinition,args);
 		}
-		return getNewInstance(registerDefinition, service, constructor, args, origin);
+		return getInstance(registerDefinition,constructorDefinition,service,origin);
 	}
 
+	private static <T> T getInstance(RegisterDefinition registerDefinition,ConstructorDefinition constructorDefinition, Class<T> service, Object origin) {
+		checkPreparedParameter(constructorDefinition, registerDefinition);
+		return getNewInstance(registerDefinition, service,
+				constructorDefinition.getConstructor(), 
+				constructorDefinition.getArgs(), origin);
+}
+
+	private static ConstructorDefinition builderConstructorDefinition(RegisterDefinition registerDefinition,
+			Object[] args) {
+		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
+		return builderConstructorDefinition(registerDefinition,parameterTypes,args);
+	}
+	private static ConstructorDefinition builderConstructorDefinition(RegisterDefinition registerDefinition,
+			Class<?>[] types,Object[] args) {
+		// 排除掉数量不同的构造器
+		ConstructorDefinition constructorDefinition = new ConstructorDefinition(null, types, args, null, null);
+		ParameterUtils.getEffectiveConstructor(constructorDefinition, registerDefinition.getRegisterClass());
+		return constructorDefinition;
+	}
 	public static <T> T getRegisterNewInstanceByParamType(RegisterDefinition registerDefinition, Class<T> service,
 			Class<?>[] paramTypes, Object... args) {
 		// 获取构造器
-		Constructor<?> constructor = getConstructor(registerDefinition, paramTypes);
+		ConstructorDefinition constructorDefinition = builderConstructorDefinition(registerDefinition,paramTypes,args);
 		// 获取构造器拦截器
-		return getNewInstance(registerDefinition, service, constructor, args, null);
+		return getInstance(registerDefinition,constructorDefinition,service,null);
 	}
 
 	/**

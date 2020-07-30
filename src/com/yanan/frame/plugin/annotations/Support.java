@@ -17,5 +17,10 @@ public @interface Support {
 	 * 默认支持的注解
 	 * @return 注解集合
 	 */
-	Class<? extends Annotation>[] value();
+	Class<? extends Annotation>[] value() default {};
+	/**
+	 * 默认支持的注解
+	 * @return 支持的类型的字符串类型
+	 */
+	String[] name() default {};
 }

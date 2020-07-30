@@ -9,15 +9,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.yanan.frame.plugin.Plugin;
+import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.annotations.Support;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.handler.FieldHandler;
 import com.yanan.frame.plugin.handler.InstanceHandler;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.asserts.Assert;
-import com.yanan.frame.plugin.Plugin;
-import com.yanan.frame.plugin.PlugsFactory;
 
 /**
  * 组件拦截器构建
@@ -57,7 +58,7 @@ public class PluginInterceptBuilder {
 				if (support == null) {
 					handler = PluginInstanceFactory.getRegisterInstance(register,FieldHandler.class);
 				} else {
-					Class<? extends Annotation>[] supportClass = support.value();
+					Class<? extends Annotation>[] supportClass = deduceSupport(support);
 					for (Class<? extends Annotation> supportClzz : supportClass) {
 						// 对比注解
 						Annotation anno;
@@ -85,9 +86,39 @@ public class PluginInterceptBuilder {
 			
 		}
 	}
+	/**
+	 * 推断支持注解类
+	 * @param support 注解
+	 * @return 支持的注解的数组
+	 */
+	@SuppressWarnings("unchecked")
+	public static Class<? extends Annotation>[] deduceSupport(Support support) {
+		Class<? extends Annotation>[] supportClassArray = new Class[0];
+		if(support.name().length>0) {
+			for(String supportStr : support.name()) {
+				try {
+					Class<? extends Annotation> suppportClass = (Class<? extends Annotation>) Class.forName(supportStr);
+					supportClassArray = ArrayUtils.add(supportClassArray, suppportClass);
+				}catch(ClassNotFoundException e) {
+//					e.printStackTrace();
+				}
+			}
+		}
+		if(support.value().length>0) {
+			if(supportClassArray != null && supportClassArray.length>0) {
+				Class<? extends Annotation>[] temp = supportClassArray;
+				supportClassArray = new Class[temp.length+support.value().length];
+				System.arraycopy(temp, 0, supportClassArray, 0, temp.length);
+				System.arraycopy(support.value(), temp.length-1, supportClassArray, temp.length,support.value().length);
+			}else {
+				supportClassArray = support.value();
+			}
+		}
+		return supportClassArray;
+	}
 
 	public static void initConstructorHandlerMapping(Class<?> serviceClass, RegisterDefinition registerDefinition) {
-		Constructor<?>[] constructors = registerDefinition.getRegisterClass().getConstructors();
+		Constructor<?>[] constructors = registerDefinition.getRegisterClass().getDeclaredConstructors();
 		// 获取所有的构造器的拦截器
 		Plugin cplug = PlugsFactory.getPlugin(InstanceHandler.class);
 		if (cplug == null)
@@ -105,7 +136,7 @@ public class PluginInterceptBuilder {
 				if (support == null) {
 					handler = PluginInstanceFactory.getRegisterInstance(register,InstanceHandler.class);
 				} else {
-					Class<? extends Annotation>[] supportClass = support.value();
+					Class<? extends Annotation>[] supportClass = deduceSupport(support);
 					for (Class<? extends Annotation> supportClzz : supportClass) {
 						// 对比注解
 						Annotation anno;
@@ -145,7 +176,7 @@ public class PluginInterceptBuilder {
 	public static void initMethodHandlerMapping(Class<?> serviceClass, RegisterDefinition registerDefinition) {
 		Assert.isNull(serviceClass, "class is null");
 		// 获取所有的方法
-		Method[] methods = serviceClass.getMethods();
+		Method[] methods = serviceClass.getDeclaredMethods();
 		for (Method method : methods) {
 			// 从组件工厂获取所有调用拦截器
 			Plugin plugin = PlugsFactory.getPlugin(InvokeHandler.class);
@@ -164,7 +195,7 @@ public class PluginInterceptBuilder {
 				if (support == null) {
 					handler = PluginInstanceFactory.getRegisterInstance(invokeRegisterDefinition,InvokeHandler.class);
 				} else {
-					Class<? extends Annotation>[] supportClass = support.value();
+					Class<? extends Annotation>[] supportClass = deduceSupport(support);
 					for (Class<? extends Annotation> supportClzz : supportClass) {
 						// 依次从代理类或接口类的方法和类声明中获取支持的注解
 						Annotation anno;

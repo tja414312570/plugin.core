@@ -3,9 +3,14 @@ package com.yanan.frame.plugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
+
 import com.yanan.frame.plugin.annotations.Service;
+import com.yanan.frame.plugin.definition.ConstructorDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
+import com.yanan.frame.plugin.exception.PluginRuntimeException;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.cache.ClassHelper;
@@ -19,33 +24,8 @@ import com.yanan.utils.reflect.cache.ClassHelper;
  *
  */
 public class ParameterUtils {
-	public static class MethodDesc {
-		private Method method;
-		private Object[] parameter;
-
-		public MethodDesc(Method method, Object[] parameter) {
-			super();
-			this.method = method;
-			this.parameter = parameter;
-		}
-
-		public Method getMethod() {
-			return method;
-		}
-
-		public void setMethod(Method method) {
-			this.method = method;
-		}
-
-		public Object[] getParameter() {
-			return parameter;
-		}
-
-		public void setParameter(Object[] parameter) {
-			this.parameter = parameter;
-		}
-	}
-
+	public static final String CONSTRUCTOR = " constructor ";
+	public static final String METHOD = " method ";
 	/**
 	 * 获取参数的类型
 	 * 
@@ -107,7 +87,61 @@ public class ParameterUtils {
 		}
 		return constructor;
 	}
-
+	/**
+	 * 获取一个有效的构造器并将构造器放入到构造器定义中
+	 * <p>主要用于处理内部非静态类的问题
+	 * @param constructorDefinition 构造器器定义
+	 * @param targetClass 目标类
+	 */
+	public static void getEffectiveConstructor(ConstructorDefinition constructorDefinition,
+			Class<?> targetClass) {
+		Constructor<?>[] constructors = targetClass.getDeclaredConstructors();
+		if(!Modifier.isStatic(targetClass.getModifiers()) && !Modifier.isPublic(targetClass.getModifiers())) {
+			Class<?> outClass;
+			try {
+				outClass = AppClassLoader.getOuterClass(targetClass);
+				Object outIns = PlugsFactory.getPluginsInstance(outClass);
+				//将第一参数设置为实例类
+				Object[] args = constructorDefinition.getArgs();
+				args = ArrayUtils.add(args, outIns,0);
+				constructorDefinition.setArgs(args);
+				//将第一参数类型设置为父类
+				Class<?>[] types = constructorDefinition.getArgsType();
+				types = ArrayUtils.add(types, outClass,0);
+				constructorDefinition.setArgsType(types);
+			} catch (ClassNotFoundException e) {
+				throw new PluginRuntimeException("failed to get out class for "+targetClass.getName(),e);
+			}
+		}
+		Constructor<?> constructor = getEffectiveConstructor(constructors, constructorDefinition.getArgsType());
+		if(constructor == null) {
+			StringBuilder errorMsg = buildNoSuchMsg(targetClass,CONSTRUCTOR,constructorDefinition.getArgsType());
+			throw new NoSuchMethodError(errorMsg.toString());
+		}
+		constructorDefinition.setConstructor(constructor);
+	}
+	/**
+	 * 构建没有方法或构造器的异常信息
+	 * @param targetClass 目标类
+	 * @param type 说明
+	 * @param types 参数类型
+	 * @return 构造的消息
+	 */
+	public static StringBuilder buildNoSuchMsg(Class<?> targetClass,String type,Class<?>[] types) {
+		StringBuilder errorMsg = new StringBuilder("cloud not found an effective")
+				.append(type)
+				.append(targetClass.getName())
+				.append(".")
+				.append(targetClass.getSimpleName())
+				.append("(");
+		for(int i = 0;i<types.length;i++) {
+			errorMsg.append(types[i].getName());
+			if(i<types.length-1)
+				errorMsg.append(",");
+		}
+		errorMsg.append(")");
+		return errorMsg;
+	}
 	/**
 	 * 获取一个有效的构造器
 	 * 
@@ -117,7 +151,6 @@ public class ParameterUtils {
 	 */
 	public static Constructor<?> getEffectiveConstructor(Constructor<?>[] constructorList,
 			Class<?>[] parameterTypes) {
-		Constructor<?> constructor = null;
 		// 遍历所有的构造器
 		con: for (Constructor<?> cons : constructorList) {
 			if((parameterTypes == null && cons.getParameterCount() == 0) 
@@ -137,7 +170,7 @@ public class ParameterUtils {
 				}
 			return cons;
 		}
-		return constructor;
+		return null;
 	}
 	/**
 	 * 获取一个有效的构造器
@@ -152,17 +185,7 @@ public class ParameterUtils {
 					&& isEffectiveTypes(constructor.getParameterTypes(),argsTypes))
 				return constructor;
 		}
-		StringBuilder errorMsg = new StringBuilder("cloud not found an effective constructor ");
-		errorMsg.append(targetClass.getName()).
-		append(".").
-		append(targetClass.getSimpleName()).
-		append("(");
-		for(int i = 0;i<argsTypes.length;i++) {
-			errorMsg.append(argsTypes[i].getName());
-			if(i<argsTypes.length-1)
-				errorMsg.append(",");
-		}
-		errorMsg.append(")");
+		StringBuilder errorMsg = buildNoSuchMsg(targetClass,CONSTRUCTOR,argsTypes);
 		throw new NoSuchMethodError(errorMsg.toString());
 	}
 	/**
@@ -236,17 +259,7 @@ public class ParameterUtils {
 					return method;
 			}
 		}
-		StringBuilder errorMsg = new StringBuilder("cloud not found an effective method ");
-		errorMsg.append(targetClass.getName()).
-		append(".").
-		append(methodName).
-		append("(");
-		for(int i = 0;i<argsTypes.length;i++) {
-			errorMsg.append(argsTypes[i].getName());
-			if(i<argsTypes.length-1)
-				errorMsg.append(",");
-		}
-		errorMsg.append(")");
+		StringBuilder errorMsg = buildNoSuchMsg(targetClass,METHOD,argsTypes);
 		throw new NoSuchMethodException(errorMsg.toString());
 	}
 	private static boolean isEffectiveTypes(Class<?>[] parameterTypes, Class<?>[] argsTypes) {
@@ -313,4 +326,5 @@ public class ParameterUtils {
 		}
 		return isEffectiveType(type, value.getClass());
 	}
+
 }
