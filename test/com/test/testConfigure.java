@@ -1,23 +1,22 @@
 package com.test;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import com.typesafe.config.Config;
-import com.yanan.frame.plugin.ConfigContext;
+import com.yanan.frame.plugin.Environment;
 import com.yanan.frame.plugin.PlugsFactory;
-import com.yanan.frame.plugin.PlugsFactory.STREAM_TYPT;
+import com.yanan.utils.resource.Resource;
+import com.yanan.utils.resource.ResourceManager;
 
 public class testConfigure {
 	public static void main(String[] args) throws IOException {
-		PlugsFactory.init();
-		InputStream is = testConfigure.class.getResourceAsStream("../../plugin2.yc");
-		PlugsFactory.getInstance().addPlugs(is,STREAM_TYPT.CONF,null);
-		Config config = ConfigContext.getInstance().getGlobalConfig().getConfig("MVC");
+		Resource resource= ResourceManager.getResource("classpath:plugin2.yc");
+		PlugsFactory.init(resource);
 		
-		System.out.println(ConfigContext.getInstance());
+		Config config =Environment.getEnviroment().getConfig("MVC");
 		System.out.println(config);
-		config.allowKeyNull();
-		System.out.println(ConfigContext.getInstance().getGlobalConfig().getConfig("app"));
+		System.out.println(Environment.getEnviroment().getRequiredConfigValue("MVC.SERVER.JBOSS").valueType());
+		System.out.println(Environment.getEnviroment().getVariable("key")+"");
+		System.out.println(Environment.getEnviroment().getRequiredVariable("key")+"");
 	}
 }

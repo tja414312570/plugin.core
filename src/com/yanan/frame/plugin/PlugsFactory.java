@@ -31,7 +31,7 @@ import com.yanan.frame.plugin.exception.PluginRuntimeException;
 import com.yanan.frame.plugin.exception.RegisterNotFound;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.asserts.Assert;
-import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.reflect.cache.ClassInfoCache;
 import com.yanan.utils.resource.Resource;
@@ -208,11 +208,11 @@ public class PlugsFactory {
 			idBuilder.append(registerDefinition.getRegisterClass().getName());
 		}else {
 			idBuilder.append(registerDefinition.getId());
-		}
-		if(!StringUtil.isEmpty(registerDefinition.getReferenceId())) {
-			idBuilder.append("-")
-			.append(registerDefinition.getReferenceId())
-			.append(registerDefinition.hashCode());
+			if(StringUtil.equals(registerDefinition.getId(),registerDefinition.getReferenceId())) {
+				idBuilder.append("-")
+				.append(registerDefinition.getReferenceId())
+				.append(registerDefinition.hashCode());
+			}
 		}
 		return idBuilder.toString();
 	}
@@ -411,7 +411,6 @@ public class PlugsFactory {
 		Iterator<RegisterDefinition> iterator = this.newRegisterDefinitionList.iterator();
 		while(iterator.hasNext()) {
 			RegisterDefinition currentRegisterDefinition = iterator.next();
-			newRegisterDefinitionList.remove(currentRegisterDefinition);
 			registerDefinitionInit(currentRegisterDefinition);
 		}
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
@@ -442,6 +441,7 @@ public class PlugsFactory {
 		}
 	}
 	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
+		newRegisterDefinitionList.remove(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
 		if(StringUtil.isNotEmpty(registerDefinition.getId())) {
@@ -719,6 +719,20 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
 	}
+	/**
+	 * 代理一个已经存在的实例
+	 * @param instance 实例对象
+	 * @param args 构造实例的参数
+	 * @return 代理的实例
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T proxyInstance(T instance,Object...args) {
+		Class<T> registerClass = (Class<T>) instance.getClass();
+		RegisterDefinition registerDefinition = PlugsFactory.getInstance().getRegisterDefinition(registerClass);
+		getInstance().checkRegisterDefinition(registerDefinition);
+		instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,args,instance);
+		return instance;
+	}
 	public static Map<Class<Annotation>, List<Annotation>> getAnnotationGroup(Annotation[] annotations,List<Class<Annotation>> annoTypes){
 		if (annotations.length == 0) {
 			return null;
@@ -825,7 +839,7 @@ public class PlugsFactory {
 		}
 		PlugsHandler plugsHandler = null;
 		try {
-			plugsHandler = AppClassLoader.getFieldValue(field, proxyInstance);
+			plugsHandler = ReflectUtils.getFieldValue(field, proxyInstance);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new PluginInitException("failed to get instance's PluginsHandler", e);
 		}

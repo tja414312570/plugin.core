@@ -3,7 +3,6 @@ package com.yanan.frame.plugin.definition;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,11 +14,9 @@ import java.util.Objects;
 import com.typesafe.config.Config;
 import com.yanan.frame.plugin.ProxyModel;
 import com.yanan.frame.plugin.annotations.Register;
-import com.yanan.frame.plugin.exception.PluginRuntimeException;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.utils.reflect.AppClassLoader;
-import com.yanan.utils.string.StringUtil;
 
 /**
  * 组件描述类 用于创建组件时的组件信息 v1.0 支持通过Class的Builder方式 v1.1 支持通过Comp文件的Builder方式 v1.2

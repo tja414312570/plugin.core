@@ -6,14 +6,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValue;
 import com.yanan.frame.plugin.event.AbstractEvent;
 import com.yanan.frame.plugin.event.EventListener;
 import com.yanan.frame.plugin.event.InterestedEventSource;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.asserts.Function;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValue;
 
 /**
  * 环境类，提供Plugin环境 环境类提供全局上下文配置，全局属性 采用holder的单例模式 提供一个系统事件
@@ -120,7 +120,6 @@ public class Environment extends AbstractQueuedSynchronizer{
 	public static Environment getEnviroment() {
 		return EnviromentHolder.ENVIRONMENT;
 	}
-
 	/**
 	 * get the global environment configure
 	 * 
@@ -237,9 +236,9 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 * @param mark 任务标志；
 	 * @param function 任务
 	 */
-	public void executorOnce(final Object mark,final Function function) {
+	public void executeOnlyOnce(final Object mark,final Function function) {
 		Assert.isNull(mark, "the function mark is null");
-		String key = ENVIROMENT_EXECUTOR_TOKEN+mark;
+		String key = (ENVIROMENT_EXECUTOR_TOKEN+mark).intern();
 		if(!hasVariable(key)) {
 			synchronized (key.intern()) {
 				if(!hasVariable(key)) {

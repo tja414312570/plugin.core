@@ -17,7 +17,7 @@ import com.yanan.frame.plugin.handler.InstanceHandler;
 import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.frame.plugin.handler.MethodHandler;
-import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.string.StringUtil;
 
 /**
@@ -100,13 +100,13 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 					//如果获取到的参数类型为数组
 					}else if(type.isArray()){
 						//获得数组的真实类型
-						Class<?> typeClass = AppClassLoader.getListGenericType(parameters[i]);
+						Class<?> typeClass = ReflectUtils.getListGenericType(parameters[i]);
 						List<?> obj = PlugsFactory.getPluginsInstanceListByAttribute(typeClass, service.attribute());
 						Object[] arr = (Object[]) Array.newInstance(typeClass, obj.size());
 						arguments[i] = obj.toArray(arr);
 					}else if(type.getClass().equals(List.class)){
 						//获取数组参数的类型
-						Class<?> typeClass = AppClassLoader.getListGenericType(parameters[i]);
+						Class<?> typeClass = ReflectUtils.getListGenericType(parameters[i]);
 						//获取服务返回的所有实现的实例
 						List<?> obj = PlugsFactory.getPluginsInstanceListByAttribute(typeClass, service.attribute());
 						arguments[i] = obj;

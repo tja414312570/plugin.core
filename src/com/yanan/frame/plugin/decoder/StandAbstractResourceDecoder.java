@@ -19,16 +19,19 @@ import com.yanan.frame.plugin.builder.PluginDefinitionBuilderFactory;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.exception.PluginRuntimeException;
-import com.yanan.utils.reflect.AppClassLoader;
-import com.yanan.utils.resource.AbstractResourceEntry;
+import com.yanan.utils.reflect.ReflectUtils;
+import com.yanan.utils.resource.Resource;
 
 /**
- * 标准抽象资源解析
+ * 标准资源解析，用于解析文件系统资源和类路径资源
+ * <p>{@link com.yanan.utils.resource.FileResource}
+ * <p>{@link com.yanan.utils.resource.ClassPathResource}
  * 
  * @author yanan
  */
-@Register(attribute = { "com.yanan.utils.resource.AbstractResourceEntry", "AbstractResourceEntry" })
-public class StandAbstractResourceDecoder implements ResourceDecoder<AbstractResourceEntry> {
+@Register(attribute = { "com.yanan.utils.resource.FileResource", "FileResource", 
+		"com.yanan.utils.resource.ClassPathResource", "ClassPathResource"})
+public class StandAbstractResourceDecoder implements ResourceDecoder<Resource> {
 	//当前资源名称
 	private String resourceName;
 	
@@ -45,7 +48,7 @@ public class StandAbstractResourceDecoder implements ResourceDecoder<AbstractRes
 		if (conf == null)
 			throw new PluginInitException("conf is null");
 		//检查配置类型
-		if(!AppClassLoader.implementsOf(conf.getClass(), ConfigValue.class))
+		if(!ReflectUtils.implementsOf(conf.getClass(), ConfigValue.class))
 			throw new UnsupportedOperationException("the config type is not support");
 		ConfigValue configValue = (ConfigValue) conf;
 		Object plugin = null;
@@ -72,7 +75,7 @@ public class StandAbstractResourceDecoder implements ResourceDecoder<AbstractRes
 	}
 
 	@Override
-	public void decodeResource(PlugsFactory factory, AbstractResourceEntry resource) {
+	public void decodeResource(PlugsFactory factory, Resource resource) {
 		this.resourceName = resource.getPath();
 		InputStream is = null;
 		InputStreamReader reader = null;

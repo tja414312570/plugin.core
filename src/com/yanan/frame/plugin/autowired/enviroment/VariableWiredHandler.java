@@ -24,6 +24,8 @@ import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.frame.plugin.handler.MethodHandler;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ParameterUtils;
+import com.yanan.utils.reflect.ReflectUtils;
 
 @Support(Variable.class)
 @Register(attribute = "*", description = "环境变量的属性的注入")
@@ -96,8 +98,8 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 	}
 	public static Object parseConfigType(Class<?> type, Object configValue) {
 		if(type.isArray()) {
-				Class<?> baseType = AppClassLoader.getArrayType(type);
-				if(AppClassLoader.implementsOf(configValue.getClass(), ConfigList.class)) {
+				Class<?> baseType = ReflectUtils.getArrayType(type);
+				if(ReflectUtils.implementsOf(configValue.getClass(), ConfigList.class)) {
 					ConfigList configList = (ConfigList) configValue;
 					if(baseType.equals(String.class)||baseType.equals(int.class)
 							||baseType.equals(long.class)||baseType.equals(boolean.class)
@@ -108,7 +110,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 					String[] strValues = ((String)((ConfigValue) configValue).unwrapped()).split(",");
 					Object values;
 					try {
-						values = AppClassLoader.parseBaseTypeArray(type, strValues, null);
+						values = ParameterUtils.parseBaseTypeArray(type, strValues, null);
 						return values;
 					} catch (ParseException e) {
 						e.printStackTrace();
@@ -125,14 +127,14 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 	private Object parseVaiable(Class<?> type, Object value) throws ParseException {
 		System.out.println(value);
 		System.out.println(value.getClass());
-		if(AppClassLoader.implementsOf(value.getClass(), ConfigValue.class)) {
+		if(ReflectUtils.implementsOf(value.getClass(), ConfigValue.class)) {
 			value = parseConfigType(type,value);
 			System.out.println(value);
 		}
 		if(value.getClass().equals(String.class)) {
-			value = type.isArray() ? AppClassLoader
+			value = type.isArray() ? ParameterUtils
 					.parseBaseTypeArray(type, ((String)value).split(","), null)
-					: AppClassLoader.parseBaseType(type, ((String)value), null);
+					: ParameterUtils.parseBaseType(type, ((String)value), null);
 		}
 		return value;
 	}
@@ -205,8 +207,8 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 						throw new VariableAutowiredFailedException("the required vaiable '"+name+"' value is null");
 					}
 					args[i] = parameter.getType().isArray()
-							? AppClassLoader.parseBaseTypeArray(parameter.getType(), value.split(","), null)
-							: AppClassLoader.parseBaseType(parameter.getType(), value, null);
+							? ParameterUtils.parseBaseTypeArray(parameter.getType(), value.split(","), null)
+							: ParameterUtils.parseBaseType(parameter.getType(), value, null);
 				} catch (Exception e) {
 					log.error("Error to process variable ! \r\nat class : "
 							+ registerDefinition.getRegisterClass().getName()

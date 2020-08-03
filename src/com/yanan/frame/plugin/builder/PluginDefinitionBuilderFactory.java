@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import com.typesafe.config.impl.SimpleConfigObject;
-import com.yanan.frame.plugin.ParameterUtils;
+import com.yanan.frame.plugin.ExtReflectUtils;
 import com.yanan.frame.plugin.Plugin;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.ProxyModel;
@@ -33,6 +33,7 @@ import com.yanan.frame.plugin.exception.PluginInitException;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.CollectionUtils;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.TypeToken;
 import com.yanan.utils.string.StringUtil;
 
@@ -218,9 +219,14 @@ public class PluginDefinitionBuilderFactory {
 				ConstructorDefinition constructorDefinition = deduceInstanitionConstructor(config, registerDefinition);
 				registerDefinition.setInstanceConstructor(constructorDefinition);
 			}
-			if(id != null)
+			if(StringUtil.isNotEmpty(id)) {
 				registerDefinition.setId(id);
-			if(ref != null)
+			}
+//			else if(StringUtil.isNotEmpty(ref) && StringUtil.isNotEmpty(registerDefinition.getId())){
+//				registerDefinition.setId(registerDefinition.getId()+ref+"_"+registerDefinition.hashCode());
+//			}
+				
+			if(StringUtil.isNotBlank(ref))
 				registerDefinition.setReferenceId(ref);
 			registerDefinition.setConfig(config);
 			registerDefinition.setPriority(config.getInt(CONFIG_PRIORITY,registerDefinition.getPriority()));
@@ -294,7 +300,7 @@ public class PluginDefinitionBuilderFactory {
 			//字符类型--》init:method 无参数格式
 			if(configValue.valueType() == ConfigValueType.STRING) {
 				String methodName = (String) configValue.unwrapped();
-				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
+				method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
 				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, null, null,null,null));
 			}else if(configValue.valueType() == ConfigValueType.OBJECT) {
 				processMethodDefinitionObject(config, registerDefinition, configValue);
@@ -320,14 +326,14 @@ public class PluginDefinitionBuilderFactory {
 			ConfigValue childConfigValue = iterator.next();
 			if(childConfigValue.valueType() == ConfigValueType.STRING) {
 				methodName = (String) childConfigValue.unwrapped();
-				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
+				method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
 				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, null, null,null,null));
 			}else {
 				SimpleConfigObject simpleConfigObject = (SimpleConfigObject) childConfigValue;
 				Entry<String, ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
 				methodName = entry.getKey();
 				MethodDefinition methodDefinition = deduceParameterTypeFromConfigValue(registerDefinition, methodName, entry.getValue());
-				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
+				method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
 				methodDefinition.setMethod(method);
 				registerDefinition.addAfterInstanceExecuteMethod(methodDefinition);
 			}
@@ -348,7 +354,7 @@ public class PluginDefinitionBuilderFactory {
 		Entry<String, ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
 		methodName = entry.getKey();
 		MethodDefinition methodDefinition = deduceParameterTypeFromObject(config,CONFIG_INIT+"."+methodName, registerDefinition, methodName);
-		method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
+		method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
 		methodDefinition.setMethod(method);
 		registerDefinition.addAfterInstanceExecuteMethod(methodDefinition);
 	}
@@ -357,7 +363,7 @@ public class PluginDefinitionBuilderFactory {
 		String methodName = config.getString(CONFIG_METHOD);
 		MethodDefinition methodDefinition = deduceParameterType(config,registerDefinition,methodName);
 		Method method = null;
-		method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName, methodDefinition.getArgsType());
+		method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName, methodDefinition.getArgsType());
 		methodDefinition.setMethod(method);
 		return methodDefinition;
 	}
@@ -370,14 +376,14 @@ public class PluginDefinitionBuilderFactory {
 			ConfigValue configValue = config.getValue(CONFIG_DESTORY);
 			if(configValue.valueType() == ConfigValueType.STRING) {
 				methodName = (String) configValue.unwrapped();
-				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
+				method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(),methodName,new Class<?>[0]);
 				registerDefinition.setDestoryMethod(new MethodDefinition(method, null, null,null,null));
 			}else if(configValue.valueType() == ConfigValueType.OBJECT) {
 				SimpleConfigObject simpleConfigObject = (SimpleConfigObject) configValue;
 				Entry<String, ConfigValue> entry = simpleConfigObject.entrySet().iterator().next();
 				methodName = entry.getKey();
 				MethodDefinition methodDefinition = deduceParameterTypeFromObject(config,CONFIG_INIT+"."+methodName, registerDefinition, methodName);
-				method = ParameterUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
+				method = ExtReflectUtils.getEffectiveMethod(registerDefinition.getRegisterClass(), methodName, methodDefinition.getArgsType());
 				methodDefinition.setMethod(method);
 				registerDefinition.setDestoryMethod(methodDefinition);
 			}
@@ -387,7 +393,7 @@ public class PluginDefinitionBuilderFactory {
 	private static ConstructorDefinition deduceInstanitionConstructor(Config config,RegisterDefinition registerDefinition) throws NoSuchMethodException {
 		ConstructorDefinition constructorDefinition = (ConstructorDefinition) deduceParameterType(config,registerDefinition,null);
 		Constructor<?> constructor = null;
-		constructor = ParameterUtils.getEffectiveConstructor(registerDefinition.getRegisterClass(), constructorDefinition.getArgsType());
+		constructor = ExtReflectUtils.getEffectiveConstructor(registerDefinition.getRegisterClass(), constructorDefinition.getArgsType());
 		constructorDefinition.setConstructor(constructor);
 		return constructorDefinition;
 	}
@@ -419,11 +425,11 @@ public class PluginDefinitionBuilderFactory {
 					}
 					Field field;
 					try {
-						field = registerDefinition.getLoader().getInfoCache().getAnyField(name);
+						field = registerDefinition.getLoader().getClassHelper().getAnyField(name);
 						if(type != null) {
 							parameterResolver = PlugsFactory.getPluginsInstanceByAttributeStrict(ParameterResolver.class, type);
 							PlugsHandler handler = PlugsFactory.getPluginsHandler(parameterResolver);
-							if(AppClassLoader.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
+							if(ReflectUtils.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
 								value = configValue;
 							}else {
 								value = parameterResolver.resove(configValue, type, 0, registerDefinition);
@@ -458,11 +464,11 @@ public class PluginDefinitionBuilderFactory {
 				Object value = configValue.unwrapped();
 				Field field;
 				try {
-					field = registerDefinition.getLoader().getInfoCache().getAnyField(name);
+					field = registerDefinition.getLoader().getClassHelper().getAnyField(name);
 					if(type != null) {
 						parameterResolver = PlugsFactory.getPluginsInstanceByAttributeStrict(ParameterResolver.class, type);
 						PlugsHandler handler = PlugsFactory.getPluginsHandler(parameterResolver);
-						if(AppClassLoader.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
+						if(ReflectUtils.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
 							value = configValue;
 						}else {
 							value = parameterResolver.resove(configValue, type, 0, registerDefinition);
@@ -514,7 +520,7 @@ public class PluginDefinitionBuilderFactory {
 				ParameterResolver<ConfigValue> parameterResolver = PlugsFactory.getPluginsInstanceByAttributeStrict(ParameterResolver.class, type);
 				ConfigValue configValue = argsConfigList.get(i);
 				PlugsHandler handler = PlugsFactory.getPluginsHandler(parameterResolver);
-				if(AppClassLoader.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
+				if(ReflectUtils.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
 					argsTypes[i] = ((DelayParameterResolver<ConfigValue>)parameterResolver).parameterType(configValue,methodName,argsTypes, type,i, registerDefinition);
 					if(parameterResolvers == null) {
 						parameterResolvers = new ParameterResolver[argsTypes.length];
@@ -559,7 +565,7 @@ public class PluginDefinitionBuilderFactory {
 								new TypeToken<ParameterResolver<ConfigValue>>() {}.getTypeClass()
 								, types[0]);
 				PlugsHandler handler = PlugsFactory.getPluginsHandler(parameterResolver);
-				if(AppClassLoader.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
+				if(ReflectUtils.implementsOf(handler.getRegisterDefinition().getRegisterClass(), DelayParameterResolver.class)) {
 					argsTypes[0] = ((DelayParameterResolver<ConfigValue>)parameterResolver).parameterType(entry.getValue(),methodName,argsTypes, types[0],0, registerDefinition);
 					parameterResolvers =new ParameterResolver[1];
 					parameterResolvers[0] = parameterResolver;

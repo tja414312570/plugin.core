@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.tja414312570</groupId>
 	<artifactId>plugin.core</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>config</name>
 	<description>score plugin,support aop,ioc,di</description>
 	<parent>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>com.github.tja414312570</groupId>
 			<artifactId>plugin.config</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.tja414312570</groupId>

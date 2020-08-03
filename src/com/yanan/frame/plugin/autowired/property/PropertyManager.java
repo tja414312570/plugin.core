@@ -14,7 +14,7 @@ import java.util.Properties;
 
 import com.typesafe.config.Config;
 import com.yanan.frame.plugin.Environment;
-import com.yanan.utils.resource.AbstractResourceEntry;
+import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;
 import com.yanan.utils.resource.scanner.Path;
 
@@ -73,7 +73,7 @@ public class PropertyManager {
 	public void scanAllProperty(){
 		Properties properties = new Properties();
 		//propertyScan
-		List<AbstractResourceEntry> scanPaths = getScanResourceByConfig();
+		List<Resource> scanPaths = getScanResourceByConfig();
 		if(scanPaths != null )
 		scanPaths.forEach((resource)->{
 			try {
@@ -88,9 +88,9 @@ public class PropertyManager {
 		});
 		this.rebuild();
 	}
-	private List<AbstractResourceEntry> getScanResourceByConfig() {
+	private List<Resource> getScanResourceByConfig() {
 		Config config = Environment.getEnviroment().getConfigure();
-		List<AbstractResourceEntry> resourceList = null;
+		List<Resource> resourceList = null;
 		String[] scanPathArrays = null ;
 		//propertyScan
 		if(config != null) {
@@ -109,7 +109,7 @@ public class PropertyManager {
 			if (scanPath != null && !scanPath.endsWith(".properties")) {
 				scanPath = scanPath+"**.properties";
 			}
-			List<AbstractResourceEntry> resourceEntryList = 
+			List<Resource> resourceEntryList = 
 					ResourceManager.getResourceList(scanPath);
 			if(resourceList == null) {
 				resourceList = resourceEntryList;

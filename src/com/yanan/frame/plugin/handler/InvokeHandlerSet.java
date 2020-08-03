@@ -87,7 +87,7 @@ public class InvokeHandlerSet {
 	public void setNext(InvokeHandlerSet next) {
 		this.next = next;
 	}
-
+	
 	public InvokeHandlerSet getFirst() {
 		return first;
 	}
@@ -125,6 +125,5 @@ public class InvokeHandlerSet {
 				return true;
 		}
 		return false;
-		
 	}
 }

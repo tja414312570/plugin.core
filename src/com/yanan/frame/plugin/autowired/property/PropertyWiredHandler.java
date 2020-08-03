@@ -17,6 +17,7 @@ import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.frame.plugin.handler.MethodHandler;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ParameterUtils;
 
 @Support(Property.class)
 @Register(attribute = "*", description = "Property文件的属性的注入")
@@ -53,9 +54,9 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 							propertyValue = property.defaultValue();
 						}
 						if (arguments[i] == null) {
-							arguments[i] = parameter.getType().isArray() ? AppClassLoader
+							arguments[i] = parameter.getType().isArray() ? ParameterUtils
 									.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
-									: AppClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
+									: ParameterUtils.parseBaseType(parameter.getType(), propertyValue, null);
 						}
 					} catch (Exception e) {
 						log.error("Error to process property \r\nat class:"
@@ -94,7 +95,7 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			}
 			new AppClassLoader(target).set(field,
 					field.getType().isArray()
-							? AppClassLoader.parseBaseTypeArray(field.getType(), propertyValue.split(","), null)
+							? ParameterUtils.parseBaseTypeArray(field.getType(), propertyValue.split(","), null)
 							: propertyValue);
 		} catch (Exception e) {
 			if(property.required())
@@ -132,8 +133,8 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 						propertyValue = property.defaultValue();
 					}
 					args[i] = parameter.getType().isArray()
-							? AppClassLoader.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
-							: AppClassLoader.parseBaseType(parameter.getType(), propertyValue, null);
+							? ParameterUtils.parseBaseTypeArray(parameter.getType(), propertyValue.split(","), null)
+							: ParameterUtils.parseBaseType(parameter.getType(), propertyValue, null);
 				} catch (Exception e) {
 					log.error("Error to process property ! \r\nat class : "
 							+ registerDefinition.getRegisterClass().getName()

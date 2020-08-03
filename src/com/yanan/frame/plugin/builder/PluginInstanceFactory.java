@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.typesafe.config.ConfigValue;
-import com.yanan.frame.plugin.ParameterUtils;
+import com.yanan.frame.plugin.ExtReflectUtils;
 import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.frame.plugin.ProxyModel;
 import com.yanan.frame.plugin.builder.resolver.DelayParameterResolver;
@@ -25,6 +25,7 @@ import com.yanan.frame.plugin.handler.InvokeHandler;
 import com.yanan.frame.plugin.handler.InvokeHandlerSet;
 import com.yanan.frame.plugin.handler.PlugsHandler;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ParameterUtils;
 import com.yanan.utils.string.StringUtil;
 
 public class PluginInstanceFactory {
@@ -105,14 +106,14 @@ public class PluginInstanceFactory {
 
 	private static ConstructorDefinition builderConstructorDefinition(RegisterDefinition registerDefinition,
 			Object[] args) {
-		Class<?>[] parameterTypes = AppClassLoader.getParameterTypes(args);
+		Class<?>[] parameterTypes = ParameterUtils.getParameterTypes(args);
 		return builderConstructorDefinition(registerDefinition,parameterTypes,args);
 	}
 	private static ConstructorDefinition builderConstructorDefinition(RegisterDefinition registerDefinition,
 			Class<?>[] types,Object[] args) {
 		// 排除掉数量不同的构造器
 		ConstructorDefinition constructorDefinition = new ConstructorDefinition(null, types, args, null, null);
-		ParameterUtils.getEffectiveConstructor(constructorDefinition, registerDefinition.getRegisterClass());
+		ExtReflectUtils.getEffectiveConstructor(constructorDefinition, registerDefinition.getRegisterClass());
 		return constructorDefinition;
 	}
 	public static <T> T getRegisterNewInstanceByParamType(RegisterDefinition registerDefinition, Class<T> service,
@@ -133,7 +134,6 @@ public class PluginInstanceFactory {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getRegisterInstance(RegisterDefinition registerDefinition, Class<T> service, Object... args) {
-//		System.out.println(registerDefinition.getId()+"."+registerDefinition.getReferenceId()+"===>"+registerDefinition.getConfig()+":"+registerDefinition.getAfterInstanceExecuteMethod());
 		Object proxy = null;
 		// 判断是否单例
 		if (registerDefinition.isSignlton()) {

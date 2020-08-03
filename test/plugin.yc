@@ -11,6 +11,7 @@ plugins:[
 		com.yanan.frame.plugin.builder.resolver.ReferenceParameterResolver,#引用解析
 		com.yanan.frame.plugin.builder.resolver.DateParameterResolver,#日期解析
 		com.yanan.frame.plugin.builder.resolver.ResourceParameterResolver,#日期解析
+		com.yanan.frame.plugin.thread.ThreadLoacalClear
 		{
 			class:com.test.SimpleRegister,
 			id:testStatic,
@@ -57,11 +58,11 @@ plugins:[
 			init:println
 		},{
 			ref:println
-			init.println:xxxx
+			init.println:打印内容1
 			#init.println.ref:println
 		},{
 			ref:println
-			init:[{println:xxx},{println.ref:sLoader}]
+			init:[{println:打印内容2},{println.ref:sLoader}]
 		},{
 			ref:println
 			init:[println,{println.ref:test3}]
@@ -69,44 +70,6 @@ plugins:[
 			ref:println
 			init.println.ref:testStatic
 		}
-		
 	]
-####################### global configure
-conf:{
-	Plugin:{
-		##ScanPackage:[com.yanan], ##扫描包位置，多个包用逗号分开或使用数组ScanPackage:[com.yanan.DZCT,com.yanan.debug]
-													  ##可以写为ScanPackage:"com.yanan.DZCT,com.yanan.debug"
-		includes:"classpath:*.comps",##扫描注册文件
-	},
-	SecurityFilter:{
-		x-frame-options:true,
-		xss-wrapper:{"/**":true}
-		},
-	Token:{
-		Timeout:4000,
-		Secure:false,
-		HttpOnly:true,
-	}
-}
-MVC:{
-	SERVER:{
-			TOMCAT:[
-				{ ## 默认调配器
-					class:org.apache.catalina.servlets.DefaultServlet,
-					priority:2,
-					signlton:true,
-					attribute:"*",
-					service:javax.servlet.Servlet
-				},
-				{ ## 默认JSP调配器
-					class:org.apache.jasper.servlet.JspServlet,
-					priority:1,
-					signlton:true,
-					attribute:".jsp",
-					service:javax.servlet.Servlet
-				},
-			]
-		}
-	}
-app.key.host=localhost
-app.key.port=8080
+	include"plugin2.yc"
+	

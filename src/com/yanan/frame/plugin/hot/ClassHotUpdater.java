@@ -28,6 +28,7 @@ import com.yanan.frame.plugin.annotations.Service;
 import com.yanan.frame.plugin.definition.RegisterDefinition;
 import com.yanan.frame.plugin.interfacer.PlugsListener;
 import com.yanan.utils.reflect.AppClassLoader;
+import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.cache.ClassHelper;
 import com.yanan.utils.resource.FileUtils;
 import com.yanan.utils.resource.scanner.Path;
@@ -39,8 +40,8 @@ import com.yanan.utils.resource.scanner.Path.PathInter;
  * @author yanan
  */
 public class ClassHotUpdater implements Runnable, PlugsListener {
-	public List<ContextPath> contextPathList = new ArrayList<ContextPath>();//扫描上下文路劲
-	private Map<String,String> classNameCache = new HashMap<>();
+	public List<ContextPath> contextPathList = new ArrayList<ContextPath>();// 扫描上下文路劲
+	private Map<String, String> classNameCache = new HashMap<>();
 	public Logger log = LoggerFactory.getLogger(ClassHotUpdater.class);
 	private boolean cache;// 是否已经扫描
 	private List<String> scanner = new ArrayList<String>(100);// 用于存储已经扫描到的文件
@@ -61,7 +62,7 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	/**
 	 * 文件hash
 	 * 
-	 * @param file 类文件
+	 * @param file  类文件
 	 * @param bytes 字节流
 	 * @return hash值
 	 */
@@ -72,7 +73,7 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 			md.update(bytes, 0, bytes.length);
 			BigInteger bigInt = new BigInteger(1, md.digest());
 			long h = bigInt.longValue();
-			return h<0l?~h+1:h;
+			return h < 0l ? ~h + 1 : h;
 		} catch (NoSuchAlgorithmException e) {
 			return file.hashCode() + file.lastModified();
 		}
@@ -88,30 +89,31 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 				String fileMark = file.getAbsolutePath();
 				if (!cache) {// 如果是第一次扫描
 					scanner.add(fileMark);
-					fileToken.put(fileMark,new FileToken(hash(file, FileUtils.getBytes(file)),lastModif));
+					fileToken.put(fileMark, new FileToken(hash(file, FileUtils.getBytes(file)), lastModif));
 				} else {// 其它扫描
-					//将扫描的文件推送到已扫描队列
+					// 将扫描的文件推送到已扫描队列
 					scanner.add(fileMark);
-					//获取类名
-					String clzzName = getClassName(file.getAbsolutePath(),currentContextPath.getContextPath());
+					// 获取类名
+					String clzzName = getClassName(file.getAbsolutePath(), currentContextPath.getContextPath());
 					try {
 						Class<?> clzz = Class.forName(clzzName);
 						java.lang.ClassLoader loader = clzz == null ? this.getClass().getClassLoader()
 								: clzz.getClassLoader();
 						FileToken token = fileToken.get(fileMark);
-						if (token!=null) {// 如果文件已经存在
-							//判断文件是否修改  先判断最后修改日期  再判断hash  
-							//也就是即使修改了文件  但内容完全相同  此时调用之前的类
-							if(token.getLastModif()!=lastModif){
+						if (token != null) {// 如果文件已经存在
+							// 判断文件是否修改 先判断最后修改日期 再判断hash
+							// 也就是即使修改了文件 但内容完全相同 此时调用之前的类
+							if (token.getLastModif() != lastModif) {
 								byte[] content = FileUtils.getBytes(file);
 								long hash = hash(file, content);
 								String className = clzzName + "$Y" + hash;
-								//无轮是否加载成功都应该记录
-								fileToken.put(fileMark,new FileToken(hash,lastModif));
+								// 无轮是否加载成功都应该记录
+								fileToken.put(fileMark, new FileToken(hash, lastModif));
 								Class<?> nc = loadClass(loader, className, clzzName, content);
 								if (!checkClass(nc))
 									return;
-								RegisterDefinition registerDescription = PlugsFactory.getInstance().getRegisterDefinition(clzz);
+								RegisterDefinition registerDescription = PlugsFactory.getInstance()
+										.getRegisterDefinition(clzz);
 								if (registerDescription != null) {
 									if (registerDescription.getLinkRegister() != null)
 										clzz = registerDescription.getLinkRegister().getRegisterClass();
@@ -122,12 +124,12 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 								notifyListener(clzz, nc, new AppClassLoader().loadClass(clzzName, content), file);// 通知修改
 								log.debug(clzzName + "  update success!");
 							}
-							
+
 						} else {// 如果之前没有加载该类
 							Class<?> nc = clzz;
 							if (nc == null)
 								nc = loadClass(loader, clzzName, FileUtils.getBytes(file));
-							fileToken.put(fileMark,new FileToken(hash(file, FileUtils.getBytes(file)),lastModif));
+							fileToken.put(fileMark, new FileToken(hash(file, FileUtils.getBytes(file)), lastModif));
 							if (!checkClass(nc))
 								return;
 							tryAddPlugs(nc);
@@ -141,21 +143,21 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 			}
 		};
 		while (true) {
-			if(this.contextPathList.isEmpty())
+			if (this.contextPathList.isEmpty())
 				break;
-			for(ContextPath contextPath : contextPathList) {
+			for (ContextPath contextPath : contextPathList) {
 				Path path = new Path(contextPath.getContextPath());
 				path.filter(contextPath.getFilter());
 				currentContextPath.setContextPath(contextPath.getContextPath());
 				currentContextPath.setFilter(contextPath.getFilter());
 				path.scanner(filePathInter);
-				//如果是第一次之后的扫描  需要将已删除的文件找出来
+				// 如果是第一次之后的扫描 需要将已删除的文件找出来
 				if (cache) {
-					Iterator<String> iterator =fileToken.keySet().iterator();
+					Iterator<String> iterator = fileToken.keySet().iterator();
 					while (iterator.hasNext()) {
 						String file = iterator.next();
 						if (!scanner.contains(file) && file.startsWith(contextPath.getContextPath())) {
-							String clzzName = getClassName(file,contextPath.getContextPath());
+							String clzzName = getClassName(file, contextPath.getContextPath());
 							clzzName = clzzName.substring(0, clzzName.length() - 6);
 							Class<?> clzz = null;
 							try {
@@ -169,10 +171,10 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 								proxy.remove(clzz);
 								notifyListener(clzz, null, null, null);// 通知删除
 							} catch (Throwable e) {
-								if(clzz != null)
-									log.error("failed to update class "+clzz.getName(),e);
+								if (clzz != null)
+									log.error("failed to update class " + clzz.getName(), e);
 								else
-									log.error("failed to load class file "+file,e);
+									log.error("failed to load class file " + file, e);
 							}
 						}
 					}
@@ -192,17 +194,19 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 
 	private String getClassName(String fileName, String contextPath) {
 		String className = classNameCache.get(fileName);
-		if(className == null) {
-			className = fileName.substring(contextPath.length()+1,fileName.length()-6)
-					.replace(File.separator,".");
+		if (className == null) {
+			className = fileName.substring(contextPath.length() + 1, fileName.length() - 6).replace(File.separator,
+					".");
 			classNameCache.put(fileName, className);
 		}
 		return className;
 	}
 
-	protected Class<?> loadClass(java.lang.ClassLoader loader,String className,String clzzName,byte[] content) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	protected Class<?> loadClass(java.lang.ClassLoader loader, String className, String clzzName, byte[] content)
+			throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException,
+			InvocationTargetException {
 		Class<?> nc = null;
-		try {//这一步为了容错
+		try {// 这一步为了容错
 			nc = Class.forName(className);
 		} catch (Throwable e) {
 			ClassReader reader = new ClassReader(content, 0, content.length);
@@ -241,40 +245,41 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	 * 通知类状态修改监听类
 	 * 
 	 * @param clzz class
-	 * @param nc new class
-	 * @param oc origin class
+	 * @param nc   new class
+	 * @param oc   origin class
 	 * @param file class file
 	 */
 	protected void notifyListener(Class<?> clzz, Class<?> nc, Class<?> oc, File file) {
 		try {
-			List<ClassUpdateListener> updaterList = PlugsFactory.getPluginsInstanceListByAttribute(ClassUpdateListener.class,nc.getName());
-			for (ClassUpdateListener listener : updaterList){
-				if((clzz!=null&&AppClassLoader.implementOf(clzz, ClassUpdateListener.class))
-						||(nc!=null&&AppClassLoader.implementOf(nc, ClassUpdateListener.class))
-						||(oc!=null&&AppClassLoader.implementOf(oc, ClassUpdateListener.class)))
+			List<ClassUpdateListener> updaterList = PlugsFactory
+					.getPluginsInstanceListByAttribute(ClassUpdateListener.class, nc.getName());
+			for (ClassUpdateListener listener : updaterList) {
+				if ((clzz != null && ReflectUtils.implementOf(clzz, ClassUpdateListener.class))
+						|| (nc != null && ReflectUtils.implementOf(nc, ClassUpdateListener.class))
+						|| (oc != null && ReflectUtils.implementOf(oc, ClassUpdateListener.class)))
 					continue;
 				listener.updateClass(clzz, nc, oc, file);
 			}
-		}catch (Throwable t) {
-			if(nc != null)
-				log.error("could not found updater listener for class "+nc.getName(),t);
+		} catch (Throwable t) {
+			if (nc != null)
+				log.error("could not found updater listener for class " + nc.getName(), t);
 		}
-		
+
 	}
 
 	/**
 	 * 加载类
 	 * 
-	 * @param loader class loader
+	 * @param loader    class loader
 	 * @param className class name
-	 * @param bytes class bytes
+	 * @param bytes     class bytes
 	 * @return class
-	 * @throws NoSuchMethodException ex
-	 * @throws SecurityException ex
-	 * @throws IllegalAccessException ex
-	 * @throws IllegalArgumentException ex
+	 * @throws NoSuchMethodException     ex
+	 * @throws SecurityException         ex
+	 * @throws IllegalAccessException    ex
+	 * @throws IllegalArgumentException  ex
 	 * @throws InvocationTargetException ex
-	 */ 
+	 */
 	protected Class<?> loadClass(java.lang.ClassLoader loader, String className, byte[] bytes)
 			throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException {
@@ -287,62 +292,70 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 	}
 
 	private void addContextPath(List<String> contextPaths) {
-		this.addContextPath(contextPaths.toArray(new String[]{}));
+		this.addContextPath(contextPaths.toArray(new String[] {}));
 	}
+
 	private void addContextPath(String... contextPaths) {
-		for(String contextPath : contextPaths) {
+		for (String contextPath : contextPaths) {
 			String context = contextPath;
 			String filte = "**.class";
-			int sp = context.indexOf(".",context.lastIndexOf("/"));
-			if(sp>0) {
-				context = contextPath.substring(0,sp);
-				filte = contextPath.substring(sp+1);
-				if(!filte.endsWith(".class")){
+			int sp = context.indexOf(".", context.lastIndexOf("/"));
+			if (sp > 0) {
+				context = contextPath.substring(0, sp);
+				filte = contextPath.substring(sp + 1);
+				if (!filte.endsWith(".class")) {
 					filte = filte.concat(".class");
 				}
 			}
-			this.contextPathList.add(new ContextPath(context,filte));
+			this.contextPathList.add(new ContextPath(context, filte));
 		}
 	}
-	public static class ContextPath{
+
+	public static class ContextPath {
 		public String getContextPath() {
 			return contextPath;
 		}
+
 		public void setContextPath(String contextPath) {
 			this.contextPath = contextPath;
 		}
+
 		public String getFilter() {
 			return filter;
 		}
+
 		public void setFilter(String filter) {
 			this.filter = filter;
 		}
+
 		public ContextPath(String contextPath, String filter) {
 			super();
 			this.contextPath = contextPath;
 			this.filter = filter;
 		}
+
 		private String contextPath;
 		private String filter;
 	}
+
 	@Override
 	public void execute(PlugsFactory plugsFactory) {
 		log.debug("enable class hot update deployment service!");
 		ClassHotUpdater test = PlugsFactory.getPluginsInstance(ClassHotUpdater.class);
 		PlugsFactory.getInstance().addPlugininDefinition(ClassUpdateListener.class);
-		if(test.contextPathList.isEmpty()) {
+		if (test.contextPathList.isEmpty()) {
 			Config config = Environment.getEnviroment().getConfig("ClassHotUpdater");
-			if(config != null) {
-				if(config.hasPath("contextPath")) {
-					if(config.isList("contextPath")) {
+			if (config != null) {
+				if (config.hasPath("contextPath")) {
+					if (config.isList("contextPath")) {
 						List<String> contextPaths = config.getStringList("contextPath");
 						test.addContextPath(contextPaths);
-					}else {
+					} else {
 						String contextPath = config.getString("contextPath");
 						test.addContextPath(contextPath.split(","));
 					}
 				}
-				
+
 			}
 		}
 		Thread thread = new Thread(test);
