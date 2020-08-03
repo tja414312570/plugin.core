@@ -1,6 +1,8 @@
 package com.yanan.frame.plugin.thread;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -30,11 +32,37 @@ public class ThreadLoacalClear implements InvokeHandler,InstanceHandler{
 			EnviromentExecutorTest.preparedThreadLocal();
 		}
 	}
-
+    public void remove(Object threadLocalMap) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvocationTargetException, NoSuchMethodException {
+    	Object tab = ReflectUtils.getDeclaredFieldValue("table", threadLocalMap);
+    	int len = Array.getLength(tab);
+    	for(int i = 0;i < len;i++) {
+    		Object e = Array.get(tab, i);
+    		Object key;
+    		if(e != null && (key = ReflectUtils.invokeDeclaredMethod(e, "get")) != null) {
+    			System.out.println("清理:"+key+"-->"+i);
+    			ReflectUtils.invokeDeclaredMethod(key, "clear");
+    			ReflectUtils.invokeDeclaredMethod(threadLocalMap, "expungeStaleEntry",i);
+    		}
+    	}
+    }
 	@Override
 	public void after(MethodHandler methodHandler) {
 		if(isRunable(methodHandler.getMethod())) {
-			System.out.println("结束执行");
+			try {
+				
+				Thread currentThread = Thread.currentThread();
+				Object inheritableThreadLocals = ReflectUtils.getDeclaredFieldValue("inheritableThreadLocals", currentThread);
+				if (inheritableThreadLocals != null) {
+					remove(inheritableThreadLocals);
+				} 
+				Object threadLocals = ReflectUtils.getDeclaredFieldValue("threadLocals", currentThread);
+				if (threadLocals != null) {
+					remove(threadLocals);
+				} 
+				System.out.println("结束执行:" + inheritableThreadLocals+"===>"+threadLocals);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
