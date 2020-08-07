@@ -101,7 +101,6 @@ public class ExtReflectUtils {
 	 */
 	public static void getEffectiveConstructor(ConstructorDefinition constructorDefinition, Class<?> targetClass) {
 		Constructor<?>[] constructors = targetClass.getDeclaredConstructors();
-		System.out.println(Arrays.toString(constructors));
 		//内部类没有static和public修饰
 		if (!Modifier.isStatic(targetClass.getModifiers()) && !Modifier.isPublic(targetClass.getModifiers())
 				//内部类为非匿名内部类
