@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.yanan.framework.plugin.definition.PluginDefinition;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
+import com.yanan.utils.CollectionUtils;
 import com.yanan.utils.string.StringUtil;
 
 /**
@@ -23,28 +24,21 @@ public class Plugin {
 		this.description = descrption;
 	}
 	public void addRegister(RegisterDefinition registerDefinition) {
-		if(registerList.indexOf(registerDefinition)!=-1) {
+		if(registerList.indexOf(registerDefinition) != -1) {
 			return;
 		}
 		//为了保持与默认注册组件有相同的优先级，采用倒叙对比法进行优先级运算 比如 原始数据 0  0  2  3 现在需要插入 1  则插入后应该为 0 0 1 2 3
-		if(this.registerList.size()==0){
+		if(this.registerList.size() == 0){
 			this.registerList.add(registerDefinition);
-		}else{
-			for(int i=this.registerList.size()-1;i>=0;i--){
-				if(registerDefinition.getPriority()>=this.registerList.get(i).getPriority()){
-					this.registerList.add(registerDefinition);
-					break;
-				}else{
-					if(i==0){
-						this.registerList.add(0,registerDefinition);
-					}else{
-						if(registerDefinition.getPriority()>=this.registerList.get(i-1).getPriority()&&
-								registerDefinition.getPriority()<this.registerList.get(i).getPriority()){
-							this.registerList.add(i,registerDefinition);
-							break;
-						}
-					}
-				}
+			return;
+		} 
+		for(int i = this.registerList.size()-1;i >= 0;i--){
+			if(registerDefinition.getPriority() >= this.registerList.get(i).getPriority()){
+				this.registerList.add(i+1,registerDefinition);
+				break;
+			}
+			if(i == 0){
+				this.registerList.add(0,registerDefinition);
 			}
 		}
 	}
@@ -82,7 +76,7 @@ public class Plugin {
 		this.registerList = registerList;
 	}
 	public RegisterDefinition getDefaultRegisterDefinition() {
-		return this.registerList.get(0);
+		return CollectionUtils.isEmpty(this.registerList)?null:this.registerList.get(0);
 	}
 	public void setDefaultRegisterDefinition(RegisterDefinition defaultRegisterDefinition) {
 		this.registerList.add(0, defaultRegisterDefinition);
