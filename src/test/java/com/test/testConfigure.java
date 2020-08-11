@@ -3,8 +3,8 @@ package com.test;
 import java.io.IOException;
 
 import com.typesafe.config.Config;
-import com.yanan.frame.plugin.Environment;
-import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.framework.plugin.Environment;
+import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;
 

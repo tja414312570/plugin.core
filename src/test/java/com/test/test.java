@@ -1,8 +1,5 @@
 package com.test;
 
-import java.util.Arrays;
-
-import com.yanan.frame.plugin.PlugsFactory;
 import com.yanan.utils.reflect.AppClassLoader;
 
 public class test {

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
-import com.yanan.frame.plugin.PlugsFactory;
+import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;

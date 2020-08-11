@@ -1,15 +1,10 @@
 package com.test;
 
-import java.util.Arrays;
-
-import com.yanan.frame.plugin.Environment;
-import com.yanan.frame.plugin.PluginEvent;
-import com.yanan.frame.plugin.PluginEventSource;
-import com.yanan.frame.plugin.PlugsFactory;
-import com.yanan.frame.plugin.builder.PluginInstanceFactory;
-import com.yanan.frame.plugin.decoder.StandScanResource;
-import com.yanan.frame.plugin.definition.RegisterDefinition;
-import com.yanan.frame.plugin.event.EventListener;
+import com.yanan.framework.plugin.Environment;
+import com.yanan.framework.plugin.PluginEvent;
+import com.yanan.framework.plugin.PluginEventSource;
+import com.yanan.framework.plugin.PlugsFactory;
+import com.yanan.framework.plugin.event.EventListener;
 import com.yanan.utils.resource.Resource;
 import com.yanan.utils.resource.ResourceManager;
 

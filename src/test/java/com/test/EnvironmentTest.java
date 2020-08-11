@@ -1,12 +1,11 @@
 package com.test;
 
-import com.yanan.frame.plugin.event.AbstractEvent;
-import com.yanan.frame.plugin.event.EventListener;
-import com.yanan.frame.plugin.event.InterestedEventSource;
-
 import java.lang.reflect.Modifier;
 
-import com.yanan.frame.plugin.Environment;
+import com.yanan.framework.plugin.Environment;
+import com.yanan.framework.plugin.event.AbstractEvent;
+import com.yanan.framework.plugin.event.EventListener;
+import com.yanan.framework.plugin.event.InterestedEventSource;
 
 public class EnvironmentTest {
 	transient String rnm;

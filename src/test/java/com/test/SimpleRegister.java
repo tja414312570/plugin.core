@@ -4,8 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import com.yanan.frame.plugin.annotations.AfterInstantiation;
-import com.yanan.frame.plugin.annotations.Register;
+import com.yanan.framework.plugin.annotations.AfterInstantiation;
+import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.utils.resource.Resource;
 
 @Register
