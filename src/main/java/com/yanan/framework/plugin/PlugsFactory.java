@@ -411,7 +411,8 @@ public class PlugsFactory {
 		Iterator<RegisterDefinition> iterator = this.newRegisterDefinitionList.iterator();
 		while(iterator.hasNext()) {
 			RegisterDefinition currentRegisterDefinition = iterator.next();
-			registerDefinitionInit(currentRegisterDefinition);
+			if(!currentRegisterDefinition.isLazyInit())
+				registerDefinitionInit(currentRegisterDefinition);
 		}
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
@@ -441,6 +442,9 @@ public class PlugsFactory {
 		}
 	}
 	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
+		if(registerDefinition.getRegisterClass().getSimpleName().equals("Test")) {
+			System.out.println(registerDefinition);
+		}
 		newRegisterDefinitionList.remove(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);

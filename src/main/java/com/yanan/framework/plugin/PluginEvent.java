@@ -30,4 +30,8 @@ public class PluginEvent implements AbstractEvent{
 	public void setEventContent(Object eventContent) {
 		this.eventContent = eventContent;
 	}
+	@Override
+	public String toString() {
+		return "envent:"+this.eventType+",content:"+this.eventContent;
+	}
 }

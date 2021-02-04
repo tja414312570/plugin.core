@@ -82,6 +82,8 @@ public class RegisterDefinition {
 	private RegisterDefinition linkRegister;
 	//链接之后的原代理的代理对象
 	private Object linkProxy;
+	
+	private boolean lazyInit = false;
 
 	public AppClassLoader getLoader() {
 		return loader;
@@ -535,5 +537,15 @@ public class RegisterDefinition {
 		}
 		if(!afterInstanceInitField.contains(fieldDefinition))
 			this.afterInstanceInitField.add(fieldDefinition);
+	}
+
+
+	public boolean isLazyInit() {
+		return lazyInit;
+	}
+
+
+	public void setLazyInit(boolean lazyInit) {
+		this.lazyInit = lazyInit;
 	}
 }
