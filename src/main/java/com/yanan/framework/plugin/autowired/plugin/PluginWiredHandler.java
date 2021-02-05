@@ -170,7 +170,7 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 					try {
 						//from type
 						obj = PlugsFactory.getPluginsInstance(type);
-					}catch (Throwable e) {e.printStackTrace();}
+					}catch (Throwable e) {}
 				}
 				if(obj == null && StringUtil.isNotEmpty(service.attribute())) {
 					try {

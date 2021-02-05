@@ -442,9 +442,6 @@ public class PlugsFactory {
 		}
 	}
 	private void registerDefinitionInit(RegisterDefinition registerDefinition) {
-		if(registerDefinition.getRegisterClass().getSimpleName().equals("Test")) {
-			System.out.println(registerDefinition);
-		}
 		newRegisterDefinitionList.remove(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
