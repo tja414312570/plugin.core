@@ -196,7 +196,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 		if (globalConfig == null) {
 			globalConfig = config;
 		} else {
-			globalConfig.merge(config);
+			globalConfig = config.withFallback(globalConfig);
 		}
 	}
 
@@ -208,7 +208,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 		if (globalConfig == null) {
 			globalConfig = config;
 		} else {
-			globalConfig.merge(config);
+			mergeConfig(config);
 		}
 	}
 
