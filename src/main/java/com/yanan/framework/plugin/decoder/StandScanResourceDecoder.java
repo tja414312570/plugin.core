@@ -23,9 +23,8 @@ public class StandScanResourceDecoder implements ResourceDecoder<StandScanResour
 	@Override
 	public void decodeResource(PlugsFactory factory,StandScanResource resource) {
 		String scanExpress = resource.getPath();
-		String[] realPathArray =  ResourceManager.getPathExress(scanExpress);
 		PackageScanner scanner = new PackageScanner();
-		scanner.setScanPath(realPathArray);
+		scanner.setScanPath(scanExpress);
 		scanner.doScanner((cls) -> tryDecodeDefinition(cls));
 	}
 	private void tryDecodeDefinition(Class<?> cls) {
