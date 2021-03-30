@@ -303,7 +303,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 			this.globalVariable.remove(key);
 	}
 	/**
-	 * 环境初始化
+	 * 环境销毁
 	 */
 	public void desotry() {
 		this.eventListenerMap.clear();

@@ -22,6 +22,7 @@ import com.yanan.framework.plugin.annotations.AfterInstantiation;
 import com.yanan.framework.plugin.annotations.Destory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Service;
+import com.yanan.framework.plugin.autowired.plugin.CustomProxy;
 import com.yanan.framework.plugin.builder.resolver.DelayParameterResolver;
 import com.yanan.framework.plugin.builder.resolver.ParameterResolver;
 import com.yanan.framework.plugin.definition.ConstructorDefinition;
@@ -31,6 +32,7 @@ import com.yanan.framework.plugin.definition.PluginDefinition;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
 import com.yanan.framework.plugin.exception.PluginInitException;
 import com.yanan.framework.plugin.handler.PlugsHandler;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.CollectionUtils;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.ReflectUtils;
@@ -126,8 +128,9 @@ public class PluginDefinitionBuilderFactory {
 		registerDefinition.setLoader(loader);
 		registerDefinition.setRegisterClass(loader.getLoadedClass());
 		registerDefinition.setRegister(register);
-		registerDefinition.setServices(register.register().length == 0 ? 
-				loader.getLoadedClass().getInterfaces() : register.register());
+//		registerDefinition.setServices(register.register().length == 0 ? 
+//				loader.getLoadedClass().getInterfaces() : register.register());
+		registerDefinition.setServices(buildService(register.register(),loader.getLoadedClass().getInterfaces()));
 		registerDefinition.setPriority(register.priority());
 		registerDefinition.setSignlton(register.signlTon());
 		registerDefinition.setAttribute(register.attribute());
@@ -173,6 +176,21 @@ public class PluginDefinitionBuilderFactory {
 		//查找实例化后的方法
 //		checkPlugs(registerDefinition.getPlugs());
 	}
+	private static Class<?>[] buildService(Class<?>[] register, Class<?>[] interfaces) {
+		if(register == null && interfaces == null)
+			return null;
+		if(register == null || register.length ==0)
+			return interfaces;
+		if(interfaces == null || interfaces.length == 0)
+			return register;
+		int len = register.length + interfaces.length;
+		Class<?>[] clzzs = new Class<?>[len];
+		System.arraycopy(register, 0, clzzs, 0, register.length);
+		System.arraycopy(interfaces, 0, clzzs, register.length, interfaces.length);
+		return  clzzs;
+	}
+
+
 	/**
 	 * 通过配置的方式构造注册定义
 	 * @param config 配置
@@ -283,7 +301,8 @@ public class PluginDefinitionBuilderFactory {
 	 */
 	private static void checkAfterBuilder(RegisterDefinition registerDefinition) {
 		if(CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceExecuteMethod())
-				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())) {
+				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())
+				|| ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1) {
 			if(registerDefinition.getProxyModel() != ProxyModel.NONE)
 			registerDefinition.setProxyModel(ProxyModel.CGLIB);
 		}

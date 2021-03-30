@@ -30,5 +30,10 @@ public @interface Variable {
 	 * @return 是否必须
 	 */
 	boolean required() default true;
+	/**
+	 * 自动刷新
+	 * @return
+	 */
+	boolean autoRefresh() default true;
 	
 }

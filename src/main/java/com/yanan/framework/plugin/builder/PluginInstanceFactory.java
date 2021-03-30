@@ -12,6 +12,7 @@ import com.typesafe.config.ConfigValue;
 import com.yanan.framework.plugin.ExtReflectUtils;
 import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.ProxyModel;
+import com.yanan.framework.plugin.autowired.plugin.CustomProxy;
 import com.yanan.framework.plugin.builder.resolver.DelayParameterResolver;
 import com.yanan.framework.plugin.builder.resolver.ParameterResolver;
 import com.yanan.framework.plugin.definition.ConstructorDefinition;
@@ -20,10 +21,11 @@ import com.yanan.framework.plugin.definition.MethodDefinition;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
 import com.yanan.framework.plugin.exception.PluginRuntimeException;
 import com.yanan.framework.plugin.handler.FieldHandler;
-import com.yanan.framework.plugin.handler.InstanceHandler;
 import com.yanan.framework.plugin.handler.Handler;
 import com.yanan.framework.plugin.handler.HandlerSet;
+import com.yanan.framework.plugin.handler.InstanceHandler;
 import com.yanan.framework.plugin.handler.PlugsHandler;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.ParameterUtils;
 import com.yanan.utils.string.StringUtil;
@@ -316,6 +318,7 @@ public class PluginInstanceFactory {
 //			}
 //			return (T) linkProxy;
 //		}
+		
 		Object proxy = null;
 		Object target = null;
 		HandlerSet constructorInvokeHanderSet = null;
@@ -428,7 +431,9 @@ public class PluginInstanceFactory {
 			if (!exception.isInterrupt())
 				throw exception;
 		}
-
+		if(ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1) {
+			proxy = ((CustomProxy<T>)proxy).getInstance();
+		}
 		return (T) proxy;
 	}
 

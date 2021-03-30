@@ -17,6 +17,7 @@ import com.yanan.framework.plugin.handler.InstanceHandler;
 import com.yanan.framework.plugin.handler.InvokeHandler;
 import com.yanan.framework.plugin.handler.HandlerSet;
 import com.yanan.framework.plugin.handler.MethodHandler;
+import com.yanan.framework.plugin.handler.PlugsHandler;
 import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.string.StringUtil;
 
@@ -170,7 +171,9 @@ public class PluginWiredHandler implements InvokeHandler,FieldHandler,InstanceHa
 					try {
 						//from type
 						obj = PlugsFactory.getPluginsInstance(type);
-					}catch (Throwable e) {}
+					}catch (Throwable e) {
+						e.printStackTrace();
+					}
 				}
 				if(obj == null && StringUtil.isNotEmpty(service.attribute())) {
 					try {

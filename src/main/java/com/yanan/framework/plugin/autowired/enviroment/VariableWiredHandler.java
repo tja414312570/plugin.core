@@ -42,8 +42,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			if(value == null) {
 				Config config = environment.getConfigure();
 				config.allowKeyNull();
-				System.out.println(config);
-				if(!config.isList("name")) {
+				if(!config.isList(name)) {
 					value = config.getValue(name);
 				}else {
 					value = config.getValueList(name);
@@ -125,11 +124,8 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 		return configValue;
 	}
 	private Object parseVaiable(Class<?> type, Object value) throws ParseException {
-		System.out.println(value);
-		System.out.println(value.getClass());
 		if(ReflectUtils.implementsOf(value.getClass(), ConfigValue.class)) {
 			value = parseConfigType(type,value);
-			System.out.println(value);
 		}
 		if(value.getClass().equals(String.class)) {
 			value = type.isArray() ? ParameterUtils
@@ -149,7 +145,6 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 	@Override
 	public void preparedField(RegisterDefinition registerDefinition, Object proxy, Object target,
 			HandlerSet handlerSet, Field field) {
-		System.out.println("llllll");
 		Variable variable = handlerSet.getAnnotation(Variable.class);
 		String name = null;
 		Object value = null;
@@ -157,7 +152,6 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 		if (name.equals(""))
 			name = field.getName();
 		try {
-			System.out.println(name);
 			value = getVariable(name);
 			if (value == null &&variable!=null&& !variable.defaultValue().equals("")) {
 				value = variable.defaultValue();
