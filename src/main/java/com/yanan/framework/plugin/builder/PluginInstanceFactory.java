@@ -452,7 +452,7 @@ public class PluginInstanceFactory {
 					methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
 					methodDefinition.getMethod().setAccessible(false);
 				} catch (Throwable e) {
-					throw new PluginRuntimeException("failed to invoke method " + methodDefinition.getMethod(), e);
+					throw new PluginRuntimeException("failed to invoke @PostConstructor method " + methodDefinition.getMethod(), e);
 				}
 			}
 		}
@@ -519,7 +519,9 @@ public class PluginInstanceFactory {
 	 * @param registerDefinition 组件定义
 	 */
 	public static void destory(RegisterDefinition registerDefinition) {
-		if(registerDefinition.getProxyContainer() != null && registerDefinition.getDestoryMethod() != null) {
+		if(registerDefinition.isSignlton() && 
+				registerDefinition.getProxyContainer() != null && 
+				registerDefinition.getDestoryMethod() != null) {
 			registerDefinition.getProxyContainer().values().forEach(instance->{
 				try {
 					MethodDefinition destoryMethod;
@@ -530,7 +532,7 @@ public class PluginInstanceFactory {
 					String name = StringUtil.isEmpty(registerDefinition.getId())
 							? registerDefinition.getRegisterClass().getName()
 							: registerDefinition.getId();
-					throw new PluginRuntimeException("failed to destory instance " + name + " by method " + registerDefinition.getDestoryMethod(), e);
+					throw new PluginRuntimeException("failed to invoke instance " + name + " @PreDestory method " + registerDefinition.getDestoryMethod(), e);
 				}
 			});
 		}

@@ -2,12 +2,10 @@ package com.yanan.framework.plugin.decoder;
 
 import com.yanan.framework.plugin.Plugin;
 import com.yanan.framework.plugin.PlugsFactory;
-import com.yanan.framework.plugin.annotations.AfterInstantiation;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Service;
 import com.yanan.framework.plugin.builder.PluginDefinitionBuilderFactory;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
-import com.yanan.utils.resource.ResourceManager;
 import com.yanan.utils.resource.scanner.PackageScanner;
 
 /**
@@ -17,9 +15,6 @@ import com.yanan.utils.resource.scanner.PackageScanner;
  */
 @Register(attribute="StandScanResource",id="standScanResourceDecoder")
 public class StandScanResourceDecoder implements ResourceDecoder<StandScanResource>{
-	@AfterInstantiation
-	public void init() {
-	}
 	@Override
 	public void decodeResource(PlugsFactory factory,StandScanResource resource) {
 		String scanExpress = resource.getPath();

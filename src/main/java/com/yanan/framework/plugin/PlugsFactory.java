@@ -72,7 +72,9 @@ public class PlugsFactory {
 		eventSource = new PluginEventSource();
 		environment.setVariable(PluginEventSource.class.getName(), eventSource);
 		resourceLoadedList = new CopyOnWriteArraySet<>();
-		
+		Runtime.getRuntime().addShutdownHook(new Thread(()->{
+			this.destory();
+		}));
 	}
 	/**
 	 * 初始化容器
@@ -116,7 +118,7 @@ public class PlugsFactory {
 	public void addScanPath(String... paths) {
 		for(String path : paths) {
 			//将路劲转化为抽象扫描资源
-			addResource(new StandScanResource(path));
+			addResource(new StandScanResource(path+"**"));
 		}
 	}
 	/**
@@ -869,6 +871,20 @@ public class PlugsFactory {
 	 */
 	public void destory() {
 		this.before_refresh_ready = false;
+//		this.registerDefinitionContainer.values().forEach(definition->{
+//			System.out.println(definition.getRegisterClass()+"==>"+definition.getDestoryMethod());
+//			if(definition.isSignlton() && definition.getDestoryMethod() != null) {
+//				Method method = definition.getDestoryMethod().getMethod();
+//				definition.getProxyContainer().values().forEach(instance->{
+//					method.setAccessible(true);
+//					try {
+//						method.invoke(instance);
+//					} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+//					}
+//					method.setAccessible(false);
+//				});
+//			}
+//		});
 		this.environment.desotry();
 		this.newRegisterDefinitionList.clear();
 		this.resourceList.clear();

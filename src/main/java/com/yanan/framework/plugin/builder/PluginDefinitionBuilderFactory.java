@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
@@ -18,8 +21,6 @@ import com.yanan.framework.plugin.ExtReflectUtils;
 import com.yanan.framework.plugin.Plugin;
 import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.ProxyModel;
-import com.yanan.framework.plugin.annotations.AfterInstantiation;
-import com.yanan.framework.plugin.annotations.Destory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Service;
 import com.yanan.framework.plugin.autowired.plugin.CustomProxy;
@@ -44,21 +45,21 @@ import com.yanan.utils.string.StringUtil;
  * @author yanan
  */
 public class PluginDefinitionBuilderFactory {
-	private static final String CONFIG_ARGS = "args";
-	private static final String CONFIG_TYPES = "types";
-	private static final String CONFIG_ID = "id";
-	private static final String CONFIG_PRIORITY = "priority";
-	private static final String CONFIG_ATTRIBUTE = "attribute";
-	private static final String CONFIG_REF = "ref";
-	private static final String CONFIG_CLASS = "class";
-	private static final String CONFIG_MODEL = "model";
-	private static final String CONFIG_SIGNITON = "signlton";
-	private static final String CONFIG_DESCIPTION = "description";
-	private static final String CONFIG_FIELD = "field";
-	private static final String CONFIG_SERVICE = "service";
-	private static final String CONFIG_INIT = "init";
-	private static final String CONFIG_METHOD = "method";
-	private static final String CONFIG_DESTORY = "destory";
+	public static final String CONFIG_ARGS = "args";
+	public static final String CONFIG_TYPES = "types";
+	public static final String CONFIG_ID = "id";
+	public static final String CONFIG_PRIORITY = "priority";
+	public static final String CONFIG_ATTRIBUTE = "attribute";
+	public static final String CONFIG_REF = "ref";
+	public static final String CONFIG_CLASS = "class";
+	public static final String CONFIG_MODEL = "model";
+	public static final String CONFIG_SIGNITON = "signlton";
+	public static final String CONFIG_DESCIPTION = "description";
+	public static final String CONFIG_FIELD = "field";
+	public static final String CONFIG_SERVICE = "service";
+	public static final String CONFIG_INIT = "init";
+	public static final String CONFIG_METHOD = "method";
+	public static final String CONFIG_DESTORY = "destory";
 	/**
 	 * 构建一个组件或则注册器
 	 * @param pluginClass 组件类
@@ -161,12 +162,12 @@ public class PluginDefinitionBuilderFactory {
 		}
 		Method[] methods = registerDefinition.getRegisterClass().getMethods();
 		for(Method method : methods) {
-			AfterInstantiation afterInstanceAnno = method.getAnnotation(AfterInstantiation.class);
+			PostConstruct afterInstanceAnno = method.getAnnotation(PostConstruct.class);
 			if(afterInstanceAnno != null) {
 //				checkAfterInstanitiationMethod(method.getName(),method,registerDefinition.getRegisterClass());
 				registerDefinition.addAfterInstanceExecuteMethod(new MethodDefinition(method, method.getParameterTypes(), new Object[method.getParameterCount()],null,null));
 			}
-			Destory destory = method.getAnnotation(Destory.class);
+			PreDestroy destory = method.getAnnotation(PreDestroy.class);
 			if(destory != null) {
 				registerDefinition.setDestoryMethod(new MethodDefinition(method, method.getParameterTypes(), new Object[method.getParameterCount()],null,null));
 			}

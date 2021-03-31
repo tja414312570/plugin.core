@@ -4,7 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import com.yanan.framework.plugin.annotations.AfterInstantiation;
+import javax.annotation.PostConstruct;
+
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.utils.resource.Resource;
 
@@ -68,7 +69,7 @@ public class SimpleRegister {
 		System.out.println(ref);
 		return simpleRegister;
 	}
-	@AfterInstantiation
+	@PostConstruct
 	public void init() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String dates = this.date == null?null:sdf.format(this.date);

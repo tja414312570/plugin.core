@@ -6,7 +6,11 @@ import java.lang.reflect.Method;
 import java.util.Stack;
 
 import com.yanan.framework.plugin.definition.RegisterDefinition;
+import com.yanan.framework.plugin.handler.FieldHandler;
+import com.yanan.framework.plugin.handler.InstanceHandler;
+import com.yanan.framework.plugin.handler.InvokeHandler;
 import com.yanan.framework.plugin.handler.MethodHandler;
+import com.yanan.utils.reflect.ReflectUtils;
 
 /**
  * 调用栈记录，用于记录当前栈的数据
@@ -19,13 +23,21 @@ public class WiredStackContext {
 	public static final int METHOD = 1;
 	public static final int CONSTRUCT = 2;
 	private static InheritableThreadLocal<Stack<Object[]>> currentContext = new InheritableThreadLocal<>();
-	static void push(Object... datas) {
+	public static void push(Object... datas) {
+		securityCheck();
 		Stack<Object[]> stack = currentContext.get();
 		if(stack == null) {
 			stack = new Stack<>();
 			currentContext.set(stack);
 		}
 		stack.push(datas);
+	}
+	private static void securityCheck() {
+		Class<?> clzz = ReflectUtils.getStackTraceClass(2);
+		if(!ReflectUtils.implementOf(clzz,InvokeHandler.class ) &&
+				!ReflectUtils.implementOf(clzz,FieldHandler.class ) &&
+				!ReflectUtils.implementOf(clzz,InstanceHandler.class ))
+			throw new SecurityException("operate not allow!");
 	}
 	public static int stackType() {
 		Object[] stacks = peek();
@@ -46,7 +58,8 @@ public class WiredStackContext {
 				return "Unknow";
 		}
 	}
-	static void pop() {
+	public static void pop() {
+		securityCheck();
 		Stack<Object[]> stack = currentContext.get();
 		if(stack != null) 
 			stack.pop();
