@@ -19,7 +19,7 @@ public class WiredStackContext {
 	public static final int METHOD = 1;
 	public static final int CONSTRUCT = 2;
 	private static InheritableThreadLocal<Stack<Object[]>> currentContext = new InheritableThreadLocal<>();
-	public static void push(Object... datas) {
+	static void push(Object... datas) {
 		Stack<Object[]> stack = currentContext.get();
 		if(stack == null) {
 			stack = new Stack<>();
@@ -46,7 +46,7 @@ public class WiredStackContext {
 				return "Unknow";
 		}
 	}
-	public static void pop() {
+	static void pop() {
 		Stack<Object[]> stack = currentContext.get();
 		if(stack != null) 
 			stack.pop();
