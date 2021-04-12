@@ -92,6 +92,8 @@ public class PluginDefinitionBuilderFactory {
 	 * @return 注册器定义
 	 */
 	public static RegisterDefinition builderRegisterDefinition(Class<?> registerClass) {
+		if(registerClass.isInterface())
+			throw new PluginInitException("the required build class is an interface ["+registerClass.getName()+"]");
 		Register register = registerClass.getAnnotation(Register.class);
 		if(register == null)
 			return buildRegisterDefinitionByDefault(registerClass);
