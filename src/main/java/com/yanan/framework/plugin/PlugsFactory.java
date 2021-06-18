@@ -98,6 +98,10 @@ public class PlugsFactory {
 			ResourceManager.getResourceList(resourceDesc).forEach((resource -> 
 			factory.addResource(resource)));
 		}
+		if(factory.getResourceList() == null || factory.getResourceList().isEmpty()) {
+			String resourceDesc = "classpath:*";
+			factory.addResource(new StandScanResource(resourceDesc));
+		}
 		factory.refresh();
 	}
 	/**
