@@ -283,7 +283,7 @@ public class PlugsFactory {
 		RegisterDefinition registerDescription = null;
 		Plugin plugin = getPlugin(serviceClass);
 		if (plugin == null) 
-			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " can't found or not be regist");
 		if (strict) {
 			registerDescription = plugin.getRegisterDefinitionByAttributeStrict(attribute);
 		}else {
@@ -303,7 +303,7 @@ public class PlugsFactory {
 		if (serviceClass.isInterface()) {
 			Plugin plugin = getPlugin(serviceClass);
 			if (plugin == null) {
-				throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+				throw new PluginNotFoundException("service interface " + serviceClass.getName() + " can't found or not be regist");
 			}
 			registerDescription = plugin.getRegisterDefinitionByInsClass(insClass);
 		} else {
@@ -320,7 +320,7 @@ public class PlugsFactory {
 	public static<T> RegisterDefinition getRegisterDefinitionNoneNull(Class<T> serviceClass){
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register");
 		}
 		return registerDescription;
 	}
@@ -491,7 +491,7 @@ public class PlugsFactory {
 		// 获取一个注册描述
 		RegisterDefinition registerDefinition = getInstance().getRegisterDefinition(id);
 		if (registerDefinition == null) {
-			throw new RegisterNotFound("could not found any register for bean id " + id);
+			throw new RegisterNotFound("can't found any register for bean id " + id);
 		}
 		getInstance().checkRegisterDefinition(registerDefinition);
 		return (T) PluginInstanceFactory.getRegisterInstance(registerDefinition,registerDefinition.getRegisterClass());
@@ -509,7 +509,7 @@ public class PlugsFactory {
 		// 获取一个注册描述
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register");
 		}
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
@@ -567,7 +567,7 @@ public class PlugsFactory {
 			// 获取一个注册描述
 			RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
 			if (registerDescription == null)
-				throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+				throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register");
 			getInstance().checkRegisterDefinition(registerDescription);
 			return PluginInstanceFactory.getRegisterNewInstance(registerDescription,serviceClass, args,null);
 		} catch (Exception e) {
@@ -588,7 +588,7 @@ public class PlugsFactory {
 	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass, Object... args) {
 		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
 		if (registerDescription == null)
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register");
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
@@ -606,7 +606,7 @@ public class PlugsFactory {
 	public static <T> T getPluginsInstanceByInsClass(Class<T> serviceClass, Class<?> insClass,Class<?>[] types, Object... args) {
 		RegisterDefinition registerDescription = getRegisterDefinition(serviceClass, insClass);
 		if (registerDescription == null)
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register");
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass,types, args);
 	}
@@ -624,7 +624,7 @@ public class PlugsFactory {
 	public static <T> T getPluginsInstanceByAttribute(Class<T> serviceClass, String attribute, Object... args) {
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, false);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register for attr ["+attribute+"]");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register for attr ["+attribute+"]");
 		}
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);// instance.getRegisterInstance(serviceClass,registerDescription,args);
@@ -644,7 +644,7 @@ public class PlugsFactory {
 	public static <T> T getPluginsInstanceByAttributeStrict(Class<T> serviceClass, String attribute, Object... args) {
 		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, true);
 		if (registerDescription == null) {
-			throw new RegisterNotFound("service interface " + serviceClass.getName() + " could not found any register for attr ["+attribute+"]");
+			throw new RegisterNotFound("service interface " + serviceClass.getName() + " can't found any register for attr ["+attribute+"]");
 		}
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
@@ -653,7 +653,7 @@ public class PlugsFactory {
 	public <T> Plugin getPluginNonNull(Class<T> serviceClass) {
 		Plugin plugin = getPlugin(serviceClass);
 		if (plugin == null)
-			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " could not found or not be regist");
+			throw new PluginNotFoundException("service interface " + serviceClass.getName() + " can't found or not be regist");
 		return plugin;
 	}
 	/**

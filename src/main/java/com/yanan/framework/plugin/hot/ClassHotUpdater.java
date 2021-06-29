@@ -262,7 +262,7 @@ public class ClassHotUpdater implements Runnable, PlugsListener {
 			}
 		} catch (Throwable t) {
 			if (nc != null)
-				log.error("could not found updater listener for class " + nc.getName(), t);
+				log.error("can't found updater listener for class " + nc.getName(), t);
 		}
 
 	}

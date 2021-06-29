@@ -206,7 +206,7 @@ public class PluginDefinitionBuilderFactory {
 			String className = config.getString(CONFIG_CLASS);
 			String ref = config.getString(CONFIG_REF);
 			if (className == null && ref == null)
-				throw new RuntimeException("could not fond class property and no reference any at \""
+				throw new RuntimeException("can't fond class property and no reference any at \""
 						+ config.origin().url() + "\" at line : " + config.origin().lineNumber());
 			if(ref != null) {
 				//推断类型
@@ -463,7 +463,7 @@ public class PluginDefinitionBuilderFactory {
 						fieldDefinition = new FieldDefinition(field, type, value,parameterResolver);
 						registerDefinition.addAfterInstanceInitField(fieldDefinition);
 					} catch (NoSuchFieldException | SecurityException e) {
-						throw new PluginInitException("could not found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
+						throw new PluginInitException("can't found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
 					}
 				}
 			});
@@ -502,7 +502,7 @@ public class PluginDefinitionBuilderFactory {
 					fieldDefinition = new FieldDefinition(field, type, value,parameterResolver);
 					registerDefinition.addAfterInstanceInitField(fieldDefinition);
 				} catch (NoSuchFieldException | SecurityException e) {
-					throw new PluginInitException("could not found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
+					throw new PluginInitException("can't found field for "+registerDefinition.getRegisterClass().getName()+"."+name,e);
 				}
 				
 			}
@@ -606,7 +606,7 @@ public class PluginDefinitionBuilderFactory {
 
 	private static void checkAfterInstanitiationMethod(String methodName, Method method,Class<?> clzz) {
 		if(method == null) 
-			throw new PluginInitException("could not found init method ["+methodName+"] at class "+clzz.getName());
+			throw new PluginInitException("can't found init method ["+methodName+"] at class "+clzz.getName());
 		if(method.getParameterCount() != 0)
 			throw new PluginInitException("the method executed after instantiation does not allow any parameters,but found " + method );
 	}

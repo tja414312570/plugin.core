@@ -10,6 +10,6 @@ public class NoneTransactionImplException extends RuntimeException {
 		super(msg);
 	}
 	public NoneTransactionImplException() {
-		super("could not found transaction implements , create transaction failed");
+		super("can't found transaction implements , create transaction failed");
 	}
 }
