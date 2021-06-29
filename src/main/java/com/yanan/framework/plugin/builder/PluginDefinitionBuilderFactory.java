@@ -303,12 +303,19 @@ public class PluginDefinitionBuilderFactory {
 	 * @param registerDefinition 组件定义
 	 */
 	private static void checkAfterBuilder(RegisterDefinition registerDefinition) {
+//		if(CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceExecuteMethod())
+//				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())
+//				|| ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1) {
+//			if(registerDefinition.getProxyModel() != ProxyModel.NONE)
+//			registerDefinition.setProxyModel(ProxyModel.CGLIB);
+//		}
 		if(CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceExecuteMethod())
-				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())
-				|| ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1) {
-			if(registerDefinition.getProxyModel() != ProxyModel.NONE)
-			registerDefinition.setProxyModel(ProxyModel.CGLIB);
+				|| CollectionUtils.isNotEmpty(registerDefinition.getAfterInstanceInitField())) {
+			if(registerDefinition.getProxyModel() != ProxyModel.NONE && registerDefinition.getRegisterClass().getInterfaces().length==0 && registerDefinition.getProxyModel() != ProxyModel.BOTH)
+				registerDefinition.setProxyModel(ProxyModel.CGLIB);
 		}
+		if(ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1)
+			registerDefinition.setProxyModel(ProxyModel.CGLIB);
 	}
 
 	private static void deduceAfterInstanceExecuteMethod(Config config, RegisterDefinition registerDefinition) throws NoSuchMethodException {

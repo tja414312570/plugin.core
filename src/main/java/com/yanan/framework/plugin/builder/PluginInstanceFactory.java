@@ -3,7 +3,9 @@ package com.yanan.framework.plugin.builder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,6 +30,7 @@ import com.yanan.framework.plugin.handler.PlugsHandler;
 import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.ParameterUtils;
+import com.yanan.utils.reflect.cache.ClassHelper;
 import com.yanan.utils.string.StringUtil;
 
 public class PluginInstanceFactory {
@@ -351,6 +354,9 @@ public class PluginInstanceFactory {
 					case BOTH:
 						target = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition,
 								constructor.getParameterTypes(), args);
+						//使用双代理，需要先调用一次
+						initProxyField(registerDefinition, target);
+						initProxyMethod(registerDefinition, target);
 						proxy = PlugsHandler.newMapperProxy(service, registerDefinition, target);
 						break;
 					case NONE:
@@ -448,9 +454,14 @@ public class PluginInstanceFactory {
 			for (MethodDefinition methodDefinition : registerDefinition.getAfterInstanceExecuteMethod()) {
 				try {
 					checkPreparedParameter(methodDefinition, registerDefinition);
-					methodDefinition.getMethod().setAccessible(true);
-					methodDefinition.getMethod().invoke(proxy, methodDefinition.getArgs());
-					methodDefinition.getMethod().setAccessible(false);
+					Method method = ClassHelper.getClassHelper(proxy.getClass())
+							.getDeclaredMethod(methodDefinition.getMethod().getName(), methodDefinition.getMethod().getParameterTypes());
+					if(method == null && proxy.getClass().getName().indexOf("com.sun.proxy.$Proxy") != -1) {
+						return;
+					}
+					method.setAccessible(true);
+					method.invoke(proxy, methodDefinition.getArgs());
+					method.setAccessible(false);
 				} catch (Throwable e) {
 					throw new PluginRuntimeException("failed to invoke @PostConstructor method " + methodDefinition.getMethod(), e);
 				}
@@ -481,7 +492,12 @@ public class PluginInstanceFactory {
 							.resove((ConfigValue) fieldDefinition.getValue(), fieldDefinition.getType(), 0,
 									registerDefinition));
 				try {
-					new AppClassLoader(proxy).set(fieldDefinition.getField(), fieldDefinition.getValue());
+					Field field = ClassHelper.getClassHelper(proxy.getClass())
+							.getDeclaredField(fieldDefinition.getField().getName());
+					if(field == null && proxy.getClass().getName().indexOf("com.sun.proxy.$Proxy") != -1) {
+						return;
+					}
+					new AppClassLoader(proxy).set(field, fieldDefinition.getValue());
 				} catch (Throwable t) {
 					String type = fieldDefinition.getValue() == null ? "null"
 							: fieldDefinition.getValue().getClass().getName();

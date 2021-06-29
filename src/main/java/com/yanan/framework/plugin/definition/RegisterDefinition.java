@@ -493,7 +493,7 @@ public class RegisterDefinition {
 	public void addAfterInstanceExecuteMethod(MethodDefinition methodDefinition) {
 		if (this.afterInstanceExecuteMethod == null) {
 			afterInstanceExecuteMethod = new ArrayList<>();
-			if (this.proxyModel != ProxyModel.BOTH && this.proxyModel != ProxyModel.CGLIB)
+			if (this.proxyModel != ProxyModel.BOTH)
 				this.proxyModel = ProxyModel.CGLIB;
 		}
 		if(!afterInstanceExecuteMethod.contains(methodDefinition))
