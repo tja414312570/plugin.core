@@ -3,6 +3,7 @@ package com.yanan.framework.plugin;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,6 +182,7 @@ public class PlugsFactory {
 	 */
 	public synchronized void addPlugininDefinition(Plugin plugin) {
 		if(!this.serviceContatiner.containsKey(plugin.getDefinition().getPlugClass())) {
+			environment.distributeEvent(eventSource, new PluginEvent(EventType.add_pluginDefinition,plugin));
 			this.serviceContatiner.put(plugin.getDefinition().getPlugClass(), plugin);
 		}
 	}
@@ -237,8 +239,10 @@ public class PlugsFactory {
 		}catch (Exception e) {
 			Plugin plugin = getPlugin(registerClass);
 			if(plugin == null) {
-				registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
-				this.addRegisterDefinition(registerDefinition);
+				if(!registerClass.isInterface() && !Modifier.isAbstract(registerClass.getModifiers())) {
+					registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
+					this.addRegisterDefinition(registerDefinition);
+				}
 			}else {
 				registerDefinition = plugin.getDefaultRegisterDefinition();
 			}

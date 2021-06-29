@@ -9,7 +9,7 @@ import com.yanan.framework.plugin.event.AbstractEvent;
  */
 public class PluginEvent implements AbstractEvent{
 	public static enum EventType{
-		init,add_resource,refresh,completed,instation,add_registerDefinition, register_init,inited
+		init,add_resource,refresh,completed,instation,add_registerDefinition, register_init,inited, add_pluginDefinition
 	}
 	private EventType eventType;
 	private Object eventContent;

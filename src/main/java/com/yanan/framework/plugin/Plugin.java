@@ -92,6 +92,8 @@ public class Plugin {
 		}
 		return null;
 	}
-	
-	
+	@Override
+	public String toString() {
+		return "Plugin [description=" + description + ", registerList=" + registerList + "]";
+	}
 }

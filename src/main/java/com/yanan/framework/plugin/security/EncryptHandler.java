@@ -1,12 +1,10 @@
 package com.yanan.framework.plugin.security;
 
+import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Support;
 import com.yanan.framework.plugin.handler.InvokeHandler;
 import com.yanan.framework.plugin.handler.MethodHandler;
-import com.yanan.framework.plugin.security.Encrypt;
-import com.yanan.framework.plugin.security.EncryptService;
-import com.yanan.framework.plugin.PlugsFactory;
 
 @Support(Encrypt.class)
 @Register(signlTon = true)
