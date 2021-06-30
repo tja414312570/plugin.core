@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -355,6 +354,9 @@ public class PluginInstanceFactory {
 						target = PlugsHandler.newCglibProxy(registerDefinition.getRegisterClass(), registerDefinition,
 								constructor.getParameterTypes(), args);
 						//使用双代理，需要先调用一次
+//							// 属性处理
+						initInterceptSet(registerDefinition, service, constructor, args, proxy, target,
+								constructorInvokeHanderSet, handler);
 						initProxyField(registerDefinition, target);
 						initProxyMethod(registerDefinition, target);
 						proxy = PlugsHandler.newMapperProxy(service, registerDefinition, target);
@@ -385,31 +387,8 @@ public class PluginInstanceFactory {
 				}
 			}
 			// 属性处理
-			if (registerDefinition.getFieldInterceptMapping() != null) {
-				FieldHandler fieldHandler;
-				Map<Field, HandlerSet> fieldInterceptMapping = registerDefinition.getFieldInterceptMapping();
-				Iterator<Entry<Field, HandlerSet>> fieldInterceptIterator = fieldInterceptMapping.entrySet()
-						.iterator();
-				while (fieldInterceptIterator.hasNext()) {
-					Entry<Field, HandlerSet> entry = fieldInterceptIterator.next();
-					Field field = entry.getKey();
-					HandlerSet filedHandlerSet = entry.getValue();
-					Iterator<HandlerSet> fieldIterator = filedHandlerSet.iterator();
-					while (fieldIterator.hasNext()) {
-						HandlerSet fieldHandlerSet = fieldIterator.next();
-						fieldHandler = fieldHandlerSet.getHandler();
-						fieldHandler.preparedField(registerDefinition, proxy, target, fieldHandlerSet, field);
-					}
-				}
-			}
-			// 调用代理完成
-			if (constructorInvokeHanderSet != null) {
-				Iterator<HandlerSet> handlerIterator = constructorInvokeHanderSet.iterator();
-				while (handlerIterator.hasNext()) {
-					handler = (InstanceHandler) handlerIterator.next().getHandler();
-					handler.after(registerDefinition, service, constructor, target, args);
-				}
-			}
+			initInterceptSet(registerDefinition, service, constructor, args, proxy, target,
+					constructorInvokeHanderSet, handler);
 			initProxyField(registerDefinition, proxy);
 			initProxyMethod(registerDefinition, proxy);
 		} catch (Throwable t) {
@@ -441,6 +420,36 @@ public class PluginInstanceFactory {
 			proxy = ((CustomProxy<T>)proxy).getInstance();
 		}
 		return (T) proxy;
+	}
+
+	private static <T> void initInterceptSet(RegisterDefinition registerDefinition, Class<T> service,
+			Constructor<?> constructor, Object[] args, Object proxy, Object target,
+			HandlerSet constructorInvokeHanderSet, InstanceHandler handler) {
+		if (registerDefinition.getFieldInterceptMapping() != null) {
+			FieldHandler fieldHandler;
+			Map<Field, HandlerSet> fieldInterceptMapping = registerDefinition.getFieldInterceptMapping();
+			Iterator<Entry<Field, HandlerSet>> fieldInterceptIterator = fieldInterceptMapping.entrySet()
+					.iterator();
+			while (fieldInterceptIterator.hasNext()) {
+				Entry<Field, HandlerSet> entry = fieldInterceptIterator.next();
+				Field field = entry.getKey();
+				HandlerSet filedHandlerSet = entry.getValue();
+				Iterator<HandlerSet> fieldIterator = filedHandlerSet.iterator();
+				while (fieldIterator.hasNext()) {
+					HandlerSet fieldHandlerSet = fieldIterator.next();
+					fieldHandler = fieldHandlerSet.getHandler();
+					fieldHandler.preparedField(registerDefinition, proxy, target, fieldHandlerSet, field);
+				}
+			}
+		}
+		// 调用代理完成
+		if (constructorInvokeHanderSet != null) {
+			Iterator<HandlerSet> handlerIterator = constructorInvokeHanderSet.iterator();
+			while (handlerIterator.hasNext()) {
+				handler = (InstanceHandler) handlerIterator.next().getHandler();
+				handler.after(registerDefinition, service, constructor, target, args);
+			}
+		}
 	}
 
 	/**
