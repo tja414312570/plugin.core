@@ -106,7 +106,6 @@ public class ExtReflectUtils {
 				&& StringUtil.isNotEmpty(targetClass.getSimpleName())) {
 			Class<?> outClass;
 			try {
-				
 				outClass = ReflectUtils.getOuterClass(targetClass);
 				Object outIns = PlugsFactory.getPluginsInstance(outClass);
 				// 将第一参数设置为实例类
@@ -170,8 +169,7 @@ public class ExtReflectUtils {
 					continue;
 				Class<?> argType = argsTypes[i];
 				Class<?> parameterType = parameterTypes[i];
-				if (!argType.equals(parameterType) && !ReflectUtils.extendsOf(parameterType, argType)
-						&& !ReflectUtils.implementsOf(parameterType, argType))
+				if (isEffectiveType(parameterType, argType))
 					continue con;
 			}
 			return cons;
