@@ -60,6 +60,7 @@ public class PluginDefinitionBuilderFactory {
 	public static final String CONFIG_INIT = "init";
 	public static final String CONFIG_METHOD = "method";
 	public static final String CONFIG_DESTORY = "destory";
+	public static final String RELY_SERVICE = "relyService";
 	/**
 	 * 构建一个组件或则注册器
 	 * @param pluginClass 组件类
@@ -140,6 +141,7 @@ public class PluginDefinitionBuilderFactory {
 		registerDefinition.setDescription(register.description());
 		registerDefinition.setProxyModel(register.model());
 		registerDefinition.setId(register.id());
+		registerDefinition.setRelyService(register.relyServic());
 		String[] afterInstance = register.afterInstance();
 		Method afterInstaceMethod;
 		if(afterInstance.length>0) {
@@ -254,6 +256,7 @@ public class PluginDefinitionBuilderFactory {
 			//推断是否单例模式
 			deduceSigniton(config, registerDefinition);
 			registerDefinition.setSignlton(config.getBoolean(CONFIG_SIGNITON,registerDefinition.isSignlton()));
+			registerDefinition.setRelyService(config.getBoolean(RELY_SERVICE,registerDefinition.isRelyService()));
 			String[] atts = config.hasPath(CONFIG_ATTRIBUTE)?config.getString(CONFIG_ATTRIBUTE).split(","):registerDefinition.getAttribute();
 			registerDefinition.setAttribute(atts);
 			registerDefinition.setDescription(config.getString(CONFIG_DESCIPTION,registerDefinition.getDescription()));

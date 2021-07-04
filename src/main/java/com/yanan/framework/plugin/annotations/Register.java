@@ -64,5 +64,9 @@ public @interface Register {
 	 * @return 方法名称
 	 */
 	String destory() default "";
+	/**
+	 * 单利模式时是否根据不同调用接口生成对应的单利
+	 */
+	boolean relyServic() default false;
 	
 }

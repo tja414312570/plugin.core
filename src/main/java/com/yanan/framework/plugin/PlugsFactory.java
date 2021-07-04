@@ -239,7 +239,7 @@ public class PlugsFactory {
 		}catch (Exception e) {
 			Plugin plugin = getPlugin(registerClass);
 			if(plugin == null) {
-				if(!registerClass.isInterface() && !Modifier.isAbstract(registerClass.getModifiers())) {
+				if(!registerClass.isInterface()) {
 					registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
 					this.addRegisterDefinition(registerDefinition);
 				}

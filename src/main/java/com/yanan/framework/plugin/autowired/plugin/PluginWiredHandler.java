@@ -228,7 +228,7 @@ public class PluginWiredHandler implements InvokeHandler, FieldHandler, Instance
 				field.setAccessible(false);
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throw new RuntimeException("failed to autowired service ! at class : "
-						+ registerDefinition.getRegisterClass().getName() + "at field : " + field.getName(), e);
+						+ registerDefinition.getRegisterClass().getName() + " at field : " + field.getName(), e);
 			}
 		} finally {
 			WiredStackContext.pop();

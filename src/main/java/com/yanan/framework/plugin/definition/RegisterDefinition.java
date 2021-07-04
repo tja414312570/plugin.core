@@ -50,6 +50,8 @@ public class RegisterDefinition {
 	private String[] attribute = { "*" };
 	//是否为单例模式
 	private boolean signlton;
+	//单利模式时是否根据不同调用服务接口来实现
+	private boolean relyService;
 	//组件文件，当组件用文件注册时有效
 	private File file;
 	//描述，用于组件说明等
@@ -547,5 +549,14 @@ public class RegisterDefinition {
 
 	public void setLazyInit(boolean lazyInit) {
 		this.lazyInit = lazyInit;
+	}
+
+	public boolean isRelyService() {
+		return relyService;
+	}
+
+
+	public void setRelyService(boolean relyService) {
+		this.relyService = relyService;
 	}
 }

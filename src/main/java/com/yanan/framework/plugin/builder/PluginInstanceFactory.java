@@ -142,7 +142,8 @@ public class PluginInstanceFactory {
 		// 判断是否单例
 		if (registerDefinition.isSignlton()) {
 			// 如果有ID属性，则hash为id的hash值
-			int hash = StringUtil.isEmpty(registerDefinition.getId()) ? hash(service, args)
+			int hash = StringUtil.isEmpty(registerDefinition.getId()) ? 
+					!registerDefinition.isRelyService()?hash(args):hash(service, args)
 					: hash(registerDefinition.getId());
 			// 从容器获取属性
 			proxy = registerDefinition.getProxyInstance(hash);

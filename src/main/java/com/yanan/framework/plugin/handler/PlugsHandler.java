@@ -179,8 +179,12 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	public static <T> T newMapperProxy(Class<T> mapperInterface, RegisterDefinition registerDefinition,
 			Object target) {
 		ClassLoader classLoader = mapperInterface.getClassLoader();
-		Class<?>[] interfaces = new Class[1];
-		interfaces[0] = mapperInterface;
+		Class<?>[] interfaces;
+		if(registerDefinition.isRelyService()) {
+			interfaces= new Class[] {mapperInterface};
+		}else {
+			interfaces = registerDefinition.getServices();
+		}
 		PlugsHandler plugsHandler = new PlugsHandler(target, mapperInterface, registerDefinition);
 		return (T) Proxy.newProxyInstance(classLoader, interfaces, plugsHandler);
 	}
