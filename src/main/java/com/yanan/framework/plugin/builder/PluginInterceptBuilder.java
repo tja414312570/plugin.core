@@ -5,9 +5,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.yanan.framework.plugin.Plugin;
 import com.yanan.framework.plugin.PlugsFactory;
@@ -39,12 +42,19 @@ public class PluginInterceptBuilder {
 			initFieldHandlerMapping(registerDefinition);
 		}
 	}
-
+	public static Field[] getAllFields(Class<?> cls) {
+		Set<Field> lists = new HashSet<>();
+		while(cls!= null && !cls.equals(Object.class)) {
+			lists.addAll(Arrays.asList(cls.getDeclaredFields()));
+			cls = cls.getSuperclass();
+		}
+		return lists.toArray(new Field[lists.size()]);
+	}
 	public static void initFieldHandlerMapping(RegisterDefinition registerDefinition) {
 		Plugin cplug = PlugsFactory.getPlugin(FieldHandler.class);
 		if (cplug == null)
 			return;
-		Field[] fields = registerDefinition.getRegisterClass().getDeclaredFields();
+		Field[] fields = getAllFields(registerDefinition.getRegisterClass());
 		for (Field field : fields) {
 			List<RegisterDefinition> registerList = cplug
 					.getRegisterDefinitionListByAttribute(registerDefinition.getRegisterClass().getName() + "." + field.getName());
@@ -172,11 +182,18 @@ public class PluginInterceptBuilder {
 			}
 		}
 	}
-
+	public static Method[] getAllMethods(Class<?> cls) {
+		Set<Method> lists = new HashSet<>();
+		while(cls != null && !cls.equals(Object.class)) {
+			lists.addAll(Arrays.asList(cls.getDeclaredMethods()));
+			cls = cls.getSuperclass();
+		}
+		return lists.toArray(new Method[lists.size()]);
+	}
 	public static void initMethodHandlerMapping(Class<?> serviceClass, RegisterDefinition registerDefinition) {
 		Assert.isNull(serviceClass, "class is null");
 		// 获取所有的方法
-		Method[] methods = serviceClass.getDeclaredMethods();
+		Method[] methods = getAllMethods(serviceClass);
 		for (Method method : methods) {
 			// 从组件工厂获取所有调用拦截器
 			Plugin plugin = PlugsFactory.getPlugin(InvokeHandler.class);
