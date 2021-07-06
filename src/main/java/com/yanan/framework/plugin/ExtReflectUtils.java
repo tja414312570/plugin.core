@@ -169,7 +169,7 @@ public class ExtReflectUtils {
 					continue;
 				Class<?> argType = argsTypes[i];
 				Class<?> parameterType = parameterTypes[i];
-				if (isEffectiveType(parameterType, argType))
+				if (!isEffectiveType(parameterType, argType))
 					continue con;
 			}
 			return cons;
