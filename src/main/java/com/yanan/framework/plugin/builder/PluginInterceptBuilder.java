@@ -191,7 +191,7 @@ public class PluginInterceptBuilder {
 		return lists.toArray(new Method[lists.size()]);
 	}
 	public static void initMethodHandlerMapping(Class<?> serviceClass, RegisterDefinition registerDefinition) {
-		Assert.isNull(serviceClass, "class is null");
+		Assert.isNotNull(serviceClass, "class is null");
 		// 获取所有的方法
 		Method[] methods = getAllMethods(serviceClass);
 		for (Method method : methods) {

@@ -151,7 +151,7 @@ public class PlugsFactory {
 	 * @param serviceClass 服务定义
 	 */
 	public void addPlugininDefinition(Class<?> serviceClass) {
-		Assert.isNull(serviceClass);
+		Assert.isNotNull(serviceClass);
 		Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(serviceClass);
 		this.addPlugininDefinition(plugin);
 	}
@@ -171,7 +171,7 @@ public class PlugsFactory {
 	 * @param registerClass 注册定义类
 	 */
 	public void addRegisterDefinition(Class<?> registerClass) {
-		Assert.isNull(registerClass);
+		Assert.isNotNull(registerClass);
 		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
 		this.addRegisterDefinition(registerDefinition);
 	}
@@ -246,7 +246,7 @@ public class PlugsFactory {
 				registerDefinition = plugin.getDefaultRegisterDefinition();
 			}
 		}
-		Assert.isNull(registerDefinition,"the register definition is null for ["+registerClass.getName()+"]");
+		Assert.isNotNull(registerDefinition,"the register definition is null for ["+registerClass.getName()+"]");
 		return registerDefinition;
 	}
 	/**
@@ -256,7 +256,7 @@ public class PlugsFactory {
 	 */
 	public RegisterDefinition getRegisterDefinition(String registerId) {
 		RegisterDefinition registerDefinition = registerDefinitionContainer.get(registerId);
-		Assert.isNull(registerDefinition,"the register definition is null for ["+registerId+"]");
+		Assert.isNotNull(registerDefinition,"the register definition is null for ["+registerId+"]");
 		return registerDefinition;
 	}
 	/**
@@ -472,7 +472,7 @@ public class PlugsFactory {
 	
 	
 	public List<RegisterDefinition> getRegisterList(Class<?> serviceClass) {
-		Assert.isNull(serviceClass);
+		Assert.isNotNull(serviceClass);
 		Plugin plugin = serviceContatiner.get(serviceClass);
 		if (plugin == null) {
 			throw new PluginRuntimeException("could found plugin for " + serviceClass.getName());

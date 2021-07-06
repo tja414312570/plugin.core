@@ -136,7 +136,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 * @return 配置
 	 */
 	public Config getConfig(String path) {
-		Assert.isNull(path);
+		Assert.isNotNull(path);
 		if (this.globalConfig == null)
 			return null;
 		try {
@@ -155,7 +155,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 * @return 配置
 	 */
 	public Config getRequiredConfig(String path) {
-		Assert.isNull(path);
+		Assert.isNotNull(path);
 		if (this.globalConfig == null)
 			throw new NullPointerException("the global config is null");
 		return this.globalConfig.getConfig(path);
@@ -168,7 +168,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 * @return 配置值
 	 */
 	public ConfigValue getConfigValue(String path) {
-		Assert.isNull(path);
+		Assert.isNotNull(path);
 		if (this.globalConfig == null)
 			return null;
 		this.globalConfig.allowKeyNull(true);
@@ -181,7 +181,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	}
 
 	public ConfigValue getRequiredConfigValue(String path) {
-		Assert.isNull(path);
+		Assert.isNotNull(path);
 		if (this.globalConfig == null)
 			throw new NullPointerException("the global config is null");
 		return this.globalConfig.getValue(path);
@@ -237,7 +237,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 * @param function 任务
 	 */
 	public void executeOnlyOnce(final Object mark,final Function function) {
-		Assert.isNull(mark, "the function mark is null");
+		Assert.isNotNull(mark, "the function mark is null");
 		String key = (ENVIROMENT_EXECUTOR_TOKEN+mark).intern();
 		if(!hasVariable(key)) {
 			synchronized (key.intern()) {
@@ -280,7 +280,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	 */
 	public <T> T getRequiredVariable(String key) {
 		T t = getVariable(key);
-		Assert.isNull(t,"cloud not found required variable for key ["+key+"]");
+		Assert.isNotNull(t,"cloud not found required variable for key ["+key+"]");
 		return t;
 	}
 	/**
