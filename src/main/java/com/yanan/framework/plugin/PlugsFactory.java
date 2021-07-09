@@ -455,7 +455,11 @@ public class PlugsFactory {
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
 		if(StringUtil.isNotEmpty(registerDefinition.getId())) {
-			PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getServices()[0]);
+			if(registerDefinition.getServices().length > 0) {
+				PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getServices()[0]);
+			}else {
+				PluginInstanceFactory.getRegisterInstance(registerDefinition,registerDefinition.getRegisterClass());
+			}
 		}
 	}
 	/**

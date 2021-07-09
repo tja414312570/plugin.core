@@ -85,7 +85,7 @@ public class RegisterDefinition {
 	//链接之后的原代理的代理对象
 	private Object linkProxy;
 	
-	private boolean lazyInit = false;
+	private boolean lazyInit = true;
 
 	public AppClassLoader getLoader() {
 		return loader;

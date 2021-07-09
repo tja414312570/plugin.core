@@ -60,7 +60,8 @@ public class PluginDefinitionBuilderFactory {
 	public static final String CONFIG_INIT = "init";
 	public static final String CONFIG_METHOD = "method";
 	public static final String CONFIG_DESTORY = "destory";
-	public static final String RELY_SERVICE = "relyService";
+	public static final String CONFIG_RELY_SERVICE = "relyService";
+	public static final String CONFIG_LAY_INIT = "layInit";
 	/**
 	 * 构建一个组件或则注册器
 	 * @param pluginClass 组件类
@@ -132,6 +133,7 @@ public class PluginDefinitionBuilderFactory {
 		registerDefinition.setLoader(loader);
 		registerDefinition.setRegisterClass(loader.getLoadedClass());
 		registerDefinition.setRegister(register);
+		registerDefinition.setLazyInit(register.layInit());
 //		registerDefinition.setServices(register.register().length == 0 ? 
 //				loader.getLoadedClass().getInterfaces() : register.register());
 		registerDefinition.setServices(buildService(register.register(),loader.getLoadedClass().getInterfaces()));
@@ -256,7 +258,8 @@ public class PluginDefinitionBuilderFactory {
 			//推断是否单例模式
 			deduceSigniton(config, registerDefinition);
 			registerDefinition.setSignlton(config.getBoolean(CONFIG_SIGNITON,registerDefinition.isSignlton()));
-			registerDefinition.setRelyService(config.getBoolean(RELY_SERVICE,registerDefinition.isRelyService()));
+			registerDefinition.setSignlton(config.getBoolean(CONFIG_LAY_INIT,registerDefinition.isLazyInit()));
+			registerDefinition.setRelyService(config.getBoolean(CONFIG_RELY_SERVICE,registerDefinition.isRelyService()));
 			String[] atts = config.hasPath(CONFIG_ATTRIBUTE)?config.getString(CONFIG_ATTRIBUTE).split(","):registerDefinition.getAttribute();
 			registerDefinition.setAttribute(atts);
 			registerDefinition.setDescription(config.getString(CONFIG_DESCIPTION,registerDefinition.getDescription()));

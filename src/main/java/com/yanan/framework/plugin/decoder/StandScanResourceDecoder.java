@@ -34,7 +34,6 @@ public class StandScanResourceDecoder implements ResourceDecoder<StandScanResour
 		if(cls.getAnnotation(Register.class)!= null) {
 			try {
 				RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(cls);
-				registerDefinition.setLazyInit(true);
 				PlugsFactory.getInstance().addRegisterDefinition(registerDefinition);
 			}catch(Throwable t) {
 //				t.printStackTrace();

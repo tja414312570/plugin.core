@@ -60,6 +60,11 @@ public @interface Register {
 	 */
 	String id() default "";
 	/**
+	 * 默认懒加载
+	 * @return
+	 */
+	boolean layInit() default true;
+	/**
 	 * 实例销毁时执行的方法
 	 * @return 方法名称
 	 */
