@@ -4,11 +4,14 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import com.yanan.framework.plugin.definition.RegisterDefinition;
+import com.yanan.utils.ArrayUtils;
+import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.ReflectUtils;
 
 import net.sf.cglib.proxy.Enhancer;
@@ -184,6 +187,12 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 			interfaces= new Class[] {mapperInterface};
 		}else {
 			interfaces = registerDefinition.getServices();
+			if(ArrayUtils.indexOf(registerDefinition.getServices(), mapperInterface) == -1) {
+				Class<?>[] temp = interfaces;
+				interfaces = new Class[temp.length+1];
+				System.arraycopy(temp, 0, interfaces, 0, temp.length);
+				interfaces[temp.length] = mapperInterface;
+			}
 		}
 		PlugsHandler plugsHandler = new PlugsHandler(target, mapperInterface, registerDefinition);
 		return (T) Proxy.newProxyInstance(classLoader, interfaces, plugsHandler);
