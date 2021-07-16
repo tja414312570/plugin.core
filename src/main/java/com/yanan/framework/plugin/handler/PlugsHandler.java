@@ -119,7 +119,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		}
 		MethodHandler mh = null;
 		if (handler != null) {
-			mh = new MethodHandler(this, method, args);
+			mh = new MethodHandler(this, method, args,proxy);
 			Iterator<HandlerSet> iterator = handler.iterator();
 			HandlerSet hs;
 			while (iterator.hasNext()) {
@@ -212,7 +212,7 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		}
 		try {
 		if (handler != null) {
-			mh = new MethodHandler(this, method, parameters);
+			mh = new MethodHandler(this, method, parameters,object);
 			Iterator<HandlerSet> iterator = handler.iterator();
 			HandlerSet hs;
 			while (iterator.hasNext()) {

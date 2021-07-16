@@ -28,6 +28,7 @@ public class MethodHandler {
 	private Object footResult;
 	private Map<String,Object> attribute = new HashMap<String,Object>();
 	private Object interruptResult;
+	private Object proxy;
 
 	public boolean isChain() {
 		return chain;
@@ -35,10 +36,14 @@ public class MethodHandler {
 	public void setChain(boolean chain) {
 		this.chain = chain;
 	}
-	public MethodHandler(PlugsHandler plugsProxy, Method method, Object[] args) {
+	public MethodHandler(PlugsHandler plugsProxy, Method method, Object[] args, Object proxy) {
 		this.plugsProxy = plugsProxy;
 		this.method = method;
 		this.parameters = args;
+		this.proxy = proxy;
+	}
+	public Object getProxy() {
+		return proxy;
 	}
 	public MethodHandler(PlugsHandler plugsProxy, MethodProxy methodProxy, Object[] args) {
 		this.plugsProxy = plugsProxy;
