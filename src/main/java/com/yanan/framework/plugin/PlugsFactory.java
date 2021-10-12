@@ -565,7 +565,7 @@ public class PlugsFactory {
 	 * @param <T> 目标类型
 	 * @return 实例
 	 */
-	public static <T> T getPluginsInstanceNew(Class<T> serviceClass, Object... args) {
+	public static <T> T getPluginsNewInstance(Class<T> serviceClass, Object... args) {
 		try {
 			// 获取一个注册描述
 			RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass);
@@ -715,7 +715,7 @@ public class PlugsFactory {
 	 * @param <T> 目标类型
 	 * @return 实例
 	 */
-	public static <T> T getPluginsInstanceNewByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
+	public static <T> T getPluginsNewInstanceByParamType(Class<T> serviceClass, Class<?>[] parameterType, Object... arguments) {
 		RegisterDefinition registerDescription =  getRegisterDefinitionNoneNull(serviceClass);
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterNewInstanceByParamType(registerDescription,serviceClass, parameterType, arguments);
