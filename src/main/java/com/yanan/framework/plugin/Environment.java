@@ -109,7 +109,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 
 	private Environment() {
 //		enInheritableThreadLocal.set(this);
-		globalConfig = ConfigFactory.parseMap(eventListenerMap);
+		mergeConfig(ConfigFactory.load());
 	};
 
 	/**
@@ -196,7 +196,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 		if (globalConfig == null) {
 			globalConfig = config;
 		} else {
-			globalConfig = config.withFallback(globalConfig);
+			globalConfig.merge(config);
 		}
 	}
 
