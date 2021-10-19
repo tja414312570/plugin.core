@@ -13,6 +13,7 @@ import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import com.yanan.framework.plugin.Environment;
+import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Support;
 import com.yanan.framework.plugin.autowired.property.PropertyManager;
@@ -159,9 +160,21 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			if (value == null && variable.required()) {
 				throw new VariableAutowiredFailedException("the required variable '"+name+"' value is null");
 			}
-			new AppClassLoader(target).set(field,
-					parseVaiable(field.getType(),value));
-			
+			Adapter adapter = field.getAnnotation(Adapter.class);
+			String attr;
+			if(adapter == null) {
+				attr = value.getClass().getSimpleName()+"_"+field.getType().getSimpleName();
+			}else {
+				attr = adapter.input()[0].getSimpleName()+"_"+adapter.target()[0].getSimpleName();
+			}
+			ResourceAdapter<Object,Object> resourceAdapter = PlugsFactory.getPluginsInstanceByAttributeStrictAllowNull(ResourceAdapter.class, attr);
+			if(resourceAdapter == null) {
+				new AppClassLoader(target).set(field,
+						parseVaiable(field.getType(),value));
+			}else {
+				value = resourceAdapter.parse(value);
+				new AppClassLoader(target).set(field,value);
+			}
 		} catch (Exception e) {
 			if(variable.required())
 				throw new VariableAutowiredFailedException("failed to autowired parameter ! variable name \"" + name

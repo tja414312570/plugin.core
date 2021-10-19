@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import com.yanan.framework.plugin.PluginEvent.EventType;
 import com.yanan.framework.plugin.annotations.Service;
+import com.yanan.framework.plugin.autowired.enviroment.ResourceAdapter;
 import com.yanan.framework.plugin.builder.PluginDefinitionBuilderFactory;
 import com.yanan.framework.plugin.builder.PluginInstanceFactory;
 import com.yanan.framework.plugin.builder.PluginInterceptBuilder;
@@ -30,6 +31,8 @@ import com.yanan.framework.plugin.exception.PluginNotFoundException;
 import com.yanan.framework.plugin.exception.PluginRuntimeException;
 import com.yanan.framework.plugin.exception.RegisterNotFound;
 import com.yanan.framework.plugin.handler.PlugsHandler;
+import com.yanan.framework.plugin.matcher.RegisterMatcher;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.TypeToken;
@@ -190,6 +193,20 @@ public class PlugsFactory {
 	 * @param registerDefinition 注册定义
 	 */
 	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
+		if(!ReflectUtils.implementsOf(registerDefinition.getRegisterClass(), RegisterMatcher.class)){
+			for(Class<?> serviceClass : registerDefinition.getServices()) {
+				RegisterMatcher registerMatcher = getPluginsInstanceByAttributeStrictAllowNull(RegisterMatcher.class,serviceClass.getName());
+				if(registerMatcher != null) {
+					String[] attribute = registerDefinition.getAttribute();
+					if(attribute.length == 1 && StringUtil.equals(attribute[0], "*")) {
+						attribute = new String[0];
+					}
+					String[] parseAttribute = registerMatcher.attributes(registerDefinition.getRegisterClass());
+					String[] newAttribute = ArrayUtils.megere(attribute, parseAttribute);
+ 					registerDefinition.setAttribute(newAttribute);
+				}
+			}
+		}
 		newRegisterDefinitionList.add(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
 		String id = getID(registerDefinition);
@@ -432,6 +449,8 @@ public class PlugsFactory {
 		if(!before_refresh_ready) {
 			synchronized (this) {
 				if(!before_refresh_ready) {
+					addPlugininDefinition(RegisterMatcher.class);
+					addPlugininDefinition(ResourceAdapter.class);
 					//抽象资源解析
 					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory
 							.builderRegisterDefinition(StandAbstractResourceDecoder.class);
@@ -595,6 +614,7 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
+	
 	/**
 	 * 获取组件实例，当组件中有多个组件实现实例时，返回一个默认组件
 	 * 具体选择某个组件实例作为默认组件实例依赖其优先级(priority)，当所有优先级相同时选第一个 优先级数值越低，优先级越高
@@ -613,6 +633,7 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstanceByParamType(registerDescription,serviceClass,types, args);
 	}
+	
 	/**
 	 * 通过组件实例的属性（attribute）获取组件实例，当组件中有多个组件实例与之匹配时，返回一个优先级组件
 	 * 如果没有匹配的组件，返回一个默认组件，因此这是一种不严谨的组件获取方式，如果需要使用严谨模式（当 匹配值不通过时，返回null），需要使用方法
@@ -652,7 +673,13 @@ public class PlugsFactory {
 		getInstance().checkRegisterDefinition(registerDescription);
 		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
 	}
-	
+	public static <T> T getPluginsInstanceByAttributeStrictAllowNull(Class<T> serviceClass, String attribute, Object... args) {
+		RegisterDefinition registerDescription = getInstance().getRegisterDefinition(serviceClass, attribute, true);
+		if (registerDescription == null) 
+			return null;
+		getInstance().checkRegisterDefinition(registerDescription);
+		return PluginInstanceFactory.getRegisterInstance(registerDescription,serviceClass, args);
+	}
 	public <T> Plugin getPluginNonNull(Class<T> serviceClass) {
 		Plugin plugin = getPlugin(serviceClass);
 		if (plugin == null)
