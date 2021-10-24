@@ -18,7 +18,7 @@ public interface InstanceHandler {
 	 * @param constructor 构造器
 	 * @param args 参数
 	 */
-	void before(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object... args);
+	default void before(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object... args) {};
 	/**
 	 * 将代理对象实例化之后
 	 * @param registerDefinition 组件定义
@@ -27,7 +27,7 @@ public interface InstanceHandler {
 	 * @param proxyObject 代理对象
 	 * @param args 参数
 	 */
-	void after(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject,Object... args);
+	default void after(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject,Object... args){};
 	/**
 	 * 对象实例化时异常
 	 * @param registerDefinition 组件定义
@@ -37,6 +37,6 @@ public interface InstanceHandler {
 	 * @param throwable 异常
 	 * @param args 参数
 	 */
-	void exception(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args);
+	default void exception(RegisterDefinition registerDefinition, Class<?> plugClass,Constructor<?> constructor, Object proxyObject, PluginRuntimeException throwable, Object... args){};
 
 }

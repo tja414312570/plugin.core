@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
 @Target({ TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Adapter {
-	Class<?>[] input();
-	Class<?>[] target();
+	Class<?>[] input() default {};
+	Class<?>[] target() default {};
 }

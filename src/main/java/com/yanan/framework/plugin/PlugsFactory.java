@@ -193,20 +193,6 @@ public class PlugsFactory {
 	 * @param registerDefinition 注册定义
 	 */
 	public void addRegisterDefinition(RegisterDefinition registerDefinition) {
-		if(!ReflectUtils.implementsOf(registerDefinition.getRegisterClass(), RegisterMatcher.class)){
-			for(Class<?> serviceClass : registerDefinition.getServices()) {
-				RegisterMatcher registerMatcher = getPluginsInstanceByAttributeStrictAllowNull(RegisterMatcher.class,serviceClass.getName());
-				if(registerMatcher != null) {
-					String[] attribute = registerDefinition.getAttribute();
-					if(attribute.length == 1 && StringUtil.equals(attribute[0], "*")) {
-						attribute = new String[0];
-					}
-					String[] parseAttribute = registerMatcher.attributes(registerDefinition.getRegisterClass());
-					String[] newAttribute = ArrayUtils.megere(attribute, parseAttribute);
- 					registerDefinition.setAttribute(newAttribute);
-				}
-			}
-		}
 		newRegisterDefinitionList.add(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.add_registerDefinition,registerDefinition));
 		String id = getID(registerDefinition);
@@ -439,6 +425,20 @@ public class PlugsFactory {
 			RegisterDefinition currentRegisterDefinition = iterator.next();
 			if(!currentRegisterDefinition.isLazyInit())
 				registerDefinitionInit(currentRegisterDefinition);
+			if(!ReflectUtils.implementsOf(currentRegisterDefinition.getRegisterClass(), RegisterMatcher.class)){
+				for(Class<?> serviceClass : currentRegisterDefinition.getServices()) {
+					RegisterMatcher registerMatcher = getPluginsInstanceByAttributeStrictAllowNull(RegisterMatcher.class,serviceClass.getName());
+					if(registerMatcher != null) {
+						String[] attribute = currentRegisterDefinition.getAttribute();
+						if(attribute.length == 1 && StringUtil.equals(attribute[0], "*")) {
+							attribute = new String[0];
+						}
+						String[] parseAttribute = registerMatcher.attributes(currentRegisterDefinition.getRegisterClass());
+						String[] newAttribute = ArrayUtils.megere(attribute, parseAttribute);
+						currentRegisterDefinition.setAttribute(newAttribute);
+					}
+				}
+			}
 		}
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
