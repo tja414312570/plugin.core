@@ -3,6 +3,7 @@ package com.yanan.framework.plugin.decoder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.List;
 
 import com.yanan.utils.resource.Resource;
@@ -60,6 +61,10 @@ public class StandScanResource implements Resource {
 	@Override
 	public String getName() {
 		return this.name;
+	}
+	@Override
+	public URI getURI() {
+		throw new UnsupportedOperationException();
 	}
 
 }
