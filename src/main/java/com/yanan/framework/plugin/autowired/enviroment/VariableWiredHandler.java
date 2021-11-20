@@ -130,6 +130,8 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 		String attr;
 		String suffix;
 		Object tempValue = value;
+		if(value == null)
+			throw new VariableAutowiredFailedException("variable not found!");
 		if (adapter == null) {
 			suffix = "_" + type.getSimpleName();
 			attr = value.getClass().getSimpleName() + suffix;

@@ -423,8 +423,6 @@ public class PlugsFactory {
 		Iterator<RegisterDefinition> iterator = this.newRegisterDefinitionList.iterator();
 		while(iterator.hasNext()) {
 			RegisterDefinition currentRegisterDefinition = iterator.next();
-			if(!currentRegisterDefinition.isLazyInit())
-				registerDefinitionInit(currentRegisterDefinition);
 			if(!ReflectUtils.implementsOf(currentRegisterDefinition.getRegisterClass(), RegisterMatcher.class)){
 				for(Class<?> serviceClass : currentRegisterDefinition.getServices()) {
 					RegisterMatcher registerMatcher = getPluginsInstanceByAttributeStrictAllowNull(RegisterMatcher.class,serviceClass.getName());
@@ -439,6 +437,12 @@ public class PlugsFactory {
 					}
 				}
 			}
+		}
+		iterator = this.newRegisterDefinitionList.iterator();
+		while(iterator.hasNext()) {
+			RegisterDefinition currentRegisterDefinition = iterator.next();
+			if(!currentRegisterDefinition.isLazyInit())
+				registerDefinitionInit(currentRegisterDefinition);
 		}
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.inited,this));
 	}
