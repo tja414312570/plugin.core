@@ -166,7 +166,7 @@ public class PluginDefinitionBuilderFactory {
 				throw new PluginInitException("failed to get init method \"" + register.destory() + "\"", e);
 			}
 		}
-		Method[] methods = registerDefinition.getRegisterClass().getMethods();
+		Method[] methods = ReflectUtils.getAllMethods(registerDefinition.getRegisterClass());
 		for(Method method : methods) {
 			PostConstruct afterInstanceAnno = method.getAnnotation(PostConstruct.class);
 			if(afterInstanceAnno != null) {
