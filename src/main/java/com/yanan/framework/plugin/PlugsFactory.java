@@ -31,8 +31,6 @@ import com.yanan.framework.plugin.exception.PluginNotFoundException;
 import com.yanan.framework.plugin.exception.PluginRuntimeException;
 import com.yanan.framework.plugin.exception.RegisterNotFound;
 import com.yanan.framework.plugin.handler.PlugsHandler;
-import com.yanan.framework.plugin.matcher.RegisterMatcher;
-import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.TypeToken;
@@ -420,23 +418,19 @@ public class PlugsFactory {
 			resourceDecoder.decodeResource(this, resource);
 			resourceLoadedList.add(resource);
 		}
+		//刷新前置处理
+		List<FactoryRefreshProcess> factoryRefreshProcess = getPluginsInstanceList(FactoryRefreshProcess.class);
+		factoryRefreshProcess.forEach(item->{
+			item.process(this);
+		});
+		List<RegisterRefreshProcess> registerRefreshProcess = getPluginsInstanceList(RegisterRefreshProcess.class);
+		//属性属性处理
 		Iterator<RegisterDefinition> iterator = this.newRegisterDefinitionList.iterator();
 		while(iterator.hasNext()) {
 			RegisterDefinition currentRegisterDefinition = iterator.next();
-			if(!ReflectUtils.implementsOf(currentRegisterDefinition.getRegisterClass(), RegisterMatcher.class)){
-				for(Class<?> serviceClass : currentRegisterDefinition.getServices()) {
-					RegisterMatcher registerMatcher = getPluginsInstanceByAttributeStrictAllowNull(RegisterMatcher.class,serviceClass.getName());
-					if(registerMatcher != null) {
-						String[] attribute = currentRegisterDefinition.getAttribute();
-						if(attribute.length == 1 && StringUtil.equals(attribute[0], "*")) {
-							attribute = new String[0];
-						}
-						String[] parseAttribute = registerMatcher.attributes(currentRegisterDefinition.getRegisterClass());
-						String[] newAttribute = ArrayUtils.megere(attribute, parseAttribute);
-						currentRegisterDefinition.setAttribute(newAttribute);
-					}
-				}
-			}
+			registerRefreshProcess.forEach(item->{
+				item.process(this,currentRegisterDefinition);
+			});
 		}
 		iterator = this.newRegisterDefinitionList.iterator();
 		while(iterator.hasNext()) {
@@ -453,8 +447,10 @@ public class PlugsFactory {
 		if(!before_refresh_ready) {
 			synchronized (this) {
 				if(!before_refresh_ready) {
-					addPlugininDefinition(RegisterMatcher.class);
 					addPlugininDefinition(ResourceAdapter.class);
+					addPlugininDefinition(FactoryRefreshProcess.class);
+					addPlugininDefinition(RegisterRefreshProcess.class);
+					addPlugininDefinition(RegisterInitProcess.class);
 					//抽象资源解析
 					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory
 							.builderRegisterDefinition(StandAbstractResourceDecoder.class);
@@ -477,6 +473,10 @@ public class PlugsFactory {
 		newRegisterDefinitionList.remove(registerDefinition);
 		environment.distributeEvent(eventSource, new PluginEvent(EventType.register_init,registerDefinition));
 		PluginInterceptBuilder.builderRegisterIntercept(registerDefinition);
+		List<RegisterInitProcess> registerRefreshProcess = getPluginsInstanceList(RegisterInitProcess.class);
+		registerRefreshProcess.forEach(item->{
+			item.process(getInstance(), registerDefinition);
+		});
 		if(StringUtil.isNotEmpty(registerDefinition.getId()) || registerDefinition.isSignlton()) {
 			if(registerDefinition.getServices().length > 0) {
 				PluginInstanceFactory.getRegisterInstance(registerDefinition, registerDefinition.getServices()[0]);
