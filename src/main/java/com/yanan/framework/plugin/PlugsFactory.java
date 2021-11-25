@@ -247,7 +247,7 @@ public class PlugsFactory {
 				registerDefinition = plugin.getDefaultRegisterDefinition();
 			}
 		}
-		Assert.isNotNull(registerDefinition,"the register definition is null for ["+registerClass.getName()+"]");
+		Assert.isNotNull(registerDefinition,"could not found register for ["+registerClass.getName()+"]");
 		return registerDefinition;
 	}
 	/**
@@ -257,7 +257,7 @@ public class PlugsFactory {
 	 */
 	public RegisterDefinition getRegisterDefinition(String registerId) {
 		RegisterDefinition registerDefinition = registerDefinitionContainer.get(registerId);
-		Assert.isNotNull(registerDefinition,"the register definition is null for ["+registerId+"]");
+		Assert.isNotNull(registerDefinition,"could not found register for ["+registerId+"]");
 		return registerDefinition;
 	}
 	/**
