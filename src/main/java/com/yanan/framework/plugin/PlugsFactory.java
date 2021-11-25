@@ -31,6 +31,7 @@ import com.yanan.framework.plugin.exception.PluginNotFoundException;
 import com.yanan.framework.plugin.exception.PluginRuntimeException;
 import com.yanan.framework.plugin.exception.RegisterNotFound;
 import com.yanan.framework.plugin.handler.PlugsHandler;
+import com.yanan.utils.ArrayUtils;
 import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.ReflectUtils;
 import com.yanan.utils.reflect.TypeToken;
@@ -771,11 +772,24 @@ public class PlugsFactory {
 	 * @return 代理的实例
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T proxyInstance(T instance,Object...args) {
+	public static <T> T proxyInstance(T instance) {
 		Class<T> registerClass = (Class<T>) instance.getClass();
-		RegisterDefinition registerDefinition = PlugsFactory.getInstance().getRegisterDefinition(registerClass);
-		getInstance().checkRegisterDefinition(registerDefinition);
-		instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,args,instance);
+		return proxyInstance(registerClass,instance);
+	}
+	@SuppressWarnings("unchecked")
+	public static <T> T proxyInstance(Class<T> registerClass,T instance) {
+		getInstance().addDefinition(registerClass);
+		Class<?> instanceClazz = instance.getClass();
+		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(instanceClazz);
+		registerDefinition.setServices(ArrayUtils.add(registerDefinition.getServices(), registerClass));
+		getInstance().addRegisterDefinition(registerDefinition);
+		try {
+			getInstance().checkRegisterDefinition(registerDefinition);
+			instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,null,instance);
+		}catch (Throwable e) {
+			int hash = 0;//PluginInstanceFactory.hash(registerClass);
+			registerDefinition.setProxyInstance(hash, instance);
+		}
 		return instance;
 	}
 	public static Map<Class<Annotation>, List<Annotation>> getAnnotationGroup(Annotation[] annotations,List<Class<Annotation>> annoTypes){
