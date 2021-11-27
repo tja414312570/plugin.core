@@ -198,6 +198,11 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			args[i] = getParameterValue(parameter, args[i],registerDefinition.getRegisterClass().getName()+"."+constructor.getName());
 		}
 	}
+	@Override
+	public void after(RegisterDefinition registerDefinition, Class<?> plugClass, Constructor<?> constructor,
+			Object proxyObject, Object... args) {
+		System.err.println("llll");
+	}
 
 	private Object getParameterValue(Parameter parameter, Object arg, String location) {
 		Variable variable = parameter.getAnnotation(Variable.class);
