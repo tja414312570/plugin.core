@@ -3,12 +3,9 @@ package com.yanan.framework.plugin.autowired.enviroment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.annotations.Support;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
@@ -46,12 +43,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 		if (name.equals(""))
 			name = field.getName();
 		try {
-			List<VariableSupporter> variableSupporters = PlugsFactory.getPluginsInstanceList(VariableSupporter.class);
-			for (VariableSupporter variableSupporter : variableSupporters) {
-				value = variableSupporter.getVariable(name, field.getType(), variable, field);
-				if(value != null)
-					break;
-			}
+			value = VariableProcesser.getVariable(name, field.getType(), variable, field,target);
 			if (value == null && variable.required()) {
 				throw new VariableAutowiredFailedException("the required variable '" + name + "' value is null");
 			}
@@ -85,12 +77,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			name = parameter.getName();
 		}
 		try {
-			List<VariableSupporter> variableSupporters = PlugsFactory.getPluginsInstanceList(VariableSupporter.class);
-			for (VariableSupporter variableSupporter : variableSupporters) {
-				arg = variableSupporter.getVariable(name, parameter.getType(), variable, parameter);
-				if(arg != null)
-					break;
-			}
+			arg = VariableProcesser.getVariable(name, parameter.getType(), variable, parameter);
 			if (arg == null && variable.required()) {
 				throw new VariableAutowiredFailedException("the required variable '" + name + "' value is null");
 			}

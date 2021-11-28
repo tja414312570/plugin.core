@@ -1,9 +1,9 @@
 package com.yanan.framework.plugin.autowired.enviroment;
 
 import java.lang.reflect.Field;
-import java.util.List;
+import java.lang.reflect.InvocationTargetException;
+
 import com.yanan.framework.plugin.InstanceBeforeProcesser;
-import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.annotations.Register;
 import com.yanan.framework.plugin.definition.RegisterDefinition;
 import com.yanan.utils.reflect.ReflectUtils;
@@ -25,20 +25,19 @@ public class VariableBeanProcess implements InstanceBeforeProcesser {
 			String fieldName;
 			Object value = null;
 			for (Field field : fields) {
+				value = null;
 				if (field.getAnnotation(Variable.class) == null) {
 					fieldName = name + "." + field.getName();
-					List<VariableSupporter> variableSupporters = PlugsFactory
-							.getPluginsInstanceList(VariableSupporter.class);
-					for (VariableSupporter variableSupporter : variableSupporters) {
-						value = variableSupporter.getVariable(fieldName, field.getType(), variable, field);
-						if (value != null)
-							break;
+					try {
+						value = VariableProcesser.getVariable(fieldName, field.getType(), variable, field,instances);
+					}catch(VariableAutowiredFailedException e) {
+						
 					}
 					if (value == null)
 						continue;
 					try {
 						ReflectUtils.setFieldValue(field, instances, value);
-					} catch (IllegalArgumentException | IllegalAccessException e) {
+					} catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
 						throw new VariableAutowiredFailedException(e);
 					}
 				}
