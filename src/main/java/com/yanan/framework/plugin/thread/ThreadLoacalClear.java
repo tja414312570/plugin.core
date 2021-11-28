@@ -9,7 +9,7 @@ import com.yanan.framework.plugin.handler.InvokeHandler;
 import com.yanan.framework.plugin.handler.MethodHandler;
 import com.yanan.utils.reflect.ReflectUtils;
 
-@Register(signlTon=true)
+//@Register(signlTon=true)
 public class ThreadLoacalClear implements InvokeHandler{
 	public static Class<?>[] expungeStaleEntryParameterType = {int.class};
 	/**

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 import com.yanan.framework.plugin.PluginEvent.EventType;
 import com.yanan.framework.plugin.annotations.Service;
@@ -452,6 +453,8 @@ public class PlugsFactory {
 					addPlugininDefinition(FactoryRefreshProcess.class);
 					addPlugininDefinition(RegisterRefreshProcess.class);
 					addPlugininDefinition(RegisterInitProcess.class);
+					addPlugininDefinition(InstanceAfterProcesser.class);
+					addPlugininDefinition(InstanceBeforeProcesser.class);
 					//抽象资源解析
 					RegisterDefinition registerDefinitions = PluginDefinitionBuilderFactory
 							.builderRegisterDefinition(StandAbstractResourceDecoder.class);
@@ -739,6 +742,19 @@ public class PlugsFactory {
 					.getRegisterDefinitionList();
 			return getPluginsInstanceList(serviceClass,registerDescriptionList, args);
 	}
+	public static <T> List<T> getPluginsInstanceListExclude(Class<T> serviceClass, Class<?>[] exclude,Object... args) {
+		List<RegisterDefinition> registerDescriptionList = getInstance().getPluginNonNull(serviceClass)
+				.getRegisterDefinitionList();
+		registerDescriptionList = registerDescriptionList.stream().filter(item->{
+			for(Class<?> clzz : exclude) {
+				if(clzz.isAssignableFrom(item.getRegisterClass())){
+					return false;
+				}
+			}
+			return true;
+		}).collect(Collectors.toList());
+		return getPluginsInstanceList(serviceClass,registerDescriptionList, args);
+}
 	/**
 	 * 获取一个新的实例
 	 * @param serviceClass 服务类型
@@ -882,6 +898,16 @@ public class PlugsFactory {
 		return getAnnotationGroup(annotations,annotationType);
 	}
 	
+	public static Class<?> getInstanceClass(Object proxyInstance){
+		if(proxyInstance == null)
+			return null;
+		PlugsHandler handler = getPluginsHandler(proxyInstance);
+		if(handler == null) {
+			return proxyInstance.getClass();
+		}else {
+			return handler.getRegisterDefinition().getRegisterClass();
+		}
+	}
 	/**
 	 * 获取代理对象的PluginsHandler对象
 	 * 
@@ -889,6 +915,8 @@ public class PlugsFactory {
 	 * @return PlugsHandler
 	 */
 	public static PlugsHandler getPluginsHandler(Object proxyInstance) {
+		if(proxyInstance == null)
+			return null;
 		Field field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getAnyField("h");
 		if (field == null) {
 			field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getDeclaredField("CGLIB$CALLBACK_0");

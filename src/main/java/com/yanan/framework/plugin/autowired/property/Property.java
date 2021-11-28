@@ -29,6 +29,6 @@ public @interface Property {
 	 * 是否必须
 	 * @return 是否必须
 	 */
-	boolean required() default false;
+	boolean required() default true;
 	
 }

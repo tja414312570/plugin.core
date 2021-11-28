@@ -6,11 +6,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.typesafe.config.ConfigValue;
 import com.yanan.framework.plugin.ExtReflectUtils;
+import com.yanan.framework.plugin.InstanceAfterProcesser;
+import com.yanan.framework.plugin.InstanceBeforeProcesser;
+import com.yanan.framework.plugin.InstanceProcess;
 import com.yanan.framework.plugin.PlugsFactory;
 import com.yanan.framework.plugin.ProxyModel;
 import com.yanan.framework.plugin.autowired.plugin.CustomProxy;
@@ -27,6 +31,7 @@ import com.yanan.framework.plugin.handler.HandlerSet;
 import com.yanan.framework.plugin.handler.InstanceHandler;
 import com.yanan.framework.plugin.handler.PlugsHandler;
 import com.yanan.utils.ArrayUtils;
+import com.yanan.utils.asserts.Assert;
 import com.yanan.utils.reflect.AppClassLoader;
 import com.yanan.utils.reflect.ParameterUtils;
 import com.yanan.utils.reflect.cache.ClassHelper;
@@ -200,7 +205,7 @@ public class PluginInstanceFactory {
 		} else {
 			proxy = getRegisterNewInstance(registerDefinition, plug, args, proxy);
 		}
-
+		
 //		//如果引用ID和注册ID相同   则说明直接引用对象
 //		if(StringUtil.equals(registerDefinition.getId(), registerDefinition.getReferenceId()) && origin != null) {
 //			proxy = getNewInstance(registerDefinition,plug, null,null,origin);
@@ -387,6 +392,8 @@ public class PluginInstanceFactory {
 					target = proxy = origin;
 				}
 			}
+			//前置处理
+			proxy = beforeProcess(registerDefinition,service,proxy);
 			// 属性处理
 			initInterceptSet(registerDefinition, service, constructor, args, proxy, target,
 					constructorInvokeHanderSet, handler);
@@ -420,9 +427,44 @@ public class PluginInstanceFactory {
 		if(ArrayUtils.indexOf(registerDefinition.getServices(), CustomProxy.class) != -1) {
 			proxy = ((CustomProxy<T>)proxy).getInstance();
 		}
+		proxy = afterProcess(registerDefinition,service,proxy);
 		return (T) proxy;
 	}
 
+	/**
+	 * 前置处理
+	 * @param registerDefinition
+	 * @param service
+	 * @param proxy
+	 * @return
+	 */
+	private static Object beforeProcess(RegisterDefinition registerDefinition, Class<?> service, Object proxy) {
+		if(!InstanceProcess.class.isAssignableFrom(proxy.getClass())){
+			List<InstanceBeforeProcesser> instanceProcessList = PlugsFactory.getPluginsInstanceList(InstanceBeforeProcesser.class);
+			for (InstanceBeforeProcesser instanceBeforeProcesser : instanceProcessList) {
+				proxy = instanceBeforeProcesser.before(registerDefinition, service, proxy);
+				Assert.isNotNull(proxy,"processer return is null at "+PlugsFactory.getInstanceClass(instanceBeforeProcesser).getName()+" , please check");
+			} 
+		}
+		return proxy;
+	}
+	/**
+	 * 后置处理
+	 * @param registerDefinition
+	 * @param service
+	 * @param proxy
+	 * @return
+	 */
+	private static Object afterProcess(RegisterDefinition registerDefinition, Class<?> service, Object proxy) {
+		if(!InstanceProcess.class.isAssignableFrom(proxy.getClass())){
+			List<InstanceAfterProcesser> instanceProcessList = PlugsFactory.getPluginsInstanceList(InstanceAfterProcesser.class);
+			for (InstanceAfterProcesser instanceProcesser : instanceProcessList) {
+				proxy = instanceProcesser.after(registerDefinition, service, proxy);
+				Assert.isNotNull(proxy,"processer return is null at "+PlugsFactory.getInstanceClass(instanceProcesser).getName()+" , please check");
+			} 
+		}
+		return proxy;
+	}
 	private static <T> void initInterceptSet(RegisterDefinition registerDefinition, Class<T> service,
 			Constructor<?> constructor, Object[] args, Object proxy, Object target,
 			HandlerSet constructorInvokeHanderSet, InstanceHandler handler) {
