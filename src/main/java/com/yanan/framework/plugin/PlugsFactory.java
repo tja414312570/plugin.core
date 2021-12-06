@@ -215,7 +215,11 @@ public class PlugsFactory {
 	public String getID(RegisterDefinition registerDefinition) {
 		StringBuilder idBuilder = new StringBuilder();
 		if(StringUtil.isEmpty(registerDefinition.getId())) {
-			idBuilder.append(registerDefinition.getRegisterClass().getName());
+			String className = registerDefinition.getRegisterClass().getName();
+			int index = 0;
+			if((index = className.indexOf("$PLUGIN_"))>-1)
+				className = className.substring(0,index);
+			idBuilder.append(className);
 		}else {
 			idBuilder.append(registerDefinition.getId());
 			if(StringUtil.equals(registerDefinition.getId(),registerDefinition.getReferenceId())) {
