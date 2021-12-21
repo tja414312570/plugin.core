@@ -1,5 +1,6 @@
 package com.yanan.framework.plugin;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -125,7 +126,10 @@ public class PlugsFactory {
 	public void addScanPath(String... paths) {
 		for(String path : paths) {
 			//将路劲转化为抽象扫描资源
-			addResource(new StandScanResource(path+"**"));
+			if(!new File(path).isFile()) {
+				path += "**";
+			}
+			addResource(new StandScanResource(path));
 		}
 	}
 	/**
