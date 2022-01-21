@@ -940,6 +940,14 @@ public class PlugsFactory {
 		}
 		return plugsHandler;
 	}
+	public static boolean isProxy(Object proxyInstance) {
+		Assert.isNotNull(proxyInstance);
+		Field field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getAnyField("h");
+		if (field == null) {
+			field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getDeclaredField("CGLIB$CALLBACK_0");
+		}
+		return field != null;
+	}
 	public Environment getEnvironment() {
 		return environment;
 	}
