@@ -200,7 +200,7 @@ public class VariableProcesser {
 				values = ParameterUtils.parseBaseTypeArray(type, strValues, null);
 				return values;
 			}
-		}                              
+		}
 		if (type.equals(String.class) || type.equals(int.class) || type.equals(long.class) || type.equals(short.class)
 				|| type.equals(boolean.class) || type.equals(double.class)) {
 			return ((ConfigValue) configValue).unwrapped();
