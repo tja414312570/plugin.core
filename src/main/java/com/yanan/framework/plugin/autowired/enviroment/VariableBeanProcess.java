@@ -26,7 +26,8 @@ public class VariableBeanProcess implements InstanceBeforeProcesser {
 			Object value = null;
 			for (Field field : fields) {
 				value = null;
-				if (field.getAnnotation(Variable.class) == null) {
+				if (field.getAnnotation(Variable.class) == null
+						&& !field.getName().startsWith("$SWITCH_TABLE")) {
 					fieldName = name + "." + field.getName();
 					try {
 						value = VariableProcesser.getVariable(fieldName, field.getType(), variable, field,instances);
