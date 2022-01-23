@@ -1,5 +1,6 @@
 package com.yanan.framework.plugin;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -125,7 +126,10 @@ public class PlugsFactory {
 	public void addScanPath(String... paths) {
 		for(String path : paths) {
 			//将路劲转化为抽象扫描资源
-			addResource(new StandScanResource(path+"**"));
+			if(!new File(path).isFile()) {
+				path += "**";
+			}
+			addResource(new StandScanResource(path));
 		}
 	}
 	/**
@@ -935,6 +939,14 @@ public class PlugsFactory {
 			throw new PluginInitException("failed to get instance's PluginsHandler", e);
 		}
 		return plugsHandler;
+	}
+	public static boolean isProxy(Object proxyInstance) {
+		Assert.isNotNull(proxyInstance);
+		Field field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getAnyField("h");
+		if (field == null) {
+			field = ClassInfoCache.getClassHelper(proxyInstance.getClass()).getDeclaredField("CGLIB$CALLBACK_0");
+		}
+		return field != null;
 	}
 	public Environment getEnvironment() {
 		return environment;

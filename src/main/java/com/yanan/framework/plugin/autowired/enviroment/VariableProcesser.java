@@ -4,7 +4,9 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -177,6 +179,22 @@ public class VariableProcesser {
 		}
 		if (ReflectUtils.implementsOf(value.getClass(), ConfigValue.class)) {
 			value = parseConfigType(type, value);
+		}
+		if(List.class.isAssignableFrom(value.getClass())) {
+			@SuppressWarnings("unchecked")
+			List<Object> list = ((List<Object>)value);
+			for (int i = 0; i < list.size(); i++) {
+				Object temp = list.get(i);
+				Class<?> t;
+				if(Field.class.isAssignableFrom(annotations.getClass())) {
+					t = ReflectUtils.getListGenericType((Field)annotations);
+				}else {
+					t = ReflectUtils.getListGenericType((Parameter)annotations);
+				}
+				temp = parseVaiable(t, temp,annotations);
+				list.set(i, temp);
+			}
+			value = list;
 		}
 		if (value.getClass().equals(String.class)) {
 			value = type.isArray() ? ParameterUtils.parseBaseTypeArray(type, ((String) value).split(","), null)

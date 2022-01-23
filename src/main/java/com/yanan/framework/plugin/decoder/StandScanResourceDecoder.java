@@ -20,6 +20,7 @@ public class StandScanResourceDecoder implements ResourceDecoder<StandScanResour
 		String scanExpress = resource.getPath();
 		PackageScanner scanner = new PackageScanner();
 		scanner.setScanPath(scanExpress);
+		scanner.setIgnoreLoadingException(true);
 		scanner.doScanner((cls) -> tryDecodeDefinition(cls));
 	}
 	private void tryDecodeDefinition(Class<?> cls) {

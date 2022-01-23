@@ -29,6 +29,7 @@ public class Environment extends AbstractQueuedSynchronizer{
 	public static final String MAIN_CLASS = "-MAIN-CLASS";
 	public static final String MAIN_CLASS_PATH = "-MAIN-CLASS-PATH";
 	private static final String ENVIROMENT_EXECUTOR_TOKEN = "ENVIROMENT_EXECUTOR_TOKEN_";
+	public static final String MAIN_ARGS = "-MAIN-ARGS";
 //	private static InheritableThreadLocal<Environment> enInheritableThreadLocal = new InheritableThreadLocal<>();
 	private Map<String, List<EventListener<AbstractEvent>>> eventListenerMap = new ConcurrentHashMap<>();
 	// 全局配置
