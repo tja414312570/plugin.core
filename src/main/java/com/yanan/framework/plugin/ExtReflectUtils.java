@@ -294,8 +294,7 @@ public class ExtReflectUtils {
 			valueType = ReflectUtils.getArrayType(valueType);
 			type = ReflectUtils.getArrayType(type);
 		}
-		if (type.equals(valueType) || ReflectUtils.extendsOf(valueType, type)
-				|| ReflectUtils.implementsOf(valueType, type))
+		if (type.equals(valueType) || type.isAssignableFrom(valueType))
 			return true;
 		if (type == byte.class) {
 			return Assert.equalsAny(valueType, byte.class, Byte.class);

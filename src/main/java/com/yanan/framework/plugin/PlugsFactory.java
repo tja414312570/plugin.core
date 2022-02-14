@@ -252,6 +252,7 @@ public class PlugsFactory {
 				if(!registerClass.isInterface()) {
 					registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(registerClass);
 					this.addRegisterDefinition(registerDefinition);
+					this.refresh();
 				}
 			}else {
 				registerDefinition = plugin.getDefaultRegisterDefinition();
