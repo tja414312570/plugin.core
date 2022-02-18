@@ -803,14 +803,14 @@ public class PlugsFactory {
 	}
 	@SuppressWarnings("unchecked")
 	public static <T> T proxyInstance(Class<T> registerClass,T instance) {
-		getInstance().addDefinition(registerClass);
+//		getInstance().addDefinition(registerClass);
 		Class<?> instanceClazz = instance.getClass();
 		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(instanceClazz);
 		registerDefinition.setServices(ArrayUtils.add(registerDefinition.getServices(), registerClass));
 		getInstance().addRegisterDefinition(registerDefinition);
 		try {
 			getInstance().checkRegisterDefinition(registerDefinition);
-			instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,null,instance);
+			instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,new Object[0] ,instance);
 		}catch (Throwable e) {
 			int hash = 0;//PluginInstanceFactory.hash(registerClass);
 			registerDefinition.setProxyInstance(hash, instance);
