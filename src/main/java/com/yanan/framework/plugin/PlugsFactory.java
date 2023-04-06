@@ -807,7 +807,7 @@ public class PlugsFactory {
 		Class<?> instanceClazz = instance.getClass();
 		RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(instanceClazz);
 		registerDefinition.setServices(ArrayUtils.add(registerDefinition.getServices(), registerClass));
-		getInstance().addRegisterDefinition(registerDefinition);
+//		getInstance().addRegisterDefinition(registerDefinition);
 		try {
 			getInstance().checkRegisterDefinition(registerDefinition);
 			instance = PluginInstanceFactory.getRegisterNewInstance(registerDefinition, registerClass,null,instance);

@@ -26,7 +26,7 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			PropertyWiredHandler.class);
 
 	@Override
-	public void before(MethodHandler methodHandler) {
+	public Object around(MethodHandler methodHandler) throws Throwable{
 		// 遍历所有Field
 		Property property;
 		String propertyName;
@@ -66,14 +66,7 @@ public class PropertyWiredHandler implements InvokeHandler, InstanceHandler, Fie
 				}
 			}
 		}
-	}
-
-	@Override
-	public void after(MethodHandler methodHandler) {
-	}
-
-	@Override
-	public void error(MethodHandler methodHandler, Throwable e) {
+		return methodHandler.invoke();
 	}
 	
 	@Override

@@ -21,34 +21,30 @@ public class ErrorPlugsHandler implements InvokeHandler, InstanceHandler {
 	private Logger log = LoggerFactory.getLogger(ErrorPlugsHandler.class);
 
 	@Override
-	public void before(MethodHandler methodHandler) {
-	}
-
-	@Override
-	public void after(MethodHandler methodHandler) {
-	}
-
-	@Override
-	public void error(MethodHandler methodHandler, Throwable e) {
-		Error error = methodHandler.getHandlerSet().getAnnotation(Error.class);
-		if (error != null && (ReflectUtils.implementOf(e.getClass(), error.exception())
-				|| ReflectUtils.extendsOf(e.getClass(), error.exception()))) {
-			if (error.recorder()) {
-				StringBuilder sb = new StringBuilder();
-				if (methodHandler.getParameters() != null && methodHandler.getParameters().length > 0) {
-					for (Object par : methodHandler.getParameters()) {
-						sb.append("[").append(par).append("]  ");
-					}
-				} else
-					sb.append("Void");
-				log.error("An error occurred  \r\n\t\tat method :" + methodHandler.getMethod() + "\r\n\t\tparameter :"
-						+ sb.toString(), e);
-				;
+	public Object around(MethodHandler methodHandler) throws Throwable {
+		try {
+			return methodHandler.invoke();
+		}catch(Exception e) {
+			Error error = methodHandler.getHandlerSet().getAnnotation(Error.class);
+			if (error != null && (ReflectUtils.implementOf(e.getClass(), error.exception())
+					|| ReflectUtils.extendsOf(e.getClass(), error.exception()))) {
+				if (error.recorder()) {
+					StringBuilder sb = new StringBuilder();
+					if (methodHandler.getParameters() != null && methodHandler.getParameters().length > 0) {
+						for (Object par : methodHandler.getParameters()) {
+							sb.append("[").append(par).append("]  ");
+						}
+					} else
+						sb.append("Void");
+					log.error("An error occurred  \r\n\t\tat method :" + methodHandler.getMethod() + "\r\n\t\tparameter :"
+							+ sb.toString(), e);
+					;
+				}
+				
 			}
-			if (!error.value().equals(""))
-				methodHandler.interrupt(error.value());
+			throw e;
 		}
-		e.printStackTrace();
+		
 	}
 
 	@Override

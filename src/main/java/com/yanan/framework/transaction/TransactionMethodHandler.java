@@ -22,7 +22,7 @@ public class TransactionMethodHandler implements InvokeHandler {
 	private Logger logger = LoggerFactory.getLogger(TransactionMethodHandler.class);
 
 	@Override
-	public void before(MethodHandler methodHandler) {
+	public Object around(MethodHandler methodHandler) throws Throwable {
 		//获取事物注解
 		Transactions transactions = methodHandler.getMethod().getAnnotation(Transactions.class);
 		//创建事物定义
@@ -32,10 +32,45 @@ public class TransactionMethodHandler implements InvokeHandler {
 		//创建事物
 		TransactionManager.createTransaction(transactionDefined);
 		logger.debug("create transaction at execute method ["+methodHandler.getMethod()+"] transaction ["+TransactionManager.getCurrentTransaction()+"]");
-	}
-
-	@Override
-	public void after(MethodHandler methodHandler) {
+		Object result = null ;
+		try {
+			result = methodHandler.invoke();
+		}catch (Throwable t) {
+			AbstractTransaction transactionManager = TransactionManager.getCurrentTransaction();
+			logger.debug("transaction execute exception when execute ["+methodHandler.getMethod().getName()+"] transaction ["+transactionManager+"]",t);
+			boolean rollback = false;
+			//判断是否需要回滚
+			for(Class<?> clzz : transactions.value()) {
+				if(ReflectUtils.extendsOf(t.getClass(), clzz)) {
+					if(transactionManager.checkReference()) {
+						logger.debug("transaction rollback when execute ["+methodHandler.getMethod().getName()+"] transaction ["+transactionManager+"]");
+						rollback = true;
+						if(transactionManager.getTransactionDefined().getTransactionPropagion() != TransactionPropagion.PROPAGATION_NESTED) {
+							transactionManager.rollback();
+							transactionManager.completedRollback();
+						}
+						TransactionManager.resetTransactionPointer();
+					}
+					break;
+				}
+			}
+			//如果没有回滚，走提交
+			if(!rollback) {
+				if(transactionManager.checkReference()) {
+					if(transactionManager.getTransactionDefined().getTransactionPropagion() != TransactionPropagion.PROPAGATION_NESTED) {
+						transactionManager.commit();
+						transactionManager.completedCommit();
+					}
+					TransactionManager.resetTransactionPointer();
+					logger.debug("Transaction not rollback because exception type is not @Transaction declare type "+Arrays.toString(transactions.value())+" or child's . target " + t.getClass());
+				}
+			}
+			//如果是独立的事物，中断异常
+			if(transactionManager.getTransactionDefined().getTransactionPropagion() == TransactionPropagion.PROPAGATION_REQUIRES) {
+				methodHandler.interrupt(null);
+			}
+			throw t;
+		}
 		logger.debug("transaction execute completed at method ["+methodHandler.getMethod().getName()+"] transaction ["+TransactionManager.getCurrentTransaction()+"]");
 		AbstractTransaction transactionManager = TransactionManager.getCurrentTransaction();
 		if(transactionManager.checkReference()) {
@@ -46,46 +81,7 @@ public class TransactionMethodHandler implements InvokeHandler {
 			}
 			TransactionManager.resetTransactionPointer();
 		}
-	
+		
+		return result;
 	}
-
-	@Override
-	public void error(MethodHandler methodHandler, Throwable e) {
-		Transactions transactions = methodHandler.getMethod().getAnnotation(Transactions.class);
-		AbstractTransaction transactionManager = TransactionManager.getCurrentTransaction();
-		logger.debug("transaction execute exception when execute ["+methodHandler.getMethod().getName()+"] transaction ["+transactionManager+"]",e);
-		boolean rollback = false;
-		//判断是否需要回滚
-		for(Class<?> clzz : transactions.value()) {
-			if(ReflectUtils.extendsOf(e.getClass(), clzz)) {
-				if(transactionManager.checkReference()) {
-					logger.debug("transaction rollback when execute ["+methodHandler.getMethod().getName()+"] transaction ["+transactionManager+"]");
-					rollback = true;
-					if(transactionManager.getTransactionDefined().getTransactionPropagion() != TransactionPropagion.PROPAGATION_NESTED) {
-						transactionManager.rollback();
-						transactionManager.completedRollback();
-					}
-					TransactionManager.resetTransactionPointer();
-				}
-				break;
-			}
-		}
-		//如果没有回滚，走提交
-		if(!rollback) {
-			if(transactionManager.checkReference()) {
-				if(transactionManager.getTransactionDefined().getTransactionPropagion() != TransactionPropagion.PROPAGATION_NESTED) {
-					transactionManager.commit();
-					transactionManager.completedCommit();
-				}
-				TransactionManager.resetTransactionPointer();
-				logger.debug("Transaction not rollback because exception type is not @Transaction declare type "+Arrays.toString(transactions.value())+" or child's . target " + e.getClass());
-			}
-		}
-		//如果是独立的事物，中断异常
-		if(transactionManager.getTransactionDefined().getTransactionPropagion() == TransactionPropagion.PROPAGATION_REQUIRES) {
-			methodHandler.interrupt(null);
-		}
-	
-	}
-	
 }

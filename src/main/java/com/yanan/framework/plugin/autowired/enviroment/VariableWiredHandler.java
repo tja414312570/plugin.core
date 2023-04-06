@@ -23,7 +23,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 	private Logger log = LoggerFactory.getLogger(VariableWiredHandler.class);
 
 	@Override
-	public void before(MethodHandler methodHandler) {
+	public Object around(MethodHandler methodHandler) throws Throwable {
 		Parameter[] parameters = methodHandler.getMethod().getParameters();
 		Object[] arguments = methodHandler.getParameters();
 		for (int i = 0; i < parameters.length; i++) {
@@ -31,6 +31,7 @@ public class VariableWiredHandler implements InvokeHandler, InstanceHandler, Fie
 			arguments[i] = getParameterValue(parameter, arguments[i],methodHandler.getMethod()
 					.getDeclaringClass().getName()+"."+methodHandler.getMethod().getName());
 		}
+		return methodHandler.invoke();
 	}
 
 	@Override

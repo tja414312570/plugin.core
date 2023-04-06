@@ -26,9 +26,6 @@ public class ThreadLoacalClear implements InvokeHandler{
 				&& ReflectUtils.implementsOf(method.getDeclaringClass(), Runnable.class));
 	}
 	
-	@Override
-	public void before(MethodHandler methodHandler) {
-	}
 	/**
 	 * 移除线程池
 	 * @param threadLocalMap 线程表
@@ -75,15 +72,14 @@ public class ThreadLoacalClear implements InvokeHandler{
 		}
     }
 	@Override
-	public void after(MethodHandler methodHandler) {
-		if(isRunable(methodHandler.getMethod())) {
-			removeThreadLocalMap();
+	public Object around(MethodHandler methodHandler) throws Throwable {
+		try {
+			return methodHandler.invoke();
+		}finally{
+			if(isRunable(methodHandler.getMethod())) {
+				removeThreadLocalMap();
+			}
 		}
-	}
-
-	@Override
-	public void error(MethodHandler methodHandler, Throwable exception) {
-		after(methodHandler);
 	}
 
 //	@Override

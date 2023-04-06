@@ -40,7 +40,7 @@ public class PluginWiredHandler implements InvokeHandler, FieldHandler, Instance
 	}
 
 	@Override
-	public void before(MethodHandler methodHandler) {
+	public Object around(MethodHandler methodHandler) throws Throwable {
 		Service service;
 		try {
 			WiredStackContext.push(WiredStackContext.METHOD,methodHandler);
@@ -96,19 +96,11 @@ public class PluginWiredHandler implements InvokeHandler, FieldHandler, Instance
 					}
 				}
 			}
+			return methodHandler.invoke();
 		} finally {
 			WiredStackContext.pop();
 		}
 
-	}
-
-	@Override
-	public void after(MethodHandler methodHandler) {
-
-	}
-
-	@Override
-	public void error(MethodHandler methodHandler, Throwable e) {
 	}
 
 	@Override

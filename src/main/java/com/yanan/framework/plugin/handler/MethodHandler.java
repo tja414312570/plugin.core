@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.yanan.framework.plugin.handler.PlugsHandler.ProxyType;
+import com.yanan.utils.reflect.ReflectUtils;
 
 import net.sf.cglib.proxy.MethodProxy;
 
@@ -23,12 +23,10 @@ public class MethodHandler {
 	private MethodProxy methodProxy;
 	private Object[] parameters;
 	private boolean chain=true;
-	private Object originResult;
-	private Object headerResult;
-	private Object footResult;
 	private Map<String,Object> attribute = new HashMap<String,Object>();
 	private Object interruptResult;
 	private Object proxy;
+	private HandlerSet handlerSet;
 
 	public boolean isChain() {
 		return chain;
@@ -36,19 +34,23 @@ public class MethodHandler {
 	public void setChain(boolean chain) {
 		this.chain = chain;
 	}
-	public MethodHandler(PlugsHandler plugsProxy, Method method, Object[] args, Object proxy) {
+	public MethodHandler(PlugsHandler plugsProxy, Method method, Object[] args, Object proxy,HandlerSet handlerSet) {
 		this.plugsProxy = plugsProxy;
 		this.method = method;
 		this.parameters = args;
 		this.proxy = proxy;
+		this.handlerSet = handlerSet;
 	}
 	public Object getProxy() {
 		return proxy;
 	}
-	public MethodHandler(PlugsHandler plugsProxy, MethodProxy methodProxy, Object[] args) {
+	public MethodHandler(PlugsHandler plugsProxy, Method method, MethodProxy methodProxy, Object[] args, Object proxy,HandlerSet handlerSet) {
 		this.plugsProxy = plugsProxy;
 		this.methodProxy = methodProxy;
+		this.method = method;
 		this.parameters = args;
+		this.proxy = proxy;
+		this.handlerSet = handlerSet;
 	}
 	/**
 	 * 获取方法的组件处理器
@@ -95,51 +97,6 @@ public class MethodHandler {
 		this.chain = false;
 		this.setInterruptResult(result) ;
 	}
-	/**
-	 * 将结果代替原来的结果，不中断执行
-	 * @param result 执行结果
-	 */
-	public void setOriginResult(Object result) {
-		this.originResult = result;
-		
-	}
-	/**
-	 * 获取原始方法返回的结果，执行之后有效
-	 * @return 原始结果
-	 */
-	public Object getOriginResult() {
-		return this.originResult;
-	}
-	/**
-	 * 获取拦截器设置的返回结果
-	 * @return 获取头部的结果的集合
-	 */
-	public Object getHeaderResult() {
-		return headerResult;
-	}
-
-	void setHeaderResult(Object headerResult) {
-		if(this.headerResult==null)
-			this.headerResult = headerResult;
-	}
-
-	public Object getFootResult() {
-		return footResult;
-	}
-
-	public void setFootResult(Object footResult) {
-		this.footResult = footResult;
-	}
-	/**
-	 * 重新执行目标方法，可以传入之前的参数或新的参数
-	 * @param parmeters 参数
-	 * @throws Throwable 异常
-	 */
-	public void chain(Object... parmeters) throws Throwable {
-		this.headerResult = this.plugsProxy.getProxyType().equals(ProxyType.JDK)
-				?this.method.invoke(this.plugsProxy.getProxyObject(), parmeters)
-						:methodProxy.invokeSuper(this.plugsProxy.getProxyObject(), parameters);
-	}
 
 	@SuppressWarnings("unchecked")
 	public <T> T getAttribute(String key) {
@@ -172,5 +129,19 @@ public class MethodHandler {
 	}
 	public void setInterruptResult(Object interruptResult) {
 		this.interruptResult = interruptResult;
+	}
+	public Object invoke() throws Throwable{
+		HandlerSet next = this.handlerSet;
+		if(next == null) {
+			if(this.methodProxy != null) {
+				return methodProxy.invokeSuper(proxy, parameters);
+			}else {
+				return ReflectUtils.invokeMethod(this.getPlugsProxy().getProxyObject(), method, parameters);
+			}
+		}
+		if(handlerSet != null) {
+			this.handlerSet = this.handlerSet.getNext();
+		}
+		return ((InvokeHandler)next.getHandler()).around(this);
 	}
 }

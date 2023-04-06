@@ -29,7 +29,7 @@ public class StandScanResourceDecoder implements ResourceDecoder<StandScanResour
 				Plugin plugin = PluginDefinitionBuilderFactory.builderPluginDefinition(cls);
 				PlugsFactory.getInstance().addPlugininDefinition(plugin);
 			}catch(Throwable t) {
-//				t.printStackTrace();
+				t.printStackTrace();
 			}
 		}
 		if(cls.getAnnotation(Register.class)!= null) {
@@ -37,7 +37,7 @@ public class StandScanResourceDecoder implements ResourceDecoder<StandScanResour
 				RegisterDefinition registerDefinition = PluginDefinitionBuilderFactory.builderRegisterDefinition(cls);
 				PlugsFactory.getInstance().addRegisterDefinition(registerDefinition);
 			}catch(Throwable t) {
-//				t.printStackTrace();
+				t.printStackTrace();
 			}
 			
 		}

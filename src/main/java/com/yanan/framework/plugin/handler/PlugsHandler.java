@@ -1,17 +1,15 @@
 package com.yanan.framework.plugin.handler;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.yanan.framework.plugin.definition.RegisterDefinition;
 import com.yanan.utils.ArrayUtils;
-import com.yanan.utils.reflect.ReflectUtils;
-
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -32,13 +30,14 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	public static enum ProxyType {
 		JDK, CGLIB
 	}
+	
 	private Map<String,Object> attribute = new HashMap<String,Object>();
 	private RegisterDefinition registerDefinition;// 注册描述类
 	private Object proxyObject;// 代理对象
 	private Class<?> proxyClass;// 代理类
 	private Class<?> interfaceClass;// 接口类
 	private ProxyType proxyType = ProxyType.JDK;// 代理模式
-	
+	final Map<Method,MethodHandle> methodHandleMap = new ConcurrentHashMap<>();
 	/**
 	 * return the proxy object
 	 * 
@@ -87,8 +86,9 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		this.proxyClass = target.getClass();
 		this.interfaceClass = mapperInterface;
 		this.registerDefinition = registerDefinition;
+		//兼容 default修饰的方法
 	}
-
+	
 	/**
 	 * cglib proxy PlugsHandler constructor
 	 * @param proxyClass 代理类
@@ -117,65 +117,17 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 		if (registerDefinition != null) {
 			handler = registerDefinition.getMethodHandler(method);
 		}
-		MethodHandler mh = null;
-		if (handler != null) {
-			mh = new MethodHandler(this, method, args,proxy);
-			Iterator<HandlerSet> iterator = handler.iterator();
-			HandlerSet hs;
-			while (iterator.hasNext()) {
-				hs = iterator.next();
-				mh.setHandlerSet(hs);
-				((InvokeHandler)hs.getHandler()).before(mh);
-				if (!mh.isChain())
-					return mh.getInterruptResult();
-			}
-		}
-		try {
-			method.setAccessible(true);
-			Object result = method.invoke(this.proxyObject, args);
-			method.setAccessible(false);
-			if (handler != null) {
-				mh.setOriginResult(result);
-				Iterator<HandlerSet> iterator = handler.iterator();
-				HandlerSet hs;
-				while (iterator.hasNext()) {
-					hs = iterator.next();
-					mh.setHandlerSet(hs);
-					((InvokeHandler)hs.getHandler()).after(mh);
-					if (!mh.isChain())
-						return mh.getInterruptResult();
-				}
-			}
-			return result;
-		} catch (Throwable e) {
-			if (handler != null) {
-				Iterator<HandlerSet> iterator = handler.iterator();
-				HandlerSet hs;
-				while (iterator.hasNext()) {
-					hs = iterator.next();
-					mh.setHandlerSet(hs);
-					((InvokeHandler)hs.getHandler()).error(mh, e);
-					if (!mh.isChain())
-						return mh.getInterruptResult();
-				}
-			}
-			throw processException(e);
-		}
+//		if(method.isDefault()){
+//			MethodHandle methodHandle = methodHandleMap.computeIfAbsent(method,ReflectUtils::createMethodHandle);
+//            methodHandle.bindTo(proxy);
+//            Object[] objects = new Object[args.length + 1];
+//            objects[0] = proxy;
+//            System.arraycopy(args, 0, objects, 1, args.length);
+//            return methodHandle.invokeWithArguments(objects);
+//        }
+		MethodHandler mh = new MethodHandler(this, method, args,proxy,handler);
+		return mh.invoke();
 	}
-	/**
-	 * process the exception
-	 * @param e
-	 * @return
-	 */
-	private Throwable processException(Throwable e) {
-		if(ReflectUtils.extendsOf(e.getClass(), InvocationTargetException.class)){
-			InvocationTargetException exc = (InvocationTargetException) e;
-			if(exc.getTargetException()!=null)
-				e = exc.getTargetException();
-		}
-		return e;
-	}
-
 	@SuppressWarnings("unchecked")
 	public static <T> T newMapperProxy(Class<T> mapperInterface, RegisterDefinition registerDefinition,
 			Object target) {
@@ -206,52 +158,11 @@ public class PlugsHandler implements InvocationHandler, MethodInterceptor {
 	public Object intercept(Object object, Method method, Object[] parameters, MethodProxy methodProxy)
 			throws Throwable {
 		HandlerSet handler = null;
-		MethodHandler mh = null;
 		if (registerDefinition != null) {
 			handler = registerDefinition.getMethodHandler(method);
 		}
-		try {
-		if (handler != null) {
-			mh = new MethodHandler(this, method, parameters,object);
-			Iterator<HandlerSet> iterator = handler.iterator();
-			HandlerSet hs;
-			while (iterator.hasNext()) {
-				hs = iterator.next();
-				mh.setHandlerSet(hs);
-				((InvokeHandler)hs.getHandler()).before(mh);
-				if (!mh.isChain())
-					return mh.getInterruptResult();
-			}
-		}
-			Object result = methodProxy.invokeSuper(object, parameters);
-			if (handler != null) {
-				mh.setOriginResult(result);
-				Iterator<HandlerSet> iterator = handler.iterator();
-				HandlerSet hs;
-				while (iterator.hasNext()) {
-					hs = iterator.next();
-					mh.setHandlerSet(hs);
-					((InvokeHandler)hs.getHandler()).after(mh);
-					if (!mh.isChain())
-						return mh.getInterruptResult();
-				}
-
-			}
-			return result;
-		}catch (Throwable e) {
-			if (handler != null) {
-				Iterator<HandlerSet> iterator = handler.iterator();
-				HandlerSet hs;
-				while (iterator.hasNext()) {
-					hs = iterator.next();
-					mh.setHandlerSet(hs);
-					((InvokeHandler)hs.getHandler()).error(mh, e);
-					if (!mh.isChain())
-						return mh.getInterruptResult();
-				}
-			}
-			throw e;
-		}
+		MethodHandler mh = new MethodHandler(this,method, methodProxy, parameters,object,handler);
+		return mh.invoke();
 	}
 
 	public ProxyType getProxyType() {
